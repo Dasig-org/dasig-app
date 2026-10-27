@@ -25,6 +25,13 @@ The two reviews set the balance from both sides: v0.1 was too dense, and the fir
 | Coordinator | State at a glance. Pills carry the state ("All set", "1 open"). | Icons for kinds of work, photos from recent sessions |
 | Newcomer from a link | Keeps one line of *why*, with "More" | A large cover photo |
 
+## 1a · Screens are templates over BIX, not one-offs
+
+1. **One template per resource type and state**, never a screen per kind of work. A design proposal, a call for speakers and a permit are all the **Task page**; what differs is the data in it (title, team icon, attachments, checklist, history) and the state (open, mine, waiting on review, done).
+2. **Only show what BIX can hold.** Every element on a sketch must map to a field. If a screen needs something the model lacks, add it to the spec first or drop it. (A colour-palette strip on a design proposal is just an image attachment.)
+3. **State drives the actions:** "I'll take it" when open, "Mark done" when it's yours, **Approve / Ask for changes** only for the `reviewer` when work is waiting on review.
+4. **Attachments render by type:** images as a gallery, documents as tiles with an icon and name. The Task page has no special layout for "design work".
+
 ## 2 · Photos
 
 1. **Photos carry the meaning text used to.** Steps show their initiative's cover. "Your story", sessions and reports show photos volunteers attached.
@@ -41,6 +48,8 @@ The two reviews set the balance from both sides: v0.1 was too dense, and the fir
 | Strip (story, session, report) | 72–86px squares, radius 16 |
 | Row thumbnail | 44–56px, radius 14–20 |
 | Group photo as avatar | 30–40px circle |
+
+7. **Link previews are text-first and generated, not stored.** Like GitHub's: the context (project · team), a large title, the reference and state, a row of 2–3 counts with icons, and the group's logo (`Organization.image`, or its initials) as the only image. A thin strip at the bottom shows progress. No page needs its own image. The preview is drawn on the server from the record when a chat asks for it, cached against the record's `meta.version`, and follows the sharing rules: a private item gives a generic card. Only a `public` Initiative may add its cover photo.
 
 ## 3 · Icons
 
@@ -91,4 +100,5 @@ Dasig's app-parity system, unchanged (Dasig's design styleguide, §6):
 | 2026-10-27 | Standard created: balance, photos, icons, people, signature marks, visual system, mockup process | Reviews of home sketches v0.1–v0.3 and differentiators v0.1–v0.2 |
 | 2026-10-27 | One line per item, detail on tap | "Text density is too dense" (home v0.1) |
 | 2026-10-27 | Use the media fields; photos carry meaning | "Utilize those media columns to enrich our sketches" (home v0.2) |
+| 2026-10-27 | Screens are templates over BIX; only show what BIX can hold; previews are text-first and generated | "The screens you created are unrealistic… is our data model capable of this?" (LU 2027 v0.1) |
 | 2026-10-27 | Every item has a visual anchor; every screen has a large visual | "The screens need visuals or icons, the visual balance same with the homescreens" (differentiators v0.1) |
