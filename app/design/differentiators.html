@@ -1,0 +1,249 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bayanihan app · differentiators v0.1</title>
+<!-- Canonical file for differentiator sketches. Overwrite per iteration; archive old versions. Sample data. -->
+<style>
+  :root{--wash:#f1f5f9;--ink:#0F172A;--slate:#475569;--s500:#64748b;--s400:#94a3b8;--s300:#cbd5e1;--s200:#e2e8f0;
+        --primary:#F47C26;--accent:#E85C21;--gold:#FBB931;--sand:#FFF6E9}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#fff}
+  header.doc{max-width:1680px;margin:0 auto;padding:28px 28px 8px}
+  header.doc h1{font-size:24px;margin:0 0 6px}
+  header.doc p{margin:0;color:var(--slate);font-size:14.5px;max-width:880px;line-height:1.5}
+  .row{max-width:1680px;margin:0 auto;padding:20px 28px 40px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:390px}
+  .label{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:0 0 8px}
+  .phone{width:390px;height:844px;background:var(--wash);border-radius:44px;overflow:hidden;position:relative;
+         box-shadow:0 0 0 10px #0f172a0d, 0 18px 50px rgb(15 23 42/.12);display:flex;flex-direction:column}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:13px;font-weight:600}
+  .scroll{flex:1;overflow-y:auto;scrollbar-width:none;padding:4px 18px 0}
+  .top{display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px}
+  .ctx{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px 0 5px;background:#fff;border-radius:999px;font-size:14px;font-weight:600}
+  .av{width:30px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+  .av.sm{width:24px;height:24px;font-size:10px;border:2px solid #fff;margin-left:-7px}
+  .av.sm:first-child{margin-left:0}
+  .a1{background:#E85C21}.a2{background:#475569}.a3{background:#FBB931;color:var(--ink)}.a4{background:#F47C26}.a5{background:#0F172A}.a6{background:#94a3b8}
+  .chev{color:var(--s400);font-size:11px}
+  .icon{width:40px;height:40px;border-radius:999px;background:#fff;display:inline-flex;align-items:center;justify-content:center}
+  h2{font-size:26px;line-height:1.2;margin:0 0 4px;font-weight:700}
+  .sub{font-size:14.5px;color:var(--slate);margin:0 0 20px;line-height:1.45}
+  .eyebrow{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:20px 4px 8px}
+  .eyebrow span{letter-spacing:0;text-transform:none;font-size:12.5px;color:var(--s500);font-weight:600}
+  .panel{background:#fff;border-radius:22px;padding:4px 16px}
+  .hero{background:#fff;border-radius:26px;padding:18px}
+  .item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--s200);align-items:flex-start}
+  .item:last-child{border-bottom:0}
+  .tile{width:44px;height:44px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;line-height:1.05;text-align:center}
+  .t-orange{background:var(--sand);color:var(--accent)}
+  .t-slate{background:var(--wash);color:var(--slate)}
+  .t-done{background:#E85C21;color:#fff}
+  .grow{flex:1;min-width:0}
+  .ttl{font-size:15px;font-weight:600;margin:0 0 3px}
+  .meta{font-size:13px;color:var(--s500);margin:0}
+  .why{font-size:14px;color:var(--slate);margin:6px 0 0;line-height:1.4}
+  .people{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--s500);font-weight:600}
+  .stack{display:flex}
+  .pill{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--wash);color:var(--ink);white-space:nowrap}
+  .pill.ok{background:#fff;border:1.5px solid var(--s200);color:var(--slate)}
+  .pill.state{background:var(--accent);color:#fff}
+  .btns{display:flex;gap:10px;margin-top:14px}
+  .btn{height:48px;border-radius:999px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;padding:0 20px;border:0}
+  .primary{background:var(--primary);color:#fff;flex:1}
+  .outline{background:#fff;border:1.5px solid var(--s300);color:var(--ink);font-weight:600}
+  .link{font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .sandnote{background:var(--sand);border-radius:20px;padding:14px 16px;display:flex;gap:12px;align-items:center}
+  .sandnote b{font-size:15px}
+  .sandnote p{margin:2px 0 0;font-size:13px;color:var(--slate)}
+  .bar{height:8px;border-radius:999px;background:var(--wash);overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:999px}
+  .stat{padding:13px 0;border-bottom:1px solid var(--s200)}
+  .stat:last-child{border-bottom:0}
+  .stat .l{display:flex;justify-content:space-between;font-size:14.5px}
+  .stat .l b{font-weight:600}
+  .nav{height:78px;background:#fff;display:flex;justify-content:space-around;align-items:flex-start;padding-top:10px;font-size:11.5px;font-weight:600;color:var(--s400)}
+  .nav div{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .nav .on{color:var(--accent)}
+  .dot{width:22px;height:22px;border-radius:8px;background:currentColor;opacity:.9}
+  .nav .on .dot{opacity:1}
+  .browserbar{height:46px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 16px;font-size:13px;color:var(--s500);border-bottom:1px solid var(--s200)}
+  .browserbar b{color:var(--ink);font-weight:600}
+  .cover{height:150px;border-radius:26px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:flex-end;padding:16px;color:#fff;font-weight:700;font-size:13px}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 20px 30px;box-shadow:0 -10px 40px rgb(15 23 42/.18)}
+  .grab{width:40px;height:5px;border-radius:999px;background:var(--s300);margin:0 auto 16px}
+  .field{background:var(--wash);border-radius:22px;padding:17px 19px;font-size:16px;color:var(--ink);margin-top:8px}
+  .field.ph{color:var(--s400)}
+  .sublabel{font-size:12.5px;font-weight:600;color:var(--s500);margin:14px 4px 0}
+  .scrim{position:absolute;inset:0;background:rgb(15 23 42/.35)}
+  .notes{margin-top:14px;font-size:13.5px;color:var(--slate);line-height:1.5}
+  .notes li{margin-bottom:6px}
+  .notes b{color:var(--ink)}
+  .center{text-align:center}
+  .bigcheck{width:76px;height:76px;border-radius:999px;background:var(--sand);color:var(--accent);display:flex;align-items:center;justify-content:center;margin:40px auto 18px}
+
+  .one{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--s200)}
+  .one:last-child{border-bottom:0}
+  .go{color:var(--s300);font-size:18px;font-weight:600}
+  .info{display:inline-flex;width:18px;height:18px;border-radius:999px;border:1.5px solid var(--s300);color:var(--s500);font-size:11px;font-weight:700;align-items:center;justify-content:center;margin-left:6px;vertical-align:1px}
+  .tip{position:relative;background:#fff;color:var(--slate);box-shadow:0 4px 18px rgb(15 23 42/.12);font-size:12.5px;line-height:1.4;border-radius:20px;padding:10px 13px;margin:8px 0 2px}
+  .tip:before{content:"";position:absolute;top:-6px;right:34px;border:6px solid transparent;border-top:0;border-bottom-color:#fff}
+  .addlink{display:inline-block;margin-top:14px;font-size:14px;font-weight:600;color:var(--slate)}
+  .more{font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .kv{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--s200);font-size:14.5px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{width:78px;color:var(--s500);font-size:13px;font-weight:600;flex:none;padding-top:1px}
+  .img{background:#e2e8f0 center/cover no-repeat;border-radius:20px;position:relative;flex:none}
+  .chipov{position:absolute;left:10px;top:10px;height:26px;padding:0 10px;border-radius:999px;background:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center}
+  .carousel{display:flex;gap:12px;overflow:hidden;margin:0 -18px;padding:0 18px}
+  .ctile{width:236px;flex:none}
+  .ctile .img{width:236px;height:150px}
+  .ctile .ttl{margin:9px 2px 2px}
+  .strip{display:flex;gap:6px;margin-top:12px}
+  .strip .img{width:72px;height:72px;border-radius:16px}
+  .thumb{width:56px;height:56px}
+  .avimg{width:30px;height:30px;border-radius:999px;background:center/cover;flex:none}
+  .sheetcover{height:150px;border-radius:20px;margin:0 0 14px}
+  .confimg{width:110px;height:110px;border-radius:999px;background:center/cover;margin:36px auto 18px;position:relative}
+  .confimg span{position:absolute;right:-2px;bottom:-2px;width:38px;height:38px;border-radius:999px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid var(--wash)}
+
+  section.d{max-width:1680px;margin:0 auto;padding:34px 28px 6px;border-top:1px solid var(--s200)}
+  section.d h3{font-size:20px;margin:0 0 4px}
+  section.d .feel{font-size:15px;color:var(--slate);margin:0 0 4px;max-width:900px;line-height:1.5}
+  section.d .feel b{color:var(--accent)}
+  .rowd{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-top:16px}
+  .msg{background:#fff;border-radius:22px 22px 22px 6px;padding:12px 14px;font-size:14.5px;line-height:1.45}
+  .badge{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:#fff;font-size:12px;font-weight:600;color:var(--slate)}
+  .badge.sand{background:var(--sand);color:var(--accent)}
+  .prop{background:#fff;border-radius:22px;padding:14px 16px;margin-top:10px}
+  .prop .k{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400)}
+  .prop .ttl{margin-top:4px}
+  .check{width:24px;height:24px;border-radius:999px;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none}
+  .check.off{background:#fff;border:1.5px solid var(--s300);color:transparent}
+  .tl{position:relative;padding-left:26px}
+  .tl:before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:2px;background:var(--s200)}
+  .ev{position:relative;padding:10px 0}
+  .ev:before{content:"";position:absolute;left:-20px;top:15px;width:10px;height:10px;border-radius:999px;background:var(--s300);border:2px solid var(--wash)}
+  .ev.hl:before{background:var(--accent)}
+  .ev p{margin:0}
+  .gen{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .gen span{height:34px;padding:0 13px;border-radius:999px;background:#fff;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+  .arrow{text-align:center;color:var(--s400);font-size:20px;margin:6px 0}
+  .fig{display:flex;justify-content:space-between;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--s200)}
+  .fig:last-child{border-bottom:0}
+  .fig b{font-size:22px}
+  .fig small{display:block;font-size:12.5px;color:var(--s500);font-weight:600;margin-top:2px}
+  .mark{display:flex;align-items:center;gap:10px}
+  .bixlogo{width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;letter-spacing:.02em}
+</style></head><body><header class="doc"><h1>What makes it different · sketches v0.1 · 27 October 2026</h1>
+<p>One section per idea, each with the feeling it should create. Sample data; photos from Wikimedia Commons (<code>media/CREDITS.md</code>). Bayani is not trained yet: its screens show the intended experience.</p></header>
+<section class="d"><h3>1 · Programmable actions</h3><p class="feel">Coordinators should feel: <b>"I describe it once and the app takes it from there."</b> A program's need becomes open steps every week, by itself.</p><div class="rowd"><div class="col"><p class="label">New program</p><div class="phone"><div class="status"><span>10:05</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<h2>Saturday feeding</h2><p class="sub" style="margin-bottom:10px">Every Saturday, 9:00 AM · from 8 Nov</p>
+<div class="eyebrow">Each Saturday needs</div>
+<div class="panel"><div class="one"><div class="grow"><p class="ttl">Volunteers to serve</p></div><span class="pill">6</span></div><div class="one"><div class="grow"><p class="ttl">Rice</p></div><span class="pill">2 sacks</span></div></div>
+<div class="eyebrow">The app will open these every week</div>
+<div class="gen"><span>🙋 Serve ×6</span><span>🛒 Buy goods · keep the receipt</span><span>📦 Receive rice</span><span>✓ Count households</span></div>
+<div class="sandnote" style="margin-top:14px"><div><b>You won't write these again.</b><p>Each Saturday, the steps open by themselves, ready to share.</p></div></div>
+<div class="btns"><span class="btn primary">Start the program</span></div>
+</div><div class="nav"><div><span class="dot"></span>This week</div><div class="on"><span class="dot"></span>Plan</div><div><span class="dot"></span>People</div><div><span class="dot"></span>Reports</div></div></div><ul class="notes"><li><b>Program the type.</b> The coordinator describes the need once; the step template turns it into open steps every week.</li><li><b>The novel part made visible:</b> "The app will open these every week." The chips are the action primitives.</li><li>Money and beneficiary steps (receipt, households) always need a second person to confirm; the template knows that.</li></ul></div><div class="col"><p class="label">Saturday arrives on its own</p><div class="phone"><div class="status"><span>Mon 8:00</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<h2>This Saturday</h2><p class="sub" style="margin-bottom:10px">Saturday feeding · 15 Nov</p>
+<div class="panel">
+<div class="one"><span class="check off" style="border-color:var(--accent);background:var(--sand)">·</span><div class="grow"><p class="ttl">Serve</p><p class="meta">4 of 6 · Liza, Marco, Mia, Josh</p></div><span class="pill">2 open</span></div>
+<div class="one"><span class="check off">·</span><div class="grow"><p class="ttl">Buy goods</p><p class="meta">Keep the receipt</p></div><span class="pill">Open</span></div>
+<div class="one"><span class="check">✓</span><div class="grow"><p class="ttl">Receive rice</p><p class="meta">Liza is bringing 2 sacks, Fri</p></div><span class="pill ok">Covered</span></div>
+<div class="one"><span class="check off">·</span><div class="grow"><p class="ttl">Count households</p><p class="meta">On the day</p></div></div>
+</div>
+<div class="btns"><span class="btn primary">Share the open steps</span></div>
+</div><div class="nav"><div><span class="dot"></span>This week</div><div class="on"><span class="dot"></span>Plan</div><div><span class="dot"></span>People</div><div><span class="dot"></span>Reports</div></div></div><ul class="notes"><li>Nobody created this week's list. It appeared from the program, and four people already said "I'm in" from last week's link.</li><li>One button shares only what's still open.</li></ul></div></div></section>
+<section class="d"><h3>2 · Bayani, the on-phone copilot</h3><p class="feel">Coordinators should feel: <b>"It understood the message, and I'm still in charge."</b> Group-chat messages become suggestions to confirm, read on the phone.</p><div class="rowd"><div class="col"><p class="label">A message comes in</p><div class="phone"><div class="status"><span>8:31</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<p class="label" style="margin:2px 4px 8px">Shared from Messenger</p>
+<div class="msg">Ate, di ako makakapunta this Saturday pero may 2 sacks of rice ako para sa feeding. Dadalhin ko na lang sa parish hall Friday night.</div>
+<p class="meta" style="margin:8px 6px 0">Liza · 8:29 PM</p>
+<div class="eyebrow" style="margin-top:18px">Bayani suggests</div>
+<div class="prop"><div style="display:flex;gap:12px"><span class="check">✓</span><div class="grow"><p class="k">Saturday serving</p><p class="ttl">Free up Liza's slot</p><p class="meta">It goes to Rina, your backup</p></div></div></div>
+<div class="prop"><div style="display:flex;gap:12px"><span class="check">✓</span><div class="grow"><p class="k">New offer</p><p class="ttl">2 sacks of rice from Liza</p><p class="meta">Friday evening · parish hall · covers this week's rice</p></div></div></div>
+<div class="btns"><span class="btn primary">Confirm both</span><span class="btn outline">Edit</span></div>
+<p class="meta center" style="margin-top:12px"><span class="badge">◉ Read on this phone · the message stays here</span></p>
+</div></div><ul class="notes"><li><b>Bayani reads the mess; you decide.</b> Each suggestion says what will change, in plain words, and nothing happens until Ana confirms.</li><li><b>Small and private, felt:</b> "Read on this phone · the message stays here." No server ever sees the raw message.</li><li>Bayani is not trained yet. This shows the intended experience; the shapes it fills are already in BIX.</li></ul></div><div class="col"><p class="label">After confirming</p><div class="phone"><div class="status"><span>8:32</span><span>▴ ◔ ▮</span></div><div class="scroll center">
+<div class="bigcheck">✓</div><h2>Done</h2><p class="sub">Rina has Liza's slot. Liza's rice is on Friday's list.</p>
+<div class="panel" style="text-align:left"><div class="one"><div class="grow"><p class="ttl">Tell Liza</p><p class="meta">"Salamat, Liza! See you Friday."</p></div><span class="pill ok">Send</span></div></div>
+<p style="margin-top:20px"><span class="link">Undo</span></p>
+</div></div><ul class="notes"><li>The suggestion became two real changes, both recorded with "suggested by Bayani, confirmed by Ana".</li><li>A ready thank-you keeps it human.</li></ul></div></div></section>
+<section class="d"><h3>3 · Propose, then commit</h3><p class="feel">Everyone should feel: <b>"I can see who did what, and who confirmed it."</b></p><div class="rowd"><div class="col"><p class="label">History of one step</p><div class="phone"><div class="status"><span>4:40</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<h2>Receive rice</h2><p class="sub" style="margin-bottom:6px">Saturday feeding · 14 Nov</p>
+<div class="eyebrow">History</div>
+<div class="panel" style="padding:8px 16px"><div class="tl">
+<div class="ev"><p class="ttl">Bayani suggested it</p><p class="meta">From Liza's message · Thu 8:29 PM</p></div>
+<div class="ev hl"><p class="ttl">Ana confirmed</p><p class="meta">Thu 8:32 PM</p></div>
+<div class="ev"><p class="ttl">Liza brought 2 sacks</p><p class="meta">Fri 7:10 PM · 1 photo</p></div>
+<div class="ev hl"><p class="ttl">Marco received them</p><p class="meta">Fri 7:12 PM · "Salamat, Liza!"</p></div>
+</div></div>
+<p class="meta" style="margin:14px 6px 0">Every change says who made it and who confirmed it. Nothing is ever quietly edited.</p>
+</div></div><ul class="notes"><li><b>Trust you can see.</b> The model's part and the people's part are always told apart.</li><li>Performer and verifier are different people (Liza brought, Marco received). The record says so.</li></ul></div></div></section>
+<section class="d"><h3>4 · Confirmation is thanks</h3><p class="feel">Volunteers should feel <b>seen</b>; coordinators should feel the admin did itself.</p><div class="rowd"><div class="col"><p class="label">Wrapping up Tuesday</p><div class="phone"><div class="status"><span>4:35</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<h2>Tuesday tutoring</h2><p class="sub" style="margin-bottom:10px">Who came? Tap to confirm.</p>
+<div class="panel">
+<div class="one"><span class="check">✓</span><div class="grow"><p class="ttl">Liza</p><p class="meta">2:00–4:30</p></div></div>
+<div class="one"><span class="check">✓</span><div class="grow"><p class="ttl">Marco</p><p class="meta">2:00–4:30</p></div></div>
+<div class="one"><span class="check">✓</span><div class="grow"><p class="ttl">Mia</p><p class="meta">2:30–4:30</p></div></div>
+<div class="one"><span class="check off">·</span><div class="grow"><p class="ttl">Josh</p><p class="meta">Didn't come</p></div></div>
+</div>
+<div class="eyebrow">Learners today</div><div class="panel"><div class="one"><div class="grow"><p class="ttl">11</p></div><span class="pill ok">4 photos</span></div></div>
+<div class="eyebrow">Say thanks</div><div class="field" style="background:#fff">Salamat, team! Grade 4 read a whole story today.</div>
+<div class="btns"><span class="btn primary">Confirm and thank</span></div>
+</div></div><ul class="notes"><li><b>Recording and thanking are one act.</b> Confirming the session is how hours, credit and report figures are counted, and the thank-you goes to everyone confirmed.</li><li>Josh isn't marked absent with red; he's simply not confirmed.</li></ul></div></div></section>
+<section class="d"><h3>5 · Reports that count themselves, up a federation</h3><p class="feel">Chapters should feel: <b>"These numbers are ours and they're right."</b> Districts should feel: <b>"Finally, every club in one place."</b></p><div class="rowd"><div class="col"><p class="label">A report that counts itself</p><div class="phone"><div class="status"><span>9:10</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<p class="meta">For District office · due 5 Nov</p><h2>October report</h2>
+<div class="eyebrow">Figures <span>counted for you <span class="info">i</span></span></div>
+<div class="panel">
+<div class="fig"><div><span class="ttl">Sessions held</span><small>from 9 confirmed sessions</small></div><b>9</b></div>
+<div class="fig"><div><span class="ttl">Volunteer hours</span><small>from 34 confirmed steps</small></div><b>78</b></div>
+<div class="fig"><div><span class="ttl">Learners reached</span><small>counted at each session</small></div><b>18</b></div>
+</div>
+<div class="eyebrow">Photos <span>choose up to 6</span></div>
+<div class="strip" style="margin-top:0"><div class="img" style="background-image:url(media/tutoring.jpg)"></div><div class="img" style="background-image:url(media/books.jpg)"></div><div class="img" style="background-image:url(media/cleanup.jpg)"></div></div>
+<div class="btns"><span class="btn primary">Send to the district</span></div>
+</div><div class="nav"><div><span class="dot"></span>This week</div><div><span class="dot"></span>Plan</div><div><span class="dot"></span>People</div><div class="on"><span class="dot"></span>Reports</div></div></div><ul class="notes"><li><b>Nobody types a number.</b> Each figure says what it was counted from; tap to see the exact sessions.</li><li>Sent as a link, so the district officer opens it without an account (the report loop).</li></ul></div><div class="col"><p class="label">The district opens it</p><div class="phone"><div class="status"><span>11:02</span><span>▴ ◔ ▮</span></div><div class="browserbar">✕ <b>bayanihan.dasig.org</b></div><div class="scroll">
+<p class="meta" style="margin-top:12px">District office · October</p><h2>12 clubs, one report</h2>
+<div class="panel" style="margin-top:10px">
+<div class="fig"><div><span class="ttl">Volunteer hours</span><small>from 9 clubs' reports</small></div><b>604</b></div>
+<div class="fig"><div><span class="ttl">Sessions held</span><small>from 9 clubs' reports</small></div><b>71</b></div>
+</div>
+<div class="eyebrow">Not in yet</div>
+<div class="panel"><div class="one"><div class="grow"><p class="ttl">3 clubs</p><p class="meta">Listed, never estimated</p></div><span class="link">Remind them</span></div></div>
+<div class="sandnote" style="margin-top:16px"><div><b>Want every club's report like this?</b><p>Invite your clubs. Their figures will add up here.</p></div></div>
+</div></div><ul class="notes"><li><b>Federation, felt.</b> Each club stands behind its own numbers; the district sees the sum and who's missing.</li><li>This is the screen that brings in the other 11 clubs.</li></ul></div></div></section>
+<section class="d"><h3>6 · BIX: open and permanent</h3><p class="feel">People should feel: <b>"This is mine, and it will still be here."</b> BIX is named only where it means freedom to someone.</p><div class="rowd"><div class="col"><p class="label">Your story is yours</p><div class="phone"><div class="status"><span>6:20</span><span>▴ ◔ ▮</span></div><div class="scroll">
+<div class="top"><span class="ctx"><span class="av a1">L</span>Liza <span class="chev">▼</span></span><span></span></div>
+<h2>Your story</h2><p class="sub" style="margin-bottom:10px">32 days · 71 hours · 2 groups since June</p>
+<div class="strip" style="margin-top:0"><div class="img" style="background-image:url(media/tutoring.jpg)"></div><div class="img" style="background-image:url(media/school-cleanup.jpg)"></div><div class="img" style="background-image:url(media/books.jpg)"></div><div class="img" style="background-image:url(media/cleanup.jpg)"></div></div>
+<div class="eyebrow">Confirmed by</div>
+<div class="panel"><div class="one"><span class="avimg" style="background-image:url(media/youth-group.jpg)"></span><div class="grow"><p class="ttl">Kabataan Tutors</p><p class="meta">24 sessions · thanked 19 times</p></div><span class="go">›</span></div>
+<div class="one"><span class="av a5">RL</span><div class="grow"><p class="ttl">Rotaract Lahug Uplands</p><p class="meta">8 days</p></div><span class="go">›</span></div></div>
+<div class="eyebrow">Yours to keep</div>
+<div class="panel"><div class="one"><div class="bixlogo">BIX</div><div class="grow"><p class="ttl">Download your record</p><p class="meta">In BIX, an open format any app can read</p></div><span class="go">›</span></div></div>
+</div><div class="nav"><div><span class="dot"></span>Today</div><div><span class="dot"></span>Groups</div><div class="on"><span class="dot"></span>Your story</div></div></div><ul class="notes"><li><b>Permanence, felt.</b> Her history belongs to her, follows her across groups, and survives any one app, including ours.</li><li><b>BIX shows up only where it means something to a person:</b> "an open format any app can read."</li><li>Later, the same record becomes a credential others can verify.</li></ul></div><div class="col"><p class="label">Your group's data</p><div class="phone"><div class="status"><span>6:25</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<h2>Your group's records</h2><p class="sub">Rotaract Lahug Uplands</p>
+<div class="hero"><div class="mark"><div class="bixlogo">BIX</div><div><p class="ttl">Kept in BIX</p><p class="meta">Bayanihan Information Exchange, an open language for civic work</p></div></div>
+<p class="why">Your plans, people and reports stay readable by any BIX app, now and later. You can take everything with you at any time.</p>
+<div class="btns"><span class="btn outline" style="flex:1">Download everything</span></div></div>
+<div class="eyebrow">Shares with</div>
+<div class="panel">
+<div class="one"><div class="grow"><p class="ttl">District office</p><p class="meta">Monthly reports</p></div><span class="pill ok">On</span></div>
+<div class="one"><div class="grow"><p class="ttl">Dasig Fundraising</p><p class="meta">Publish a need that needs money</p></div><span class="pill">Connect</span></div>
+<div class="one"><div class="grow"><p class="ttl">Other BIX apps</p><p class="meta">Any app that speaks BIX</p></div><span class="pill">Connect</span></div>
+</div>
+</div></div><ul class="notes"><li><b>Interoperability, felt as freedom:</b> "Take everything with you at any time" and a list of who it already talks to.</li><li>Dasig Fundraising is one connection among others, as decided.</li></ul></div></div></section>
+<section class="d"><h3>7 · Handover that loses nothing</h3><p class="feel">A new officer should feel: <b>"I'm not starting from zero."</b></p><div class="rowd"><div class="col"><p class="label">July handover</p><div class="phone"><div class="status"><span>1 Jul</span><span>▴ ◔ ▮</span></div><div class="scroll">
+<div class="img" style="height:170px;margin-top:8px;border-radius:26px;background-image:url(media/youth-group.jpg)"></div>
+<h2 style="margin-top:16px">Welcome, President Mia</h2><p class="sub">Ana's team left you everything.</p>
+<div class="panel">
+<div class="one"><div class="grow"><p class="ttl">Last year</p><p class="meta">34 projects · 1,240 hours · 12 reports</p></div><span class="go">›</span></div>
+<div class="one"><div class="grow"><p class="ttl">People</p><p class="meta">58 members and helpers</p></div><span class="go">›</span></div>
+<div class="one"><div class="grow"><p class="ttl">Programs that carry on</p><p class="meta">Tutoring, coastal cleanup</p></div><span class="go">›</span></div>
+</div>
+<div class="btns"><span class="btn primary">Plan your year</span></div>
+</div></div><ul class="notes"><li><b>Continuity, felt.</b> Records belong to the club, so a new officer starts on day one instead of from a blank spreadsheet.</li></ul></div></div></section>
+<section class="d"><h3>8 · Offline and full, without anxiety</h3><p class="feel">Volunteers should feel: <b>"It's handled."</b></p><div class="rowd"><div class="col"><p class="label">No signal, and a full session</p><div class="phone"><div class="status"><span>6:10</span><span>▴ ◔ ▮</span></div><div class="scroll">
+<div class="top"><span class="ctx"><span class="av a1">L</span>Liza <span class="chev">▼</span></span><span class="badge">◌ Offline</span></div>
+<div class="prop" style="margin-top:6px"><p class="k">Pending</p><p class="ttl">You're in for Sunday tutoring</p><p class="meta">We'll confirm your spot when you're back online.</p></div>
+<div class="prop"><p class="k">Full</p><p class="ttl">Coastal cleanup is full</p><p class="meta">Want to be a backup? If a spot opens, it's yours first.</p><div class="btns"><span class="btn primary">Be a backup</span></div></div>
+</div></div><ul class="notes"><li><b>Honest about offline.</b> A claim made without signal is shown as pending, never as certain.</li><li><b>No rejection:</b> a full session offers a backup spot instead of "sorry".</li></ul></div></div></section>
+<div style="height:60px"></div></body></html>
