@@ -37,12 +37,8 @@ Volunteers matter as much as coordinators. Both get the same app; neither is a s
 7. **The app does the admin.** Anything that can be calculated (hours, counts, report figures, what's still needed) is calculated. Nobody types a number the app already knows.
 8. **Celebrate quietly.** A session fully staffed, a report submitted, an animal adopted: a short, warm moment, then out of the way.
 9. **Honest about the AI.** When Bayani suggests something, it says so and asks. It never acts on its own.
-11. **One line per item on home screens; detail on tap.** A row is a title and one line of what matters most (who's going, how many are needed, its state). Reasons, places, partners and counts open in a sheet. An *i* explains how a number was calculated. Tuned per person (2026-10-27):
-    - **Volunteers** are scanning for something to do, so rows are the lightest.
-    - **Coordinators** need the state at a glance, so pills carry it ("All set", "1 open") and detail opens on tap.
-    - **Newcomers from a link** don't know the group yet, so they keep one line of why, with "More".
-12. **Photos carry the meaning.** Steps show their initiative's cover; "Your story" and a session's page show the photos volunteers attached. Real photos from the group's own work, never stock in the product. One overlay at most (usually the date). With no photo yet, a warm tinted tile with the group's initials, and a prompt to add one after the first session. Photos of beneficiaries never appear in public previews (spec, "Media").
-13. **Calm by default.** Urgency is real but rare (an injured animal, a last-minute gap). Only `priority: urgent` is allowed to look urgent.
+11. **Visual rules** (density, photos, icons, faces, marks) live in `DESIGN_STANDARD.md`.
+12. **Calm by default.** Urgency is real but rare (an injured animal, a last-minute gap). Only `priority: urgent` is allowed to look urgent.
 
 ## Words: BIX term → what people see
 
@@ -67,4 +63,4 @@ Volunteers matter as much as coordinators. Both get the same app; neither is a s
 
 ## How we'll know
 
-During the pilot, ask after each session, in the debrief and not as a survey: did it make running the group feel more manageable? Did a volunteer open it without being reminded? Those two are the measures. The visual system (colour, type, components) follows from these rules and is designed next.
+During the pilot, ask after each session, in the debrief and not as a survey: did it make running the group feel more manageable? Did a volunteer open it without being reminded? Those two are the measures. The visual system is `DESIGN_STANDARD.md`.
