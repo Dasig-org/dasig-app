@@ -41,7 +41,8 @@ Volunteers matter as much as coordinators. Both get the same app; neither is a s
     - **Volunteers** are scanning for something to do, so rows are the lightest.
     - **Coordinators** need the state at a glance, so pills carry it ("All set", "1 open") and detail opens on tap.
     - **Newcomers from a link** don't know the group yet, so they keep one line of why, with "More".
-12. **Calm by default.** Urgency is real but rare (an injured animal, a last-minute gap). Only `priority: urgent` is allowed to look urgent.
+12. **Photos carry the meaning.** Steps show their initiative's cover; "Your story" and a session's page show the photos volunteers attached. Real photos from the group's own work, never stock in the product. One overlay at most (usually the date). With no photo yet, a warm tinted tile with the group's initials, and a prompt to add one after the first session. Photos of beneficiaries never appear in public previews (spec, "Media").
+13. **Calm by default.** Urgency is real but rare (an injured animal, a last-minute gap). Only `priority: urgent` is allowed to look urgent.
 
 ## Words: BIX term → what people see
 

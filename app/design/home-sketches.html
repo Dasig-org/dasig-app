@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bayanihan app · home-screen sketches v0.2</title>
+<title>Bayanihan app · home-screen sketches v0.3</title>
 <!--
   Canonical sketch file. Overwrite on each iteration; old versions in design/archive/.
   v0.2 (2026-10-27): lighter density. One line per item on home screens; detail on tap.
@@ -98,12 +98,25 @@
   .kv{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--s200);font-size:14.5px}
   .kv:last-child{border-bottom:0}
   .kv .k{width:78px;color:var(--s500);font-size:13px;font-weight:600;flex:none;padding-top:1px}
+  .img{background:#e2e8f0 center/cover no-repeat;border-radius:20px;position:relative;flex:none}
+  .chipov{position:absolute;left:10px;top:10px;height:26px;padding:0 10px;border-radius:999px;background:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center}
+  .carousel{display:flex;gap:12px;overflow:hidden;margin:0 -18px;padding:0 18px}
+  .ctile{width:236px;flex:none}
+  .ctile .img{width:236px;height:150px}
+  .ctile .ttl{margin:9px 2px 2px}
+  .strip{display:flex;gap:6px;margin-top:12px}
+  .strip .img{width:72px;height:72px;border-radius:16px}
+  .thumb{width:56px;height:56px}
+  .avimg{width:30px;height:30px;border-radius:999px;background:center/cover;flex:none}
+  .sheetcover{height:150px;border-radius:20px;margin:0 0 14px}
+  .confimg{width:110px;height:110px;border-radius:999px;background:center/cover;margin:36px auto 18px;position:relative}
+  .confimg span{position:absolute;right:-2px;bottom:-2px;width:38px;height:38px;border-radius:999px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid var(--wash)}
 </style>
 </head>
 <body>
 <header class="doc">
-  <h1>Home-screen sketches · v0.2 · 27 October 2026</h1>
-  <p>Lighter than v0.1: home screens show one line per item, and detail opens on tap. Phone 2 shows the volunteer's detail sheet, which is where v0.1's extra text went. Sample data.</p>
+  <h1>Home-screen sketches · v0.3 · 27 October 2026</h1>
+  <p>Lighter than v0.1: home screens show one line per item, and detail opens on tap. v0.3 adds photos from the media fields: initiative covers, group photos, and photos attached to completed steps. Photos are from Wikimedia Commons (see <code>media/CREDITS.md</code>); the groups and people named are invented and are not the people pictured.</p>
 </header>
 
 <div class="row">
@@ -122,27 +135,26 @@
 
         <div class="eyebrow">Ana asked you</div>
         <div class="hero">
-          <p class="ttl">Tutor on Thursday?</p>
-          <p class="meta">Kabataan Tutors · Thu 2:00 PM</p>
+          <div style="display:flex;gap:12px;align-items:center"><div class="img thumb" style="background-image:url(media/tutoring.jpg)"></div><div><p class="ttl">Tutor on Thursday?</p>
+          <p class="meta">Kabataan Tutors · Thu 2:00 PM</p></div></div>
           <div class="btns"><span class="btn primary">I'm in</span><span class="btn outline">Can't make it</span></div>
         </div>
 
         <div class="eyebrow">Lend a hand <span>See all</span></div>
-        <div class="panel">
-          <div class="one"><div class="tile t-orange">SAT<br>1</div><div class="grow"><p class="ttl">Coastal cleanup</p><div class="people" style="margin-top:4px"><span class="stack"><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a4">R</span></span>5 more hands</div></div><span class="go">›</span></div>
-          <div class="one"><div class="tile t-orange">TUE<br>4</div><div class="grow"><p class="ttl">Tutoring</p><p class="meta">1 spot left</p></div><span class="go">›</span></div>
-          <div class="one"><div class="tile t-slate">ANY<br>TIME</div><div class="grow"><p class="ttl">Sort donated books</p><p class="meta">Whenever you can</p></div><span class="go">›</span></div>
+        <div class="carousel">
+          <div class="ctile"><div class="img" style="background-image:url(media/cleanup.jpg)"><span class="chipov">Sat 1 Nov</span></div><p class="ttl">Coastal cleanup</p><div class="people" style="margin-top:3px"><span class="stack"><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a4">R</span></span>5 more hands</div></div>
+          <div class="ctile"><div class="img" style="background-image:url(media/books.jpg)"><span class="chipov">Any time</span></div><p class="ttl">Sort donated books</p><p class="meta">Whenever you can</p></div>
         </div>
 
         <div class="eyebrow">Your story</div>
-        <div class="sandnote"><span class="tile t-done">6</span><div><b>6 days of helping since June</b></div></div>
+        <div class="sandnote" style="display:block"><b>6 days of helping since June</b><div class="strip"><div class="img" style="background-image:url(media/tutoring.jpg)"></div><div class="img" style="background-image:url(media/school-cleanup.jpg)"></div><div class="img" style="background-image:url(media/books.jpg)"></div></div></div>
       </div>
       <div class="nav"><div class="on"><span class="dot"></span>Today</div><div><span class="dot"></span>Groups</div><div><span class="dot"></span>Your story</div></div>
     </div>
     <ul class="notes">
       <li><b>Scanning for something to do.</b> Each row is a title and one line: who's going or how many are needed. The group, place and reason are one tap away.</li>
       <li><b>The ask stays a card</b> because it's addressed to her and needs an answer.</li>
-      <li><b>Removed from v0.1:</b> the subtitle, the reason on the ask, group names on rows, the thank-you line in "Your story".</li>
+      <li><b>Photos carry the meaning text used to.</b> Steps show their initiative's photo; the date is the one overlay. "Your story" is photos from sessions she helped.</li>
     </ul>
   </div>
 
@@ -156,8 +168,9 @@
         <h2>Good morning, Liza</h2>
       </div>
       <div class="scrim"></div>
-      <div class="sheet" style="top:120px">
+      <div class="sheet" style="top:64px">
         <div class="grab"></div>
+        <div class="img sheetcover" style="background-image:url(media/cleanup.jpg)"></div>
         <p class="meta">Rotaract Club of Lahug Uplands</p>
         <h2 style="margin:4px 0 6px">Coastal cleanup</h2>
         <p class="why" style="margin:0 0 6px;font-size:14.5px">We clear the shore by the fishing village every first Saturday. Last month: 38 sacks.</p>
@@ -184,7 +197,7 @@
       <div class="status"><span>7:42</span><span>▴ ◔ ▮</span></div>
       <div class="scroll">
         <div class="top">
-          <span class="ctx"><span class="av a5">RL</span>Rotaract Lahug Uplands <span class="chev">▼</span></span>
+          <span class="ctx"><span class="avimg" style="background-image:url(media/youth-group.jpg)"></span>Rotaract Lahug Uplands <span class="chev">▼</span></span>
           <span class="icon" aria-label="Add">＋</span>
         </div>
         <h2>Your week, Ana</h2>
@@ -208,6 +221,9 @@
           <div class="one"><div class="tile t-orange">SAT</div><div class="grow"><p class="ttl">Coastal cleanup</p></div><span class="pill">5 open</span></div>
         </div>
 
+        <div class="eyebrow">From Tuesday's tutoring <span>4 photos</span></div>
+        <div class="strip" style="margin-top:0"><div class="img" style="background-image:url(media/tutoring.jpg);width:86px;height:86px"></div><div class="img" style="background-image:url(media/books.jpg);width:86px;height:86px"></div><div class="img" style="background-image:url(media/youth-group.jpg);width:86px;height:86px"></div><div class="img" style="background-image:url(media/school-cleanup.jpg);width:86px;height:86px"></div></div>
+
         <div class="eyebrow">This Rotary year <span>Jul–Jun <span class="info">i</span></span></div>
         <div class="tip">Counted from sessions your group confirmed. Nobody types these in.</div>
         <div class="panel">
@@ -223,7 +239,7 @@
     <ul class="notes">
       <li><b>Confidence at a glance.</b> Two items with their one fix, then single-line sessions whose pills say the state. Tap a session for who's coming.</li>
       <li><b>Tooltip for the "how".</b> The <span class="info">i</span> explains where the numbers come from; shown open here.</li>
-      <li><b>Removed from v0.1:</b> counts like "12 of 17", partner names and "asked Marco" on rows. They open on tap.</li>
+      <li><b>Proof that feels like a memory.</b> Photos volunteers attached to Tuesday's session, the same files that back the report.</li>
     </ul>
   </div>
 
@@ -234,7 +250,7 @@
       <div class="status"><span>8:15</span><span>▴ ◔ ▮</span></div>
       <div class="browserbar">✕ <b>bayanihan.dasig.org</b></div>
       <div class="scroll">
-        <div class="cover" style="margin-top:12px">Sat 1 Nov · 6:30 AM</div>
+        <div class="img" style="height:190px;margin-top:12px;border-radius:26px;background-image:url(media/cleanup.jpg)"><span class="chipov">Sat 1 Nov · 6:30 AM</span></div>
         <h2 style="margin-top:16px">Coastal cleanup</h2>
         <p class="meta">Rotaract Club of Lahug Uplands</p>
         <div class="people"><span class="stack"><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a4">R</span><span class="av sm a1">A</span></span>12 going</div>
@@ -263,7 +279,7 @@
       <div class="status"><span>8:16</span><span>▴ ◔ ▮</span></div>
       <div class="browserbar">✕ <b>bayanihan.dasig.org</b></div>
       <div class="scroll center">
-        <div class="bigcheck"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <div class="confimg" style="background-image:url(media/cleanup.jpg)"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>
         <h2>You're in, Josh</h2>
         <p class="sub">See you Saturday, 6:30 AM.</p>
         <div class="btns" style="justify-content:center"><span class="btn outline">Add to calendar</span><span class="btn outline">Tell a friend</span></div>
