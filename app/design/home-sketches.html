@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bayanihan app · home-screen sketches v0.1</title>
+<!--
+  Canonical sketch file. Overwrite on each iteration; move old versions to design/archive/.
+  Sample data only: groups, people and places are invented.
+  Visual language: Dasig app-parity tokens (wash, white borderless surfaces, radius 999/26/22/20/28,
+  one orange per screen, Accent-a for state). Experience rules: design/EXPERIENCE.md.
+-->
+<style>
+  :root{--wash:#f1f5f9;--ink:#0F172A;--slate:#475569;--s500:#64748b;--s400:#94a3b8;--s300:#cbd5e1;--s200:#e2e8f0;
+        --primary:#F47C26;--accent:#E85C21;--gold:#FBB931;--sand:#FFF6E9}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#fff}
+  header.doc{max-width:1680px;margin:0 auto;padding:28px 28px 8px}
+  header.doc h1{font-size:24px;margin:0 0 6px}
+  header.doc p{margin:0;color:var(--slate);font-size:14.5px;max-width:880px;line-height:1.5}
+  .row{max-width:1680px;margin:0 auto;padding:20px 28px 40px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:390px}
+  .label{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:0 0 8px}
+  .phone{width:390px;height:844px;background:var(--wash);border-radius:44px;overflow:hidden;position:relative;
+         box-shadow:0 0 0 10px #0f172a0d, 0 18px 50px rgb(15 23 42/.12);display:flex;flex-direction:column}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:13px;font-weight:600}
+  .scroll{flex:1;overflow-y:auto;scrollbar-width:none;padding:4px 18px 0}
+  .top{display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px}
+  .ctx{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px 0 5px;background:#fff;border-radius:999px;font-size:14px;font-weight:600}
+  .av{width:30px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+  .av.sm{width:24px;height:24px;font-size:10px;border:2px solid #fff;margin-left:-7px}
+  .av.sm:first-child{margin-left:0}
+  .a1{background:#E85C21}.a2{background:#475569}.a3{background:#FBB931;color:var(--ink)}.a4{background:#F47C26}.a5{background:#0F172A}.a6{background:#94a3b8}
+  .chev{color:var(--s400);font-size:11px}
+  .icon{width:40px;height:40px;border-radius:999px;background:#fff;display:inline-flex;align-items:center;justify-content:center}
+  h2{font-size:26px;line-height:1.2;margin:0 0 4px;font-weight:700}
+  .sub{font-size:14.5px;color:var(--slate);margin:0 0 20px;line-height:1.45}
+  .eyebrow{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:20px 4px 8px}
+  .eyebrow span{letter-spacing:0;text-transform:none;font-size:12.5px;color:var(--s500);font-weight:600}
+  .panel{background:#fff;border-radius:22px;padding:4px 16px}
+  .hero{background:#fff;border-radius:26px;padding:18px}
+  .item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--s200);align-items:flex-start}
+  .item:last-child{border-bottom:0}
+  .tile{width:44px;height:44px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;line-height:1.05;text-align:center}
+  .t-orange{background:var(--sand);color:var(--accent)}
+  .t-slate{background:var(--wash);color:var(--slate)}
+  .t-done{background:#E85C21;color:#fff}
+  .grow{flex:1;min-width:0}
+  .ttl{font-size:15px;font-weight:600;margin:0 0 3px}
+  .meta{font-size:13px;color:var(--s500);margin:0}
+  .why{font-size:14px;color:var(--slate);margin:6px 0 0;line-height:1.4}
+  .people{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--s500);font-weight:600}
+  .stack{display:flex}
+  .pill{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--wash);color:var(--ink);white-space:nowrap}
+  .pill.ok{background:#fff;border:1.5px solid var(--s200);color:var(--slate)}
+  .pill.state{background:var(--accent);color:#fff}
+  .btns{display:flex;gap:10px;margin-top:14px}
+  .btn{height:48px;border-radius:999px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;padding:0 20px;border:0}
+  .primary{background:var(--primary);color:#fff;flex:1}
+  .outline{background:#fff;border:1.5px solid var(--s300);color:var(--ink);font-weight:600}
+  .link{font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .sandnote{background:var(--sand);border-radius:20px;padding:14px 16px;display:flex;gap:12px;align-items:center}
+  .sandnote b{font-size:15px}
+  .sandnote p{margin:2px 0 0;font-size:13px;color:var(--slate)}
+  .bar{height:8px;border-radius:999px;background:var(--wash);overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:999px}
+  .stat{padding:13px 0;border-bottom:1px solid var(--s200)}
+  .stat:last-child{border-bottom:0}
+  .stat .l{display:flex;justify-content:space-between;font-size:14.5px}
+  .stat .l b{font-weight:600}
+  .nav{height:78px;background:#fff;display:flex;justify-content:space-around;align-items:flex-start;padding-top:10px;font-size:11.5px;font-weight:600;color:var(--s400)}
+  .nav div{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .nav .on{color:var(--accent)}
+  .dot{width:22px;height:22px;border-radius:8px;background:currentColor;opacity:.9}
+  .nav .on .dot{opacity:1}
+  .browserbar{height:46px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 16px;font-size:13px;color:var(--s500);border-bottom:1px solid var(--s200)}
+  .browserbar b{color:var(--ink);font-weight:600}
+  .cover{height:150px;border-radius:26px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:flex-end;padding:16px;color:#fff;font-weight:700;font-size:13px}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 20px 30px;box-shadow:0 -10px 40px rgb(15 23 42/.18)}
+  .grab{width:40px;height:5px;border-radius:999px;background:var(--s300);margin:0 auto 16px}
+  .field{background:var(--wash);border-radius:22px;padding:17px 19px;font-size:16px;color:var(--ink);margin-top:8px}
+  .field.ph{color:var(--s400)}
+  .sublabel{font-size:12.5px;font-weight:600;color:var(--s500);margin:14px 4px 0}
+  .scrim{position:absolute;inset:0;background:rgb(15 23 42/.35)}
+  .notes{margin-top:14px;font-size:13.5px;color:var(--slate);line-height:1.5}
+  .notes li{margin-bottom:6px}
+  .notes b{color:var(--ink)}
+  .center{text-align:center}
+  .bigcheck{width:76px;height:76px;border-radius:999px;background:var(--sand);color:var(--accent);display:flex;align-items:center;justify-content:center;margin:40px auto 18px}
+</style>
+</head>
+<body>
+<header class="doc">
+  <h1>Home-screen sketches · v0.1 · 27 October 2026</h1>
+  <p>Four phones: the volunteer's home, the coordinator's home, and the two screens a newcomer sees after tapping a shared step in Messenger. Sample data. Visual language is Dasig's app-parity system; the experience rules are in <code>design/EXPERIENCE.md</code>. Notes under each phone say which rule each element serves.</p>
+</header>
+
+<div class="row">
+
+  <!-- 1 · VOLUNTEER HOME -->
+  <div class="col">
+    <p class="label">1 · Volunteer home · personal context</p>
+    <div class="phone">
+      <div class="status"><span>7:42</span><span>▴ ◔ ▮</span></div>
+      <div class="scroll">
+        <div class="top">
+          <span class="ctx"><span class="av a1">L</span>Liza <span class="chev">▼</span></span>
+          <span class="icon" aria-label="Search">⌕</span>
+        </div>
+        <h2>Good morning, Liza</h2>
+        <p class="sub">Two groups have something you could help with this week.</p>
+
+        <div class="eyebrow">Ana asked you</div>
+        <div class="hero">
+          <p class="ttl">Can you tutor on Thursday?</p>
+          <p class="meta">Kabataan Tutors · Thu 30 Oct · 2:00–4:30 PM</p>
+          <p class="why">Grade 4 reading. 11 kids came on Tuesday, and Thursday has one tutor short.</p>
+          <div class="btns"><span class="btn primary">I'm in</span><span class="btn outline">Can't make it</span></div>
+        </div>
+
+        <div class="eyebrow">Lend a hand this week <span>See all</span></div>
+        <div class="panel">
+          <div class="item">
+            <div class="tile t-orange">SAT<br>1</div>
+            <div class="grow">
+              <p class="ttl">Coastal cleanup</p>
+              <p class="meta">Rotaract Club of Lahug Uplands · with its Rotary club</p>
+              <div class="people"><span class="stack"><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a4">R</span></span>12 going · 5 more hands</div>
+            </div>
+          </div>
+          <div class="item">
+            <div class="tile t-orange">TUE<br>4</div>
+            <div class="grow">
+              <p class="ttl">Tutoring, Grade 4 reading</p>
+              <p class="meta">Kabataan Tutors · 1 spot left</p>
+            </div>
+          </div>
+          <div class="item">
+            <div class="tile t-slate">ANY<br>TIME</div>
+            <div class="grow">
+              <p class="ttl">Sort donated books</p>
+              <p class="meta">Kabataan Tutors · at the clubhouse, whenever you can</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="eyebrow">Your story</div>
+        <div class="sandnote">
+          <span class="tile t-done">6</span>
+          <div><b>You've helped on 6 days since June</b><p>With 2 groups. Ana thanked you on Tuesday.</p></div>
+        </div>
+      </div>
+      <div class="nav"><div class="on"><span class="dot"></span>Today</div><div><span class="dot"></span>Groups</div><div><span class="dot"></span>Your story</div></div>
+    </div>
+    <ul class="notes">
+      <li><b>Something worth doing, first.</b> Each step says what it's for and who's going before the details.</li>
+      <li><b>Asked by name, separately.</b> "Ana asked you" sits above what's open to everyone.</li>
+      <li><b>One orange.</b> "I'm in" is the only primary action. "Can't make it" is equal-sized and guilt-free.</li>
+      <li><b>No red counters, no points.</b> "Your story" is a sentence, not a score.</li>
+      <li><b>Context switch</b> top left: Liza's personal view, or a group she helps run.</li>
+    </ul>
+  </div>
+
+  <!-- 2 · COORDINATOR HOME -->
+  <div class="col">
+    <p class="label">2 · Coordinator home · organization context</p>
+    <div class="phone">
+      <div class="status"><span>7:42</span><span>▴ ◔ ▮</span></div>
+      <div class="scroll">
+        <div class="top">
+          <span class="ctx"><span class="av a5">RL</span>Rotaract Lahug Uplands <span class="chev">▼</span></span>
+          <span class="icon" aria-label="Add">＋</span>
+        </div>
+        <h2>Your week, Ana</h2>
+        <p class="sub">Most things are on track. Two need you.</p>
+
+        <div class="eyebrow">Needs you</div>
+        <div class="hero">
+          <p class="ttl">Saturday's cleanup needs 5 more hands</p>
+          <p class="meta">12 of 17 going · Sat 1 Nov · 6:30 AM</p>
+          <div class="btns"><span class="btn primary">Share in the group chat</span></div>
+          <div class="item" style="margin-top:12px;border-top:1px solid var(--s200);padding-bottom:4px">
+            <div class="grow"><p class="ttl">Marco hasn't answered about Thursday yet</p><p class="meta">You asked him yesterday</p></div>
+            <span class="link">Ask someone else</span>
+          </div>
+        </div>
+
+        <div class="eyebrow">Coming up</div>
+        <div class="panel">
+          <div class="item"><div class="tile t-done">TUE</div><div class="grow"><p class="ttl">Tutoring</p><p class="meta">4 of 4 tutors</p></div><span class="pill ok">All set</span></div>
+          <div class="item"><div class="tile t-orange">THU</div><div class="grow"><p class="ttl">Tutoring</p><p class="meta">3 of 4 tutors · asked Marco</p></div><span class="pill">1 open</span></div>
+          <div class="item"><div class="tile t-orange">SAT</div><div class="grow"><p class="ttl">Coastal cleanup</p><p class="meta">12 of 17 · with Rotary Club of Lahug</p></div><span class="pill">5 open</span></div>
+        </div>
+
+        <div class="eyebrow">This Rotary year <span>Jul–Jun</span></div>
+        <div class="panel">
+          <div class="stat"><div class="l"><b>Learners reached</b><span>18 of 40</span></div><div class="bar"><i style="width:45%"></i></div></div>
+          <div class="stat"><div class="l"><b>Volunteer hours</b><span>212 of 600</span></div><div class="bar"><i style="width:35%"></i></div></div>
+        </div>
+
+        <div class="eyebrow">Reports</div>
+        <div class="sandnote">
+          <span class="tile t-done">✓</span>
+          <div><b>October report for the district</b><p>Figures are ready. Due 5 Nov.</p></div>
+        </div>
+      </div>
+      <div class="nav"><div class="on"><span class="dot"></span>This week</div><div><span class="dot"></span>Plan</div><div><span class="dot"></span>People</div><div><span class="dot"></span>Reports</div></div>
+    </div>
+    <ul class="notes">
+      <li><b>Knowing what's next.</b> The week, not a dashboard. It says plainly that most things are on track.</li>
+      <li><b>Only what needs her.</b> Two items, each with the one action that fixes it. Sharing is the growth loop.</li>
+      <li><b>Progress in the group's words,</b> against the targets set in the plan.</li>
+      <li><b>The app did the admin.</b> Report figures are already calculated; "still open", never "late".</li>
+    </ul>
+  </div>
+
+  <!-- 3 · LINK FROM MESSENGER -->
+  <div class="col">
+    <p class="label">3 · Newcomer opens a shared step</p>
+    <div class="phone">
+      <div class="status"><span>8:15</span><span>▴ ◔ ▮</span></div>
+      <div class="browserbar">✕ <b>bayanihan.dasig.org</b></div>
+      <div class="scroll">
+        <div class="cover" style="margin-top:12px">Sat 1 Nov · 6:30 AM</div>
+        <h2 style="margin-top:16px">Coastal cleanup</h2>
+        <p class="meta">Rotaract Club of Lahug Uplands · with Rotary Club of Lahug</p>
+        <p class="why" style="font-size:14.5px">Every first Saturday we clear the shore by the fishing village. Last month we filled 38 sacks. Gloves and sacks are provided.</p>
+        <div class="people"><span class="stack"><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a4">R</span><span class="av sm a1">A</span></span>12 going, including Ana</div>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <p class="ttl" style="font-size:18px">What should we call you?</p>
+        <div class="field">Josh</div>
+        <p class="sublabel">Phone or email, so Ana can reach you (optional)</p>
+        <div class="field ph">0917 … or name@email.com</div>
+        <div class="btns"><span class="btn primary">I'm in</span></div>
+        <p class="meta center" style="margin-top:12px">No account needed. You can keep your story later.</p>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Useful before signing up.</b> The page shows what it's for and who's going, inside Messenger's browser.</li>
+      <li><b>A nickname is enough.</b> No Google sign-in, which Messenger's browser blocks.</li>
+      <li><b>Preview respects sharing.</b> This step is public; a private one would say only "An open step in your group".</li>
+    </ul>
+  </div>
+
+  <!-- 4 · CONFIRMED -->
+  <div class="col">
+    <p class="label">4 · Right after "I'm in"</p>
+    <div class="phone">
+      <div class="status"><span>8:16</span><span>▴ ◔ ▮</span></div>
+      <div class="browserbar">✕ <b>bayanihan.dasig.org</b></div>
+      <div class="scroll center">
+        <div class="bigcheck"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+        <h2>You're in, Josh</h2>
+        <p class="sub">Ana will see you on Saturday at 6:30 AM, by the fishing village. Wear shoes you don't mind getting wet.</p>
+        <div class="panel" style="text-align:left">
+          <div class="item"><div class="grow"><p class="ttl">Add to your calendar</p><p class="meta">Sat 1 Nov, 6:30–9:30 AM</p></div><span class="pill ok">Add</span></div>
+          <div class="item"><div class="grow"><p class="ttl">Tell your friends</p><p class="meta">5 more hands are still needed</p></div><span class="pill ok">Share</span></div>
+        </div>
+        <div class="sandnote" style="margin-top:16px;text-align:left">
+          <div><b>Get the app to see what else is on</b><p>Groups near you post things to help with every week.</p></div>
+        </div>
+        <p style="margin-top:22px"><span class="link">Can't make it after all?</span></p>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Celebrate quietly.</b> A warm confirmation, the practical details, then out of the way.</li>
+      <li><b>The loop continues.</b> "Tell your friends" reshares the step. "Get the app" is an offer, not a gate.</li>
+      <li><b>No full-profile ask yet.</b> That comes after his first confirmed contribution: "Keep your story".</li>
+      <li><b>Backing out stays one tap</b>, and releases the slot to the backup list.</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>
