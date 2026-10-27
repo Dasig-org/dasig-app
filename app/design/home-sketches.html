@@ -3,12 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bayanihan app · home-screen sketches v0.1</title>
+<title>Bayanihan app · home-screen sketches v0.2</title>
 <!--
-  Canonical sketch file. Overwrite on each iteration; move old versions to design/archive/.
-  Sample data only: groups, people and places are invented.
-  Visual language: Dasig app-parity tokens (wash, white borderless surfaces, radius 999/26/22/20/28,
-  one orange per screen, Accent-a for state). Experience rules: design/EXPERIENCE.md.
+  Canonical sketch file. Overwrite on each iteration; old versions in design/archive/.
+  v0.2 (2026-10-27): lighter density. One line per item on home screens; detail on tap.
+  Sample data only. Visual language: Dasig app-parity tokens. Experience rules: design/EXPERIENCE.md.
 -->
 <style>
   :root{--wash:#f1f5f9;--ink:#0F172A;--slate:#475569;--s500:#64748b;--s400:#94a3b8;--s300:#cbd5e1;--s200:#e2e8f0;
@@ -87,19 +86,31 @@
   .notes b{color:var(--ink)}
   .center{text-align:center}
   .bigcheck{width:76px;height:76px;border-radius:999px;background:var(--sand);color:var(--accent);display:flex;align-items:center;justify-content:center;margin:40px auto 18px}
+
+  .one{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--s200)}
+  .one:last-child{border-bottom:0}
+  .go{color:var(--s300);font-size:18px;font-weight:600}
+  .info{display:inline-flex;width:18px;height:18px;border-radius:999px;border:1.5px solid var(--s300);color:var(--s500);font-size:11px;font-weight:700;align-items:center;justify-content:center;margin-left:6px;vertical-align:1px}
+  .tip{position:relative;background:#fff;color:var(--slate);box-shadow:0 4px 18px rgb(15 23 42/.12);font-size:12.5px;line-height:1.4;border-radius:20px;padding:10px 13px;margin:8px 0 2px}
+  .tip:before{content:"";position:absolute;top:-6px;right:34px;border:6px solid transparent;border-top:0;border-bottom-color:#fff}
+  .addlink{display:inline-block;margin-top:14px;font-size:14px;font-weight:600;color:var(--slate)}
+  .more{font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .kv{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--s200);font-size:14.5px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{width:78px;color:var(--s500);font-size:13px;font-weight:600;flex:none;padding-top:1px}
 </style>
 </head>
 <body>
 <header class="doc">
-  <h1>Home-screen sketches · v0.1 · 27 October 2026</h1>
-  <p>Four phones: the volunteer's home, the coordinator's home, and the two screens a newcomer sees after tapping a shared step in Messenger. Sample data. Visual language is Dasig's app-parity system; the experience rules are in <code>design/EXPERIENCE.md</code>. Notes under each phone say which rule each element serves.</p>
+  <h1>Home-screen sketches · v0.2 · 27 October 2026</h1>
+  <p>Lighter than v0.1: home screens show one line per item, and detail opens on tap. Phone 2 shows the volunteer's detail sheet, which is where v0.1's extra text went. Sample data.</p>
 </header>
 
 <div class="row">
 
   <!-- 1 · VOLUNTEER HOME -->
   <div class="col">
-    <p class="label">1 · Volunteer home · personal context</p>
+    <p class="label">1 · Volunteer home</p>
     <div class="phone">
       <div class="status"><span>7:42</span><span>▴ ◔ ▮</span></div>
       <div class="scroll">
@@ -107,63 +118,68 @@
           <span class="ctx"><span class="av a1">L</span>Liza <span class="chev">▼</span></span>
           <span class="icon" aria-label="Search">⌕</span>
         </div>
-        <h2>Good morning, Liza</h2>
-        <p class="sub">Two groups have something you could help with this week.</p>
+        <h2 style="margin-bottom:18px">Good morning, Liza</h2>
 
         <div class="eyebrow">Ana asked you</div>
         <div class="hero">
-          <p class="ttl">Can you tutor on Thursday?</p>
-          <p class="meta">Kabataan Tutors · Thu 30 Oct · 2:00–4:30 PM</p>
-          <p class="why">Grade 4 reading. 11 kids came on Tuesday, and Thursday has one tutor short.</p>
+          <p class="ttl">Tutor on Thursday?</p>
+          <p class="meta">Kabataan Tutors · Thu 2:00 PM</p>
           <div class="btns"><span class="btn primary">I'm in</span><span class="btn outline">Can't make it</span></div>
         </div>
 
-        <div class="eyebrow">Lend a hand this week <span>See all</span></div>
+        <div class="eyebrow">Lend a hand <span>See all</span></div>
         <div class="panel">
-          <div class="item">
-            <div class="tile t-orange">SAT<br>1</div>
-            <div class="grow">
-              <p class="ttl">Coastal cleanup</p>
-              <p class="meta">Rotaract Club of Lahug Uplands · with its Rotary club</p>
-              <div class="people"><span class="stack"><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a4">R</span></span>12 going · 5 more hands</div>
-            </div>
-          </div>
-          <div class="item">
-            <div class="tile t-orange">TUE<br>4</div>
-            <div class="grow">
-              <p class="ttl">Tutoring, Grade 4 reading</p>
-              <p class="meta">Kabataan Tutors · 1 spot left</p>
-            </div>
-          </div>
-          <div class="item">
-            <div class="tile t-slate">ANY<br>TIME</div>
-            <div class="grow">
-              <p class="ttl">Sort donated books</p>
-              <p class="meta">Kabataan Tutors · at the clubhouse, whenever you can</p>
-            </div>
-          </div>
+          <div class="one"><div class="tile t-orange">SAT<br>1</div><div class="grow"><p class="ttl">Coastal cleanup</p><div class="people" style="margin-top:4px"><span class="stack"><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a4">R</span></span>5 more hands</div></div><span class="go">›</span></div>
+          <div class="one"><div class="tile t-orange">TUE<br>4</div><div class="grow"><p class="ttl">Tutoring</p><p class="meta">1 spot left</p></div><span class="go">›</span></div>
+          <div class="one"><div class="tile t-slate">ANY<br>TIME</div><div class="grow"><p class="ttl">Sort donated books</p><p class="meta">Whenever you can</p></div><span class="go">›</span></div>
         </div>
 
         <div class="eyebrow">Your story</div>
-        <div class="sandnote">
-          <span class="tile t-done">6</span>
-          <div><b>You've helped on 6 days since June</b><p>With 2 groups. Ana thanked you on Tuesday.</p></div>
-        </div>
+        <div class="sandnote"><span class="tile t-done">6</span><div><b>6 days of helping since June</b></div></div>
       </div>
       <div class="nav"><div class="on"><span class="dot"></span>Today</div><div><span class="dot"></span>Groups</div><div><span class="dot"></span>Your story</div></div>
     </div>
     <ul class="notes">
-      <li><b>Something worth doing, first.</b> Each step says what it's for and who's going before the details.</li>
-      <li><b>Asked by name, separately.</b> "Ana asked you" sits above what's open to everyone.</li>
-      <li><b>One orange.</b> "I'm in" is the only primary action. "Can't make it" is equal-sized and guilt-free.</li>
-      <li><b>No red counters, no points.</b> "Your story" is a sentence, not a score.</li>
-      <li><b>Context switch</b> top left: Liza's personal view, or a group she helps run.</li>
+      <li><b>Scanning for something to do.</b> Each row is a title and one line: who's going or how many are needed. The group, place and reason are one tap away.</li>
+      <li><b>The ask stays a card</b> because it's addressed to her and needs an answer.</li>
+      <li><b>Removed from v0.1:</b> the subtitle, the reason on the ask, group names on rows, the thank-you line in "Your story".</li>
     </ul>
   </div>
 
-  <!-- 2 · COORDINATOR HOME -->
+  <!-- 2 · VOLUNTEER DETAIL SHEET -->
   <div class="col">
-    <p class="label">2 · Coordinator home · organization context</p>
+    <p class="label">2 · Volunteer taps a step</p>
+    <div class="phone">
+      <div class="status"><span>7:43</span><span>▴ ◔ ▮</span></div>
+      <div class="scroll" style="opacity:.35">
+        <div class="top"><span class="ctx"><span class="av a1">L</span>Liza <span class="chev">▼</span></span></div>
+        <h2>Good morning, Liza</h2>
+      </div>
+      <div class="scrim"></div>
+      <div class="sheet" style="top:120px">
+        <div class="grab"></div>
+        <p class="meta">Rotaract Club of Lahug Uplands</p>
+        <h2 style="margin:4px 0 6px">Coastal cleanup</h2>
+        <p class="why" style="margin:0 0 6px;font-size:14.5px">We clear the shore by the fishing village every first Saturday. Last month: 38 sacks.</p>
+        <div class="people"><span class="stack"><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a4">R</span><span class="av sm a1">A</span></span>12 going, including Ana</div>
+        <div class="panel" style="background:var(--wash);margin-top:16px">
+          <div class="kv"><span class="k">When</span><span>Sat 1 Nov, 6:30–9:30 AM</span></div>
+          <div class="kv"><span class="k">Where</span><span>Fishing village shore, near the chapel</span></div>
+          <div class="kv"><span class="k">Bring</span><span>Shoes that can get wet. Gloves and sacks provided.</span></div>
+          <div class="kv"><span class="k">With</span><span>Rotary Club of Lahug</span></div>
+        </div>
+        <div class="btns"><span class="btn primary">I'm in</span><span class="btn outline">Can't make it</span></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Detail on tap, in a sheet.</b> Everything removed from the home screen lives here, laid out as short labelled rows rather than paragraphs.</li>
+      <li><b>Decide in one place.</b> The sheet has the same two answers as the card.</li>
+    </ul>
+  </div>
+
+  <!-- 3 · COORDINATOR HOME -->
+  <div class="col">
+    <p class="label">3 · Coordinator home</p>
     <div class="phone">
       <div class="status"><span>7:42</span><span>▴ ◔ ▮</span></div>
       <div class="scroll">
@@ -172,104 +188,91 @@
           <span class="icon" aria-label="Add">＋</span>
         </div>
         <h2>Your week, Ana</h2>
-        <p class="sub">Most things are on track. Two need you.</p>
+        <p class="sub" style="margin-bottom:14px">On track. Two things need you.</p>
 
         <div class="eyebrow">Needs you</div>
         <div class="hero">
-          <p class="ttl">Saturday's cleanup needs 5 more hands</p>
-          <p class="meta">12 of 17 going · Sat 1 Nov · 6:30 AM</p>
+          <p class="ttl">Cleanup needs 5 more hands</p>
+          <p class="meta">Saturday</p>
           <div class="btns"><span class="btn primary">Share in the group chat</span></div>
-          <div class="item" style="margin-top:12px;border-top:1px solid var(--s200);padding-bottom:4px">
-            <div class="grow"><p class="ttl">Marco hasn't answered about Thursday yet</p><p class="meta">You asked him yesterday</p></div>
+          <div class="one" style="border-top:1px solid var(--s200);margin-top:14px;padding-bottom:2px">
+            <div class="grow"><p class="ttl">Marco hasn't replied</p><p class="meta">Thursday tutoring</p></div>
             <span class="link">Ask someone else</span>
           </div>
         </div>
 
         <div class="eyebrow">Coming up</div>
         <div class="panel">
-          <div class="item"><div class="tile t-done">TUE</div><div class="grow"><p class="ttl">Tutoring</p><p class="meta">4 of 4 tutors</p></div><span class="pill ok">All set</span></div>
-          <div class="item"><div class="tile t-orange">THU</div><div class="grow"><p class="ttl">Tutoring</p><p class="meta">3 of 4 tutors · asked Marco</p></div><span class="pill">1 open</span></div>
-          <div class="item"><div class="tile t-orange">SAT</div><div class="grow"><p class="ttl">Coastal cleanup</p><p class="meta">12 of 17 · with Rotary Club of Lahug</p></div><span class="pill">5 open</span></div>
+          <div class="one"><div class="tile t-done">TUE</div><div class="grow"><p class="ttl">Tutoring</p></div><span class="pill ok">All set</span></div>
+          <div class="one"><div class="tile t-orange">THU</div><div class="grow"><p class="ttl">Tutoring</p></div><span class="pill">1 open</span></div>
+          <div class="one"><div class="tile t-orange">SAT</div><div class="grow"><p class="ttl">Coastal cleanup</p></div><span class="pill">5 open</span></div>
         </div>
 
-        <div class="eyebrow">This Rotary year <span>Jul–Jun</span></div>
+        <div class="eyebrow">This Rotary year <span>Jul–Jun <span class="info">i</span></span></div>
+        <div class="tip">Counted from sessions your group confirmed. Nobody types these in.</div>
         <div class="panel">
-          <div class="stat"><div class="l"><b>Learners reached</b><span>18 of 40</span></div><div class="bar"><i style="width:45%"></i></div></div>
+          <div class="stat"><div class="l"><b>Learners</b><span>18 of 40</span></div><div class="bar"><i style="width:45%"></i></div></div>
           <div class="stat"><div class="l"><b>Volunteer hours</b><span>212 of 600</span></div><div class="bar"><i style="width:35%"></i></div></div>
         </div>
 
         <div class="eyebrow">Reports</div>
-        <div class="sandnote">
-          <span class="tile t-done">✓</span>
-          <div><b>October report for the district</b><p>Figures are ready. Due 5 Nov.</p></div>
-        </div>
+        <div class="sandnote"><span class="tile t-done">✓</span><div><b>October report is ready</b><p>Due 5 Nov</p></div></div>
       </div>
       <div class="nav"><div class="on"><span class="dot"></span>This week</div><div><span class="dot"></span>Plan</div><div><span class="dot"></span>People</div><div><span class="dot"></span>Reports</div></div>
     </div>
     <ul class="notes">
-      <li><b>Knowing what's next.</b> The week, not a dashboard. It says plainly that most things are on track.</li>
-      <li><b>Only what needs her.</b> Two items, each with the one action that fixes it. Sharing is the growth loop.</li>
-      <li><b>Progress in the group's words,</b> against the targets set in the plan.</li>
-      <li><b>The app did the admin.</b> Report figures are already calculated; "still open", never "late".</li>
+      <li><b>Confidence at a glance.</b> Two items with their one fix, then single-line sessions whose pills say the state. Tap a session for who's coming.</li>
+      <li><b>Tooltip for the "how".</b> The <span class="info">i</span> explains where the numbers come from; shown open here.</li>
+      <li><b>Removed from v0.1:</b> counts like "12 of 17", partner names and "asked Marco" on rows. They open on tap.</li>
     </ul>
   </div>
 
-  <!-- 3 · LINK FROM MESSENGER -->
+  <!-- 4 · NEWCOMER -->
   <div class="col">
-    <p class="label">3 · Newcomer opens a shared step</p>
+    <p class="label">4 · Newcomer opens a shared step</p>
     <div class="phone">
       <div class="status"><span>8:15</span><span>▴ ◔ ▮</span></div>
       <div class="browserbar">✕ <b>bayanihan.dasig.org</b></div>
       <div class="scroll">
         <div class="cover" style="margin-top:12px">Sat 1 Nov · 6:30 AM</div>
         <h2 style="margin-top:16px">Coastal cleanup</h2>
-        <p class="meta">Rotaract Club of Lahug Uplands · with Rotary Club of Lahug</p>
-        <p class="why" style="font-size:14.5px">Every first Saturday we clear the shore by the fishing village. Last month we filled 38 sacks. Gloves and sacks are provided.</p>
-        <div class="people"><span class="stack"><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a4">R</span><span class="av sm a1">A</span></span>12 going, including Ana</div>
+        <p class="meta">Rotaract Club of Lahug Uplands</p>
+        <div class="people"><span class="stack"><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a4">R</span><span class="av sm a1">A</span></span>12 going</div>
+        <p class="why" style="font-size:14.5px">We clear the shore by the fishing village every first Saturday. <span class="more">More</span></p>
       </div>
       <div class="scrim"></div>
       <div class="sheet">
         <div class="grab"></div>
         <p class="ttl" style="font-size:18px">What should we call you?</p>
         <div class="field">Josh</div>
-        <p class="sublabel">Phone or email, so Ana can reach you (optional)</p>
-        <div class="field ph">0917 … or name@email.com</div>
+        <span class="addlink">＋ Add a phone or email (optional)</span>
         <div class="btns"><span class="btn primary">I'm in</span></div>
-        <p class="meta center" style="margin-top:12px">No account needed. You can keep your story later.</p>
+        <p class="meta center" style="margin-top:12px">No account needed.</p>
       </div>
     </div>
     <ul class="notes">
-      <li><b>Useful before signing up.</b> The page shows what it's for and who's going, inside Messenger's browser.</li>
-      <li><b>A nickname is enough.</b> No Google sign-in, which Messenger's browser blocks.</li>
-      <li><b>Preview respects sharing.</b> This step is public; a private one would say only "An open step in your group".</li>
+      <li><b>A stranger needs a little context</b> to decide, so the reason stays, cut to one line with "More".</li>
+      <li><b>One field.</b> Contact details are optional and collapsed.</li>
     </ul>
   </div>
 
-  <!-- 4 · CONFIRMED -->
+  <!-- 5 · CONFIRMED -->
   <div class="col">
-    <p class="label">4 · Right after "I'm in"</p>
+    <p class="label">5 · Right after "I'm in"</p>
     <div class="phone">
       <div class="status"><span>8:16</span><span>▴ ◔ ▮</span></div>
       <div class="browserbar">✕ <b>bayanihan.dasig.org</b></div>
       <div class="scroll center">
         <div class="bigcheck"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
         <h2>You're in, Josh</h2>
-        <p class="sub">Ana will see you on Saturday at 6:30 AM, by the fishing village. Wear shoes you don't mind getting wet.</p>
-        <div class="panel" style="text-align:left">
-          <div class="item"><div class="grow"><p class="ttl">Add to your calendar</p><p class="meta">Sat 1 Nov, 6:30–9:30 AM</p></div><span class="pill ok">Add</span></div>
-          <div class="item"><div class="grow"><p class="ttl">Tell your friends</p><p class="meta">5 more hands are still needed</p></div><span class="pill ok">Share</span></div>
-        </div>
-        <div class="sandnote" style="margin-top:16px;text-align:left">
-          <div><b>Get the app to see what else is on</b><p>Groups near you post things to help with every week.</p></div>
-        </div>
-        <p style="margin-top:22px"><span class="link">Can't make it after all?</span></p>
+        <p class="sub">See you Saturday, 6:30 AM.</p>
+        <div class="btns" style="justify-content:center"><span class="btn outline">Add to calendar</span><span class="btn outline">Tell a friend</span></div>
+        <p style="margin-top:28px"><span class="link">Get the app</span></p>
+        <p style="margin-top:14px"><span class="link" style="color:var(--s500)">Can't make it after all?</span></p>
       </div>
     </div>
     <ul class="notes">
-      <li><b>Celebrate quietly.</b> A warm confirmation, the practical details, then out of the way.</li>
-      <li><b>The loop continues.</b> "Tell your friends" reshares the step. "Get the app" is an offer, not a gate.</li>
-      <li><b>No full-profile ask yet.</b> That comes after his first confirmed contribution: "Keep your story".</li>
-      <li><b>Backing out stays one tap</b>, and releases the slot to the backup list.</li>
+      <li><b>Celebrate quietly.</b> One sentence, two optional actions. Place and what to bring are on the step and in the calendar entry.</li>
     </ul>
   </div>
 

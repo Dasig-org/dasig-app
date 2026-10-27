@@ -37,7 +37,11 @@ Volunteers matter as much as coordinators. Both get the same app; neither is a s
 7. **The app does the admin.** Anything that can be calculated (hours, counts, report figures, what's still needed) is calculated. Nobody types a number the app already knows.
 8. **Celebrate quietly.** A session fully staffed, a report submitted, an animal adopted: a short, warm moment, then out of the way.
 9. **Honest about the AI.** When Bayani suggests something, it says so and asks. It never acts on its own.
-10. **Calm by default.** Urgency is real but rare (an injured animal, a last-minute gap). Only `priority: urgent` is allowed to look urgent.
+11. **One line per item on home screens; detail on tap.** A row is a title and one line of what matters most (who's going, how many are needed, its state). Reasons, places, partners and counts open in a sheet. An *i* explains how a number was calculated. Tuned per person (2026-10-27):
+    - **Volunteers** are scanning for something to do, so rows are the lightest.
+    - **Coordinators** need the state at a glance, so pills carry it ("All set", "1 open") and detail opens on tap.
+    - **Newcomers from a link** don't know the group yet, so they keep one line of why, with "More".
+12. **Calm by default.** Urgency is real but rare (an injured animal, a last-minute gap). Only `priority: urgent` is allowed to look urgent.
 
 ## Words: BIX term → what people see
 
