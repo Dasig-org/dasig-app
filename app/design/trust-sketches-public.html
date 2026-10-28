@@ -1,0 +1,216 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dasig · moving and trust</title>
+<style>
+  :root{--wash:#f1f5f9;--ink:#0F172A;--slate:#475569;--s500:#64748b;--s400:#94a3b8;--s300:#cbd5e1;--s200:#e2e8f0;
+        --primary:#F47C26;--accent:#E85C21;--gold:#FBB931;--sand:#FFF6E9}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#fff}
+  header.doc{max-width:1680px;margin:0 auto;padding:28px 28px 8px}
+  header.doc h1{font-size:24px;margin:0 0 6px}
+  header.doc p{margin:0;color:var(--slate);font-size:14.5px;max-width:880px;line-height:1.5}
+  .row{max-width:1680px;margin:0 auto;padding:20px 28px 40px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:390px}
+  .label{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:0 0 8px}
+  .phone{width:390px;height:844px;background:var(--wash);border-radius:44px;overflow:hidden;position:relative;
+         box-shadow:0 0 0 10px #0f172a0d, 0 18px 50px rgb(15 23 42/.12);display:flex;flex-direction:column}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:13px;font-weight:600}
+  .scroll{flex:1;overflow-y:auto;scrollbar-width:none;padding:4px 18px 0}
+  .top{display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px}
+  .ctx{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px 0 5px;background:#fff;border-radius:999px;font-size:14px;font-weight:600}
+  .av{width:30px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+  .av.sm{width:24px;height:24px;font-size:10px;border:2px solid #fff;margin-left:-7px}
+  .av.sm:first-child{margin-left:0}
+  .a1{background:#E85C21}.a2{background:#475569}.a3{background:#FBB931;color:var(--ink)}.a4{background:#F47C26}.a5{background:#0F172A}.a6{background:#94a3b8}
+  .chev{color:var(--s400);font-size:11px}
+  .icon{width:40px;height:40px;border-radius:999px;background:#fff;display:inline-flex;align-items:center;justify-content:center}
+  h2{font-size:26px;line-height:1.2;margin:0 0 4px;font-weight:700}
+  .sub{font-size:14.5px;color:var(--slate);margin:0 0 20px;line-height:1.45}
+  .eyebrow{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:20px 4px 8px}
+  .eyebrow span{letter-spacing:0;text-transform:none;font-size:12.5px;color:var(--s500);font-weight:600}
+  .panel{background:#fff;border-radius:22px;padding:4px 16px}
+  .hero{background:#fff;border-radius:26px;padding:18px}
+  .item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--s200);align-items:flex-start}
+  .item:last-child{border-bottom:0}
+  .tile{width:44px;height:44px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;line-height:1.05;text-align:center}
+  .t-orange{background:var(--sand);color:var(--accent)}
+  .t-slate{background:var(--wash);color:var(--slate)}
+  .t-done{background:#E85C21;color:#fff}
+  .grow{flex:1;min-width:0}
+  .ttl{font-size:15px;font-weight:600;margin:0 0 3px}
+  .meta{font-size:13px;color:var(--s500);margin:0}
+  .why{font-size:14px;color:var(--slate);margin:6px 0 0;line-height:1.4}
+  .people{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--s500);font-weight:600}
+  .stack{display:flex}
+  .pill{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--wash);color:var(--ink);white-space:nowrap}
+  .pill.ok{background:#fff;border:1.5px solid var(--s200);color:var(--slate)}
+  .pill.state{background:var(--accent);color:#fff}
+  .btns{display:flex;gap:10px;margin-top:14px}
+  .btn{height:48px;border-radius:999px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;padding:0 20px;border:0}
+  .primary{background:var(--primary);color:#fff;flex:1}
+  .outline{background:#fff;border:1.5px solid var(--s300);color:var(--ink);font-weight:600}
+  .link{font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .sandnote{background:var(--sand);border-radius:20px;padding:14px 16px;display:flex;gap:12px;align-items:center}
+  .sandnote b{font-size:15px}
+  .sandnote p{margin:2px 0 0;font-size:13px;color:var(--slate)}
+  .bar{height:8px;border-radius:999px;background:var(--wash);overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:999px}
+  .stat{padding:13px 0;border-bottom:1px solid var(--s200)}
+  .stat:last-child{border-bottom:0}
+  .stat .l{display:flex;justify-content:space-between;font-size:14.5px}
+  .stat .l b{font-weight:600}
+  .nav{height:78px;background:#fff;display:flex;justify-content:space-around;align-items:flex-start;padding-top:10px;font-size:11.5px;font-weight:600;color:var(--s400)}
+  .nav div{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .nav .on{color:var(--accent)}
+  .dot{width:22px;height:22px;border-radius:8px;background:currentColor;opacity:.9}
+  .nav .on .dot{opacity:1}
+  .browserbar{height:46px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 16px;font-size:13px;color:var(--s500);border-bottom:1px solid var(--s200)}
+  .browserbar b{color:var(--ink);font-weight:600}
+  .cover{height:150px;border-radius:26px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:flex-end;padding:16px;color:#fff;font-weight:700;font-size:13px}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 20px 30px;box-shadow:0 -10px 40px rgb(15 23 42/.18)}
+  .grab{width:40px;height:5px;border-radius:999px;background:var(--s300);margin:0 auto 16px}
+  .field{background:var(--wash);border-radius:22px;padding:17px 19px;font-size:16px;color:var(--ink);margin-top:8px}
+  .field.ph{color:var(--s400)}
+  .sublabel{font-size:12.5px;font-weight:600;color:var(--s500);margin:14px 4px 0}
+  .scrim{position:absolute;inset:0;background:rgb(15 23 42/.35)}
+  .notes{margin-top:14px;font-size:13.5px;color:var(--slate);line-height:1.5}
+  .notes li{margin-bottom:6px}
+  .notes b{color:var(--ink)}
+  .center{text-align:center}
+  .bigcheck{width:76px;height:76px;border-radius:999px;background:var(--sand);color:var(--accent);display:flex;align-items:center;justify-content:center;margin:40px auto 18px}
+
+  .one{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--s200)}
+  .one:last-child{border-bottom:0}
+  .go{color:var(--s300);font-size:18px;font-weight:600}
+  .info{display:inline-flex;width:18px;height:18px;border-radius:999px;border:1.5px solid var(--s300);color:var(--s500);font-size:11px;font-weight:700;align-items:center;justify-content:center;margin-left:6px;vertical-align:1px}
+  .tip{position:relative;background:#fff;color:var(--slate);box-shadow:0 4px 18px rgb(15 23 42/.12);font-size:12.5px;line-height:1.4;border-radius:20px;padding:10px 13px;margin:8px 0 2px}
+  .tip:before{content:"";position:absolute;top:-6px;right:34px;border:6px solid transparent;border-top:0;border-bottom-color:#fff}
+  .addlink{display:inline-block;margin-top:14px;font-size:14px;font-weight:600;color:var(--slate)}
+  .more{font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .kv{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--s200);font-size:14.5px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{width:78px;color:var(--s500);font-size:13px;font-weight:600;flex:none;padding-top:1px}
+  .img{background:#e2e8f0 center/cover no-repeat;border-radius:20px;position:relative;flex:none}
+  .chipov{position:absolute;left:10px;top:10px;height:26px;padding:0 10px;border-radius:999px;background:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center}
+  .carousel{display:flex;gap:12px;overflow:hidden;margin:0 -18px;padding:0 18px}
+  .ctile{width:236px;flex:none}
+  .ctile .img{width:236px;height:150px}
+  .ctile .ttl{margin:9px 2px 2px}
+  .strip{display:flex;gap:6px;margin-top:12px}
+  .strip .img{width:72px;height:72px;border-radius:16px}
+  .thumb{width:56px;height:56px}
+  .avimg{width:30px;height:30px;border-radius:999px;background:center/cover;flex:none}
+  .sheetcover{height:150px;border-radius:20px;margin:0 0 14px}
+  .confimg{width:110px;height:110px;border-radius:999px;background:center/cover;margin:36px auto 18px;position:relative}
+  .confimg span{position:absolute;right:-2px;bottom:-2px;width:38px;height:38px;border-radius:999px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid var(--wash)}
+
+  section.d{max-width:1680px;margin:0 auto;padding:34px 28px 6px;border-top:1px solid var(--s200)}
+  section.d h3{font-size:20px;margin:0 0 4px}
+  section.d .feel{font-size:15px;color:var(--slate);margin:0 0 4px;max-width:900px;line-height:1.5}
+  section.d .feel b{color:var(--accent)}
+  .rowd{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-top:16px}
+  .ic{width:40px;height:40px;border-radius:999px;background:var(--sand);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .ic.w{background:#fff}.ic.g{background:var(--wash);color:var(--slate)}
+  .ic.lg{width:56px;height:56px}
+  .ic svg{width:20px;height:20px}.ic.lg svg{width:26px;height:26px}
+  .bay{background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff}
+  .msg{background:#fff;border-radius:22px 22px 22px 6px;padding:12px 14px;font-size:14.5px;line-height:1.45}
+  .badge{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:#fff;font-size:12px;font-weight:600;color:var(--slate)}
+  .badge svg{width:14px;height:14px;color:var(--accent)}
+  .prop{background:#fff;border-radius:22px;padding:14px 16px;margin-top:10px}
+  .k{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:0}
+  .check{width:24px;height:24px;border-radius:999px;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none}
+  .check.off{background:#fff;border:1.5px solid var(--s300);color:transparent}
+  .tl{position:relative}
+  .tl:before{content:"";position:absolute;left:19px;top:22px;bottom:22px;width:2px;background:var(--s200)}
+  .ev{position:relative;display:flex;gap:12px;align-items:flex-start;padding:9px 0}
+  .ev p{margin:0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px}
+  .gtile{background:#fff;border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .gtile .ttl{margin:0;font-size:14px}
+  .fig{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--s200)}
+  .fig:last-child{border-bottom:0}
+  .fig b{font-size:22px}
+  .fig small{display:block;font-size:12.5px;color:var(--s500);font-weight:600;margin-top:2px}
+  .bixlogo{width:44px;height:44px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff;font-weight:800;font-size:12.5px;display:flex;align-items:center;justify-content:center;flex:none}
+  .bixlogo.lg{width:64px;height:64px;border-radius:22px;font-size:16px}
+  .clubs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .clubs span{width:34px;height:34px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+  .clubs .miss{background:#fff;border:1.5px dashed var(--s300);color:var(--s400)}
+  .inph{width:44px;height:44px;border-radius:14px;background:center/cover;flex:none}
+  .duo{display:flex;justify-content:center;margin:34px 0 16px}
+  .duo .avimg,.duo .av{width:76px;height:76px;font-size:24px;border:4px solid var(--wash)}
+  .duo>*+*{margin-left:-16px}
+  .door{background:#fff;border-radius:22px;padding:16px;display:flex;gap:14px;align-items:center;margin-top:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{height:36px;padding:0 14px;border-radius:999px;background:#fff;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+  .chip.on{background:var(--accent);color:#fff}
+  .tog{width:51px;height:31px;border-radius:999px;background:var(--accent);position:relative;flex:none}
+  .tog:after{content:"";position:absolute;right:2px;top:2px;width:27px;height:27px;border-radius:999px;background:#fff}
+  .tog.off{background:var(--s300)}.tog.off:after{right:auto;left:2px}
+  .logo{width:72px;height:72px;border-radius:24px;background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center}
+  .step{font-size:12px;font-weight:700;color:var(--s400);letter-spacing:.12em;text-transform:uppercase;margin:6px 0 6px}
+</style></head><body><header class="doc"><h1>Moving and trust · sketches v0.1 · 28 October 2026</h1>
+<p>A fictional club, for sharing publicly. Names are samples. Follows <code>DESIGN_STANDARD.md</code> and <code>EXPERIENCE.md</code>. Privacy wording is a starting point, not legal advice.</p></header>
+<section class="d"><h3>Moving between groups</h3><p class="feel">Everyone should feel: <b>“I always know where I am.”</b></p><div class="rowd"><div class="col"><p class="label">1 · Switching context</p><div class="phone"><div class="status"><span>9:30</span><span>▴ ◔ ▮</span></div><div class="scroll" style="opacity:.3"><h2 style="margin-top:80px">My work</h2></div>
+<div class="scrim"></div><div class="sheet" style="top:120px">
+<div class="grab"></div>
+<div class="panel" style="background:var(--wash)"><div class="one"><span class="av a4">D</span><div class="grow"><p class="ttl">Don</p><p class="meta">Just me: my work and my story</p></div><span class=go>›</span></div></div>
+<div class="eyebrow">Your groups</div>
+<div class="panel" style="background:var(--wash)">
+<div class="one"><span style="width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none">RL</span><div class="grow"><p class="ttl">Rotaract Club of Lahug Uplands</p><p class="meta">Fun Run 2027 · Communications lead</p></div><span class=check>✓</span></div>
+<div class="one"><span style="width:40px;height:40px;border-radius:14px;background:#475569;color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none">RL</span><div class="grow"><p class="ttl">Kabataan Tutors</p><p class="meta">Volunteer · 2 open steps</p></div><span class=go>›</span></div>
+</div>
+<p style="margin:14px 4px"><span class="link">＋ Start a group</span></p>
+</div></div><ul class="notes"><li><b>One tap between personal and each group</b>; each group row shows the person's place in it.</li><li>No orange: choosing is the action.</li></ul></div></div></section>
+<section class="d"><h3>Your story and your data</h3><p class="feel">A person should feel: <b>“This is mine, and I’m in control of it.”</b></p><div class="rowd"><div class="col"><p class="label">2 · Keep your story</p><div class="phone"><div class="status"><span>6:00</span><span>▴ ◔ ▮</span></div><div class="scroll center">
+<div class="strip" style="justify-content:center;margin-top:30px"><div class="img" style="background-image:url(media/cleanup.jpg)"></div><div class="img" style="background-image:url(media/tutoring.jpg)"></div><div class="img" style="background-image:url(media/books.jpg)"></div></div>
+<h2 style="margin-top:18px">Keep your story, Mia</h2>
+<p class="sub">You've helped 3 times with 2 groups. Save it to your own profile, so it stays with you.</p>
+<div class="btns"><span class="btn primary">Continue with Google</span></div>
+<p style="margin-top:12px"><span class="link">Use my email instead</span> · <span class="link" style="color:var(--s500)">Not now</span></p>
+</div></div><ul class="notes"><li>Offered <b>after the first completed work</b>, never before. “Not now” is always there.</li><li>Her signed records, already on her phone, attach to the new account.</li></ul></div><div class="col"><p class="label">3 · Your data</p><div class="phone"><div class="status"><span>6:05</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<h2>Your data</h2><p class="sub" style="margin-bottom:8px">What Dasig keeps about you, and what you can do with it</p>
+<div class="grid2"><div class="gtile"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><p class="ttl">42 records</p><p class="meta">Your work, signed by your groups</p></div><div class="gtile"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l2-3h6l2 3h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="4"/></svg></span><p class="ttl">9 photos</p><p class="meta">You added</p></div><div class="gtile"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><p class="ttl">0 messages</p><p class="meta">Bayani reads on your phone only</p></div><div class="gtile"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><p class="ttl">Profile</p><p class="meta">Shows 2 of 3 groups</p></div></div>
+<div class="panel" style="margin-top:12px">
+<div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><div class="grow"><p class="ttl">Download everything</p><p class="meta">In BIX, an open format</p></div><span class="go">›</span></div>
+<div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><div class="grow"><p class="ttl">Choose what your profile shows</p></div><span class="go">›</span></div>
+<div class="one"><span class="ic g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg></span><div class="grow"><p class="ttl">Delete my account</p></div><span class="go">›</span></div>
+</div>
+</div></div><ul class="notes"><li>Plain counts of what's kept; three things you can always do. Data Privacy Act basics, not legal advice.</li><li>No orange: nothing here should be done by accident.</li></ul></div><div class="col"><p class="label">4 · Deleting your account</p><div class="phone"><div class="status"><span>6:06</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<div class="duo" style="margin-top:8px"><span class="av a3">M</span></div>
+<h2 class="center">Delete your account?</h2>
+<div class="panel" style="margin-top:12px">
+<div class="one"><span class="ic g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><div class="grow"><p class="ttl">Your profile and photos are removed</p></div></div>
+<div class="one"><span class="ic g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4s2-1 5-1 5 2 8 2 3-1 3-1v11s-1 1-3 1-5-2-8-2-5 1-5 1"/></svg></span><div class="grow"><p class="ttl">Groups keep the work, without your name</p><p class="meta">Shown as "a former volunteer"</p></div></div>
+<div class="one"><span class="ic g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><div class="grow"><p class="ttl">Download a copy first?</p></div><span class="link">Download</span></div>
+</div>
+<div class="btns"><span class="btn outline" style="flex:1">Delete my account</span></div>
+<p class="meta center" style="margin-top:10px">You have 14 days to change your mind.</p>
+</div></div><ul class="notes"><li>Says exactly what happens: personal data goes; groups' records stay, unnamed, so their history and reports still add up.</li><li>An outline button, never orange or red, and a grace period.</li></ul></div></div></section>
+<section class="d"><h3>Safety and consent</h3><p class="feel">A lead should feel: <b>“I can keep the group safe.”</b> Everyone: <b>“Nothing happens without my say.”</b></p><div class="rowd"><div class="col"><p class="label">5 · Safety controls, for a lead</p><div class="phone"><div class="status"><span>9:40</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<div style="display:flex;gap:14px;align-items:center"><span class="ic lg w"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><div><p class="meta">Communications</p><h2 style="margin:0">Links and safety</h2></div></div>
+<div class="eyebrow">Active links</div>
+<div class="panel">
+<div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></span><div class="grow"><p class="ttl">Team invite</p><p class="meta">Joined by 4 · anyone with the link</p></div><span class="link">Revoke</span></div>
+<div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></span><div class="grow"><p class="ttl">Call for runners</p><p class="meta">Opened 31 times · view and suggest</p></div><span class="link">Revoke</span></div>
+</div>
+<div class="eyebrow">Needs a look</div>
+<div class="hero" style="display:flex;gap:12px;align-items:center"><span class="ic g"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg></span><div class="grow"><p class="ttl">6 suggestions from one link</p><p class="meta">Look like spam</p></div><span class="btn outline" style="flex:none;height:40px;font-size:14px">Clear</span></div>
+</div></div><ul class="notes"><li>Every link can be revoked; suggestions arriving through a link stay drafts until someone accepts them, so spam can't reach anyone.</li><li>Clearing removes them all at once and revokes the link.</li></ul></div><div class="col"><p class="label">6 · Removing someone</p><div class="phone"><div class="status"><span>9:42</span><span>▴ ◔ ▮</span></div><div class="scroll" style="opacity:.3"><h2 style="margin-top:80px">The team</h2></div>
+<div class="scrim"></div><div class="sheet" style="top:240px">
+<div class="grab"></div>
+<div style="display:flex;gap:12px;align-items:center"><span class="av a6">K</span><p class="ttl" style="font-size:18px;margin:0">Remove Kim from Communications?</p></div>
+<p class="meta" style="margin:10px 0">Kim's past work stays in the team's history and in Kim's own story.</p>
+<div class="panel" style="background:var(--wash)"><div class="one"><div class="grow"><p class="ttl">Also stop Kim joining by link</p></div><span class="tog off"></span></div></div>
+<div class="btns"><span class="btn outline" style="flex:1">Remove</span></div>
+</div></div><ul class="notes"><li>Ends the team participation; never erases what Kim did.</li><li>Blocking is a separate, deliberate choice.</li></ul></div><div class="col"><p class="label">7 · Consent</p><div class="phone"><div class="status"><span>8:00</span><span>▴ ◔ ▮</span></div><div class="scroll">
+<div style="display:flex;gap:14px;align-items:center;margin-top:20px"><span class="ic lg bay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><div><p class="meta">Optional</p><h2 style="margin:0;font-size:24px">Help Bayani learn?</h2></div></div>
+<p class="sub" style="margin-top:10px">Bayani reads messages on your phone and nothing leaves it. You can also choose to share a few, so it gets better at Filipino-English.</p>
+<div class="panel">
+<div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><div class="grow"><p class="ttl">Keep everything on my phone</p></div><span class="check">✓</span></div>
+<div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></span><div class="grow"><p class="ttl">Share messages I pick</p><p class="meta">Names removed first. You can withdraw any time.</p></div><span class="check off">·</span></div>
+</div>
+<div class="eyebrow">Photos with children</div>
+<div class="panel"><div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l2-3h6l2 3h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="4"/></svg></span><div class="grow"><p class="ttl">Never show outside the group</p><p class="meta">For photos marked as showing children</p></div><span class="tog"></span></div></div>
+<div class="btns"><span class="btn primary">Save</span></div>
+</div></div><ul class="notes"><li>The default keeps everything on the phone. Sharing is opt-in, per message, and withdrawable.</li><li>Group setting for photos with children; on by default.</li></ul></div></div></section><div style="height:60px"></div></body></html>
