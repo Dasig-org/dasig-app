@@ -34,8 +34,16 @@ export const bix = {
   byRef: (r: string) => call<R>("GET", `/$ref/${encodeURIComponent(r)}`),
   search: async (type: string, q: Record<string, string>) => entries(await call<{ entry: { resource: R }[] }>("GET", `/${type}?${new URLSearchParams(q)}`)),
   verify: (type: string, id: string) => call<{ allValid: boolean; signatures: { signedBy: string; when: string; unchanged: boolean }[] }>("GET", `/${type}/${id}/$verify`),
-  /** Apply changes now. Throws BixError (with the current state) if refused. */
+  /** Apply changes now; if there's no connection, keep them to sync later. Throws BixError if refused. */
   async commit(...records: R[]): Promise<R[]> {
+    try { return await this.commitNow(...records); }
+    catch (e) {
+      const { isNetworkError, enqueue } = await import("./outbox");
+      if (isNetworkError(e)) { await enqueue(records); throw new BixError(["Saved on this phone. We'll send it when you're back online."]); }
+      throw e;
+    }
+  },
+  async commitNow(...records: R[]): Promise<R[]> {
     const b = await call<{ entry: ({ ok: true; record: R } | { ok: false; reasons: string[]; current: R | null })[] }>("POST", "/", { type: "transaction", entry: records.map((resource) => ({ resource })) });
     const bad = b.entry.find((e) => !e.ok) as { reasons: string[]; current: R | null } | undefined;
     if (bad) throw new BixError(bad.reasons, bad.current);

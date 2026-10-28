@@ -3,6 +3,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View,
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Icon, type IconName } from "./Icon";
+import { SyncBar } from "./SyncBar";
 import { avatarColors, c, radius, type } from "./theme";
 
 /** A screen on the wash, phone-first, with an optional fixed bottom bar. */
@@ -11,6 +12,7 @@ export function Screen({ children, bottom, back }: { children: ReactNode; bottom
   return (
     <View style={{ flex: 1, backgroundColor: c.wash }}>
       <ScrollView contentContainerStyle={{ paddingTop: inset.top + 12, paddingHorizontal: 18, paddingBottom: 120, maxWidth: 520, width: "100%", alignSelf: "center" }} keyboardShouldPersistTaps="handled">
+        <SyncBar />
         {back && <RoundButton icon="back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} style={{ marginBottom: 14 }} label="Back" />}
         {children}
       </ScrollView>

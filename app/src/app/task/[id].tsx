@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { onSynced } from "@/lib/outbox";
 import { useLocalSearchParams } from "expo-router";
 import { Text, View } from "react-native";
 import { bix, BixError, type R } from "@/lib/bix";
@@ -18,6 +19,7 @@ export default function Task() {
   const [busy, setBusy] = useState(false);
   const [item, setItem] = useState("");
   const [asking, setAsking] = useState(false);
+  useEffect(() => onSynced(() => setMsg(null)), []);
   const { data, error, reload } = useLoad(async () => {
     const task = await bix.get("Task", id);
     const team = task.team ? await bix.get("Team", task.team.reference.split("/")[1]).catch(() => null) : null;
