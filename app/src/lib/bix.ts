@@ -48,4 +48,6 @@ export const bix = {
   link: (target: Ref, grants: string[], preview = "title-only") => call<{ token: string; link: R }>("POST", "/$links", { target, grants, preview }),
   openLink: (token: string) => call<any>("GET", `/$link/${token}`),
   joinByLink: (token: string) => call<R>("POST", `/$link/${token}/join`, {}),
+  /** Everything that names you, as a BIX Bundle (rule 18). */
+  exportMe: (personId: string) => call<object>("GET", `/Person/${personId}/$export`),
 };
