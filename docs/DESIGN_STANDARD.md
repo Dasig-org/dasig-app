@@ -32,6 +32,20 @@ The two reviews set the balance from both sides: v0.1 was too dense, and the fir
 3. **State drives the actions:** "I'll take it" when open, "Mark done" when it's yours, **Approve / Ask for changes** only for the `reviewer` when work is waiting on review.
 4. **Attachments render by type:** images as a gallery, documents as tiles with an icon and name. The Task page has no special layout for "design work".
 
+## 1b · Every page, the same anatomy
+
+Every page (a group, team, project, task, need, offer, vote, report or position) is laid out in this order, showing only the parts that have content:
+
+1. **Header:** icon or cover, reference, title, where it belongs
+2. **State and the one action**
+3. **About:** the `description`, two lines, with "More"
+4. **Files:** reference attachments as tiles (images as thumbnails, documents as a file tile with its name); a vote shows each option's files with the option
+5. **The work:** checklist, smaller pieces, people on it (Tasks); teams (projects); roster (teams)
+6. **What came out of it:** outputs (Tasks only)
+7. **History and comments**
+
+A page with no files doesn't show an empty Files section; "Add a file" sits in the page's menu.
+
 ## 2 · Photos
 
 1. **Photos carry the meaning text used to.** Steps show their initiative's cover. "Your story", sessions and reports show photos volunteers attached.
@@ -100,5 +114,6 @@ Dasig's app-parity system, unchanged (Dasig's design styleguide, §6):
 | 2026-10-27 | Standard created: balance, photos, icons, people, signature marks, visual system, mockup process | Reviews of home sketches v0.1–v0.3 and differentiators v0.1–v0.2 |
 | 2026-10-27 | One line per item, detail on tap | "Text density is too dense" (home v0.1) |
 | 2026-10-27 | Use the media fields; photos carry meaning | "Utilize those media columns to enrich our sketches" (home v0.2) |
+| 2026-10-28 | Every page has the same anatomy, including About and Files | "The voting items and the pages should be able to have attachments… so people know what to view" |
 | 2026-10-27 | Screens are templates over BIX; only show what BIX can hold; previews are text-first and generated | "The screens you created are unrealistic… is our data model capable of this?" (LU 2027 v0.1) |
 | 2026-10-27 | Every item has a visual anchor; every screen has a large visual | "The screens need visuals or icons, the visual balance same with the homescreens" (differentiators v0.1) |
