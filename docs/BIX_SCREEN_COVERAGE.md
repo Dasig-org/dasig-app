@@ -55,3 +55,7 @@
 13. Group settings: sharing defaults, our words
 14. Withdrawing consent
 15. Following, with an updates feed
+
+## Status after 2026-10-28 batches
+
+P1 (1–5) sketched in `p1-sketches.html`; P2 (6–11) sketched in `p2-sketches.html`, each with a `-public` version. P3 (12–15) remain, to be designed while building.
