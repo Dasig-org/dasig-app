@@ -43,6 +43,10 @@ await mia.getByText("Volunteers", { exact: true }).waitFor();
 await mia.getByText("Draft call for speakers").click();
 await mia.getByText("I'll take it").click();
 await mia.getByText("Mark done").waitFor(); log("Mia took the task"); await shot(mia, "07-task-mine");
+await mia.getByLabel("Add a photo or file").click();
+const [chooser] = await Promise.all([mia.waitForEvent("filechooser"), mia.getByText("Document", { exact: true }).click()]);
+await chooser.setFiles({ name: "speaker-call-draft.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n% draft call for speakers\n") });
+await mia.getByText("speaker-call-draft.pdf").waitFor(); log("Mia attached her draft (kept by the group's server)");
 await mia.getByText("Mark done").click();
 await mia.getByText("Recorded and signed by your group").waitFor(); log("Mia marked it done: recorded and signed"); await shot(mia, "08-done-signed");
 

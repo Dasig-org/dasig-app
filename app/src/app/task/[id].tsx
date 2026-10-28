@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { onSynced } from "@/lib/outbox";
+import { pickDocument, pickPhoto, type Attachment } from "@/lib/files";
+import { Files } from "@/ui/Files";
 import { useLocalSearchParams } from "expo-router";
 import { Text, View } from "react-native";
 import { bix, BixError, type R } from "@/lib/bix";
@@ -19,6 +21,7 @@ export default function Task() {
   const [busy, setBusy] = useState(false);
   const [item, setItem] = useState("");
   const [asking, setAsking] = useState(false);
+  const [adding, setAdding] = useState(false);
   useEffect(() => onSynced(() => setMsg(null)), []);
   const { data, error, reload } = useLoad(async () => {
     const task = await bix.get("Task", id);
@@ -38,6 +41,13 @@ export default function Task() {
   const mine = task.owner?.reference === me;
   const onIt = parts.some((p: any) => p.person.reference === me);
 
+  const canAdd = onIt || isLead;
+  const outputs: Attachment[] = (task.output ?? []).flatMap((o: any) => o.attachment ?? []);
+  const attach = async (a: Attachment | null) => {
+    setAdding(false); if (!a) return;
+    if (task.status === "completed") await run(bix.next(task, { output: [...(task.output ?? []), { attachment: [a] }] }));
+    else await run(bix.next(task, { attachment: [...(task.attachment ?? []), a] }));
+  };
   const run = async (next: R, ok?: string) => {
     setBusy(true); setMsg(null);
     try { await bix.commit(next); if (ok) setMsg(ok); }
@@ -67,6 +77,11 @@ export default function Task() {
         <View style={{ flex: 1 }}><Text style={t.row}>{signed?.allValid ? "Recorded and signed by your group" : "Recorded"}</Text>
           <Meta>{signed?.signatures?.[0] ? `Signed ${new Date(signed.signatures[0].when).toLocaleString()} · unchanged` : "Added to the story of everyone who did it"}</Meta></View></Sand></View> : null}
 
+      {(task.attachment ?? []).length || (canAdd && task.status !== "completed") ? <><Eyebrow right={(task.attachment ?? []).length ? `${(task.attachment ?? []).length}` : undefined}>Files</Eyebrow>
+        <Files items={task.attachment ?? []} onAdd={canAdd && task.status !== "completed" ? () => setAdding(true) : undefined} /></> : null}
+      {outputs.length || (canAdd && task.status === "completed") ? <><Eyebrow>What came out of it</Eyebrow>
+        <Files items={outputs} onAdd={canAdd ? () => setAdding(true) : undefined} /></> : null}
+
       {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} />} title={parts.map((p: any) => name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? `${name(task.owner.reference)} is accountable` : undefined} last /></Panel></> : null}
 
       <Eyebrow right={(task.checklist ?? []).length ? `${(task.checklist ?? []).filter((x: any) => x.done).length} of ${(task.checklist ?? []).length}` : undefined}>Smaller steps</Eyebrow>
@@ -76,6 +91,15 @@ export default function Task() {
           onSubmitEditing={() => { if (item.trim()) { run(bix.next(task, { checklist: [...(task.checklist ?? []), { text: item.trim(), done: false }] })); setItem(""); } }} returnKeyType="done" /></View>
           : (task.checklist ?? []).length ? null : <Row title="None yet" last />}
       </Panel>
+
+      <Sheet open={adding} onClose={() => setAdding(false)}>
+        <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>{task.status === "completed" ? "Add what came out of it" : "Add to Files"}</Text>
+        <Panel style={{ backgroundColor: c.wash }}>
+          <Row left={<IconCircle name="camera" tone="white" />} title="Photo" meta="Kept by your group" onPress={() => pickPhoto(false).then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
+          <Row left={<IconCircle name="smile" tone="white" />} title="Photo that shows children" meta="Never leaves the group" onPress={() => pickPhoto(true).then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
+          <Row left={<IconCircle name="receipt" tone="white" />} title="Document" meta="PDF, Word, Excel, text" last onPress={() => pickDocument().then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
+        </Panel>
+      </Sheet>
 
       <Sheet open={asking} onClose={() => setAsking(false)}>
         <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>Who should we ask?</Text>
