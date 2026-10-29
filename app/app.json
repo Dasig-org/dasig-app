@@ -19,7 +19,13 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "org.dasig.bayanihan"
+      "package": "org.dasig.bayanihan",
+      "permissions": [
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.CAMERA",
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "output": "single",
@@ -36,7 +42,13 @@
         }
       ],
       "expo-build-properties",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Dasig uses the camera to scan your group hub's code and to take photos of your work."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
