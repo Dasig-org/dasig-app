@@ -9,11 +9,16 @@ import { appUrl } from "@/lib/env";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, shortRef, stateLabel, teamIcon } from "@/lib/work";
-import { Avatar, Buttons, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet , Skeleton} from "@/ui/kit";
+import { Avatar, Buttons, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 
-/** A team page: roster (lead, members, volunteers), ideas waiting for the lead, the team's work, and its invite link. */
-export default function Team() {
+/**
+ * A team, in two views.
+ * "work": the team's tasks first. While the team is still being set up (no work, nobody but the lead) the full roster shows;
+ *   after that it shrinks to one line of faces that opens the people view. Invite lives in the header.
+ * "people": lead, members, volunteers and the invite.
+ */
+export default function Team({ view = "work" }: { view?: "work" | "people" }) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useSession();
   const me = s.person ? `Person/${s.person.id}` : "";
@@ -61,12 +66,18 @@ export default function Team() {
       } else setInvite(`${appUrl()}/join/${l.token}`);
     } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
   };
-  return (
-    <Screen onRefresh={reload} back>
-      <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={teamIcon(team.name)} size={56} tone="white" />
-        <View style={{ flex: 1 }}><Meta>{leadsIt ? "You lead it" : s.isLead ? "Your group's team" : "Team"}</Meta><Text style={[t.title, { fontSize: 24 }]}>{team.name}</Text></View></View>
-      {lead && ideas.length ? <View style={{ marginTop: 14 }}><Panel>{ideas.map((x, i) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta={`Suggested by ${name(x.note?.[0]?.author?.reference ?? "")}`}
-        right={<Outline label="Accept" onPress={async () => { try { await bix.commit(act.accept(x)); } catch {} reload(); }} />} last={i === ideas.length - 1} />)}</Panel></View> : null}
+  const setup = work.length === 0 && parts.length <= 1;
+  const everyone = parts.map((p: any) => name(p.person.reference));
+  const count = (n: number, one: string, many: string) => (n ? `${n} ${n === 1 ? one : many}` : null);
+  const summary = (
+    <View style={{ marginTop: 14 }}><Panel>
+      <Row left={everyone.length ? <View style={{ width: 54 }}><Faces names={everyone} /></View> : <IconCircle name="users" tone="grey" />}
+        title={byRole("lead").length ? `${byRole("lead")[0]} leads` : "No lead yet"}
+        meta={[count(byRole("member").length, "member", "members"), count(byRole("volunteer").length, "volunteer", "volunteers")].filter(Boolean).join(" · ") || "Just the lead so far"}
+        onPress={() => router.push(`/team/${id}/people`)} last />
+    </Panel></View>
+  );
+  const roster = (<>
       <Eyebrow right={lead ? undefined : undefined}>The team</Eyebrow>
       <Panel>
         <Row left={who(byRole("lead"))} title="Lead" meta={byRole("lead").join(", ") || (s.isLead ? "No lead yet · tap to choose" : "No lead yet")}
@@ -80,14 +91,25 @@ export default function Team() {
         <Row left={who(byRole("member"))} title="Members" meta={byRole("member").join(", ") || "None yet"} />
         <Row left={who(byRole("volunteer"))} title="Volunteers" meta={byRole("volunteer").join(", ") || "None yet"} last />
       </Panel>
-      <Buttons><Outline flex label="Invite your team" onPress={makeInvite} /></Buttons>
+      <Buttons><Outline flex label={parts.length > 1 ? "Invite more people" : "Invite your team"} onPress={makeInvite} /></Buttons>
+  </>);
+  return (
+    <Screen onRefresh={reload} back right={<RoundButton icon="userplus" label="Invite people" onPress={makeInvite} />}
+      dock={view === "work" ? <Field value={title} onChangeText={setTitle} placeholder={lead ? "Add something to do" : "Suggest something to do"} onSubmitEditing={add} submitBehavior="submit" returnKeyType="done" /> : undefined}>
+      <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={teamIcon(team.name)} size={56} tone="white" />
+        <View style={{ flex: 1 }}><Meta>{view === "people" ? "People" : leadsIt ? "You lead it" : s.isLead ? "Your group's team" : "Team"}</Meta><Text style={[t.title, { fontSize: 24 }]}>{team.name}</Text></View></View>
+      {view === "work" && lead && ideas.length ? <View style={{ marginTop: 14 }}><Panel>{ideas.map((x, i) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta={`Suggested by ${name(x.note?.[0]?.author?.reference ?? "")}`}
+        right={<Outline label="Accept" onPress={async () => { try { await bix.commit(act.accept(x)); } catch {} reload(); }} />} last={i === ideas.length - 1} />)}</Panel></View> : null}
+      {view === "people" || setup ? roster : summary}
+      {view === "work" ? <>
       <Eyebrow right={`${work.filter((x) => x.status === "completed").length} of ${work.length} done`}>Our work</Eyebrow>
       <Panel>
-        {work.map((x) => <Row key={x.id} left={<IconCircle name={x.status === "completed" ? "check" : "pen"} tone={x.status === "completed" ? "grey" : "sand"} />} title={x.title}
+        {work.map((x, i) => <Row key={x.id} last={i === work.length - 1} left={<IconCircle name={x.status === "completed" ? "check" : "pen"} tone={x.status === "completed" ? "grey" : "sand"} />} title={x.title}
           meta={[shortRef(x), x.owner?.reference?.startsWith("Person/") ? name(x.owner.reference) : null].filter(Boolean).join(" · ")}
           right={<Pill tone={stateLabel(x, me).tone}>{stateLabel(x, me).label}</Pill>} onPress={() => router.push(`/task/${x.id}`)} />)}
-        <View style={{ paddingVertical: 8 }}><Field value={title} onChangeText={setTitle} placeholder={lead ? "Add something to do" : "Suggest something to do"} onSubmitEditing={add} returnKeyType="done" style={{ backgroundColor: c.wash }} /></View>
+        {work.length ? null : <Row title="Nothing yet" meta={lead ? "Add the first thing to do below" : "Suggest something below"} last />}
       </Panel>
+      </> : null}
       {msg ? <Notice>{msg}</Notice> : null}
       <Sheet open={!!choosing} onClose={() => setChoosing(null)}>
         <Text style={[t.row, { fontSize: 18 }]}>{`Who leads ${team.name}?`}</Text>

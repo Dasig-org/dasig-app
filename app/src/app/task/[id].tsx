@@ -25,6 +25,7 @@ export default function Task() {
   const [asking, setAsking] = useState(false);
   const [adding, setAdding] = useState(false);
   const [planning, setPlanning] = useState(false);
+  const [tuning, setTuning] = useState(false);
   const [dueText, setDueText] = useState("");
   const [desc, setDesc] = useState<string | null>(null);
   useEffect(() => onSynced(() => setMsg(null)), []);
@@ -84,6 +85,14 @@ export default function Task() {
         : task.description ? <View style={{ marginTop: 10 }}><Body>{task.description}</Body></View> : null}
       {actions}
       {msg ? <Notice>{msg}</Notice> : null}
+      <Eyebrow right={(task.checklist ?? []).length ? `${(task.checklist ?? []).filter((x: any) => x.done).length} of ${(task.checklist ?? []).length}` : undefined}>Smaller steps</Eyebrow>
+      <Panel>
+        {(task.checklist ?? []).map((x: any, i: number) => <Row key={i} left={<Check on={!!x.done} onPress={onIt || isLead ? () => run(act.toggle(task, i, me)) : undefined} />} title={x.text} />)}
+        {(onIt || isLead) && task.status !== "completed" ? <View style={{ paddingVertical: 8 }}><Field value={item} onChangeText={setItem} placeholder="Add a smaller step" style={{ backgroundColor: c.wash }}
+          onSubmitEditing={() => { if (item.trim()) { run(bix.next(task, { checklist: [...(task.checklist ?? []), { text: item.trim(), done: false }] })); setItem(""); } }} returnKeyType="done" /></View>
+          : (task.checklist ?? []).length ? null : <Row title="None yet" last />}
+      </Panel>
+
 
       {task.status === "completed" && task.milestone && unblocks.length ? <><Eyebrow>{`The gate is open: ${unblocks.length} can go ahead`}</Eyebrow>
         <Panel>{unblocks.map((x, i) => <Row key={x.id} left={<IconCircle name="check" />} title={x.title} right={<Pill tone="ok">Ready</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === unblocks.length - 1} />)}</Panel></> : null}
@@ -98,23 +107,24 @@ export default function Task() {
 
       {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} />} title={parts.map((p: any) => name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? `${name(task.owner.reference)} is accountable` : undefined} last /></Panel></> : null}
 
-      {isLead && task.status !== "completed" ? <><Eyebrow>For the lead</Eyebrow><Panel>
-        <Row left={<IconCircle name="cal" />} title="Due date" meta={task.due ? short(task.due) : "None yet"} onPress={() => setPlanning(true)} />
+
+      {isLead && task.status !== "completed" ? <View style={{ marginTop: 20 }}><Panel>
+        <Row left={<IconCircle name="cal" />} title="Plan this task" onPress={() => setTuning(true)} last
+          meta={[task.due ? `Due ${short(task.due)}` : "No due date", deps.length ? `waits on ${deps.length}` : null, task.audience === "open" ? "anyone can help" : null].filter(Boolean).join(" · ")} />
+      </Panel></View> : null}
+
+      <Sheet open={tuning} onClose={() => setTuning(false)}>
+        <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>Plan this task</Text>
+        <Panel style={{ backgroundColor: c.wash }}>
+        <Row left={<IconCircle name="cal" />} title="Due date" meta={task.due ? short(task.due) : "None yet"} onPress={() => { setTuning(false); setTimeout(() => setPlanning(true), 260); }} />
         <Row left={<IconCircle name="building" />} title="Others wait on this" meta="Make it a gate on the project page" right={<Check on={!!task.milestone} onPress={() => run(bix.next(task, { milestone: !task.milestone }))} />} />
-        <Row left={<IconCircle name="pending" />} title="Waits on" meta={deps.length ? deps.map((x) => x.title).join(", ") : "Nothing"} onPress={() => setPlanning(true)} />
+        <Row left={<IconCircle name="pending" />} title="Waits on" meta={deps.length ? deps.map((x) => x.title).join(", ") : "Nothing"} onPress={() => { setTuning(false); setTimeout(() => setPlanning(true), 260); }} />
         <Row left={<IconCircle name="heart" />} title="Anyone can help" meta="Show to outside volunteers" right={<Check on={task.audience === "open"} onPress={() => run(bix.next(task, { audience: task.audience === "open" ? "team" : "open" }))} />} />
         <Row left={<IconCircle name="smile" />} title="Good first step" meta="Suggested to newcomers" right={<Check on={!!task.goodFirstStep} onPress={() => run(bix.next(task, { goodFirstStep: !task.goodFirstStep }))} />} />
-        <Row left={<IconCircle name="pen" />} title="About this task" onPress={() => setDesc(task.description ?? "")} />
-        {task.partOf ? <Row left={<IconCircle name="flag" />} title="Start a vote about this" onPress={() => router.push({ pathname: "/vote/new" as never, params: { project: task.partOf.reference.split("/")[1], about: `Task/${task.id}` } })} last /> : null}
-      </Panel></> : null}
-
-      <Eyebrow right={(task.checklist ?? []).length ? `${(task.checklist ?? []).filter((x: any) => x.done).length} of ${(task.checklist ?? []).length}` : undefined}>Smaller steps</Eyebrow>
-      <Panel>
-        {(task.checklist ?? []).map((x: any, i: number) => <Row key={i} left={<Check on={!!x.done} onPress={onIt || isLead ? () => run(act.toggle(task, i, me)) : undefined} />} title={x.text} />)}
-        {(onIt || isLead) && task.status !== "completed" ? <View style={{ paddingVertical: 8 }}><Field value={item} onChangeText={setItem} placeholder="Add a smaller step" style={{ backgroundColor: c.wash }}
-          onSubmitEditing={() => { if (item.trim()) { run(bix.next(task, { checklist: [...(task.checklist ?? []), { text: item.trim(), done: false }] })); setItem(""); } }} returnKeyType="done" /></View>
-          : (task.checklist ?? []).length ? null : <Row title="None yet" last />}
-      </Panel>
+        <Row left={<IconCircle name="pen" />} title="About this task" onPress={() => { setTuning(false); setDesc(task.description ?? ""); }} />
+        {task.partOf ? <Row left={<IconCircle name="flag" />} title="Start a vote about this" onPress={() => { setTuning(false); router.push({ pathname: "/vote/new" as never, params: { project: task.partOf.reference.split("/")[1], about: `Task/${task.id}` } }); }} last /> : null}
+        </Panel>
+      </Sheet>
 
       <Sheet open={planning} onClose={() => setPlanning(false)}>
         <Text style={[t.row, { fontSize: 18 }]}>Due date</Text>

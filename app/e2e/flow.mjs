@@ -36,7 +36,7 @@ await don.getByText("Communications", { exact: true }).click();
 await don.getByText("You lead it").waitFor();
 await don.getByPlaceholder("Add something to do").fill("Draft call for speakers"); await don.getByPlaceholder("Add something to do").press("Enter");
 await don.getByText(/^LU 2027-\d+$/).waitFor(); log("task with a LU 2027 reference");
-await tap(don, "Invite your team");
+await shot(don, "07b-team-work"); await don.getByLabel("Invite people").first().click();
 const invite = await don.getByText(/\/join\//).textContent(); log("invite:", invite);
 
 // Mia: volunteer joins by link
@@ -50,6 +50,10 @@ await tap(mia, "Mark done");
 await mia.getByText("Recorded and signed by your group").waitFor(); await shot(mia, "09-done"); log("Mia did it: recorded and signed");
 await mia.goto(APP + "/home"); await mia.getByText(/Good (morning|afternoon|evening), Mia/).waitFor(); await shot(mia, "10-volunteer-home"); log("volunteer home");
 
+// Don: the team page now shows the roster as one line that opens the people view
+const teamUrl = don.url(); await don.goto(teamUrl);
+await don.getByText("Don leads").waitFor(); await don.getByText("1 volunteer").waitFor(); await shot(don, "10b-team-compact"); log("team roster collapsed to one line");
+await don.getByText("Don leads").click(); await don.getByText("Volunteers", { exact: true }).waitFor(); await shot(don, "10c-team-people"); log("team people view");
 // Don: people, need, vote, timeline, credits, wrap-up
 await don.goto(APP + "/home"); await don.getByText("Your week, Don").waitFor(); await shot(don, "11-coordinator-home"); log("coordinator home");
 await don.getByRole("tab", { name: "People" }).click();

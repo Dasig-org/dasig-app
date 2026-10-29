@@ -5,23 +5,29 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Icon, type IconName } from "./Icon";
 import { SyncBar } from "./SyncBar";
+import { KScroll, KSticky } from "./kbd";
 import { avatarColors, c, radius, type } from "./theme";
 
 /** A screen on the wash, phone-first, with an optional fixed bottom bar. */
-export function Screen({ children, bottom, back, onRefresh }: { children: ReactNode; bottom?: ReactNode; back?: boolean; onRefresh?: () => Promise<unknown> | void }) {
+/** `dock` is a composer pinned to the bottom that rises with the keyboard (e.g. "Add something to do"). */
+export function Screen({ children, bottom, back, onRefresh, dock, right }: { children: ReactNode; bottom?: ReactNode; back?: boolean; onRefresh?: () => Promise<unknown> | void; dock?: ReactNode; right?: ReactNode }) {
   const inset = useSafeAreaInsets();
   const { useState } = require("react") as typeof import("react");
   const [refreshing, setRefreshing] = useState(false);
   return (
     <View style={{ flex: 1, backgroundColor: c.wash }}>
-      <ScrollView contentContainerStyle={{ paddingTop: inset.top + 12, paddingHorizontal: 18, paddingBottom: (bottom ? 96 : 40) + inset.bottom, maxWidth: 520, width: "100%", alignSelf: "center" }}
+      <KScroll bottomOffset={dock ? 96 : 24} contentContainerStyle={{ paddingTop: inset.top + 12, paddingHorizontal: 18, paddingBottom: (bottom || dock ? 96 : 40) + inset.bottom, maxWidth: 520, width: "100%", alignSelf: "center" }}
         keyboardShouldPersistTaps="handled" refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} colors={[c.accent]} tintColor={c.accent}
           onRefresh={async () => { setRefreshing(true); try { await onRefresh(); } finally { setRefreshing(false); } }} /> : undefined}>
         <SyncBar />
-        {back && <RoundButton icon="back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} style={{ marginBottom: 14 }} label="Back" />}
+        {back || right ? <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          {back ? <RoundButton icon="back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} label="Back" /> : <View />}{right}</View> : null}
         {children}
-      </ScrollView>
+      </KScroll>
       {bottom}
+      {dock ? <KSticky offset={{ closed: 0, opened: inset.bottom }} style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
+        <View style={{ backgroundColor: c.wash, paddingHorizontal: 18, paddingTop: 8, paddingBottom: inset.bottom + 10, maxWidth: 520, width: "100%", alignSelf: "center" }}>{dock}</View>
+      </KSticky> : null}
     </View>
   );
 }
