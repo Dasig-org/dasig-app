@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { router } from "expo-router";
+import { parseDate, quick, short } from "@/lib/dates";
 import { onSynced } from "@/lib/outbox";
 import { pickDocument, pickPhoto, type Attachment } from "@/lib/files";
 import { Files } from "@/ui/Files";
@@ -22,6 +24,9 @@ export default function Task() {
   const [item, setItem] = useState("");
   const [asking, setAsking] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [planning, setPlanning] = useState(false);
+  const [dueText, setDueText] = useState("");
+  const [desc, setDesc] = useState<string | null>(null);
   useEffect(() => onSynced(() => setMsg(null)), []);
   const { data, error, reload } = useLoad(async () => {
     const task = await bix.get("Task", id);
@@ -30,14 +35,18 @@ export default function Task() {
     const people: Record<string, R> = {};
     for (const r of refs) { try { people[r] = await bix.get("Person", r.split("/")[1]!); } catch {} }
     const signed = task.status === "completed" ? await bix.verify("Task", id).catch(() => null) : null;
-    return { task, team, people, signed };
+    const siblings = task.partOf ? (await bix.search("Task", { partOf: task.partOf.reference })).filter((x) => x.id !== task.id && x.status !== "draft") : [];
+    return { task, team, people, signed, siblings };
   }, [id]);
   if (error) return <Screen back><Notice>{error}</Notice></Screen>;
   if (!data) return <Screen back><Meta>Loading…</Meta></Screen>;
-  const { task, team, people, signed } = data;
+  const { task, team, people, signed, siblings } = data;
+  const deps = (task.dependsOn ?? []).map((d: any) => siblings.find((x) => `Task/${x.id}` === d.reference)).filter(Boolean) as R[];
+  const waitingOn = deps.filter((x) => x.status !== "completed");
+  const unblocks = siblings.filter((x) => (x.dependsOn ?? []).some((d: any) => d.reference === `Task/${task.id}`));
   const name = (r?: string) => (r && people[r]?.name?.text) || "Someone";
   const parts = (task.participant ?? []).filter((p: any) => p.status === "active");
-  const isLead = (team?.participant ?? []).some((p: any) => p.person.reference === me && p.role === "lead" && p.status === "active");
+  const isLead = (team?.participant ?? []).some((p: any) => p.person.reference === me && p.role === "lead" && p.status === "active") || s.isLead;
   const mine = task.owner?.reference === me;
   const onIt = parts.some((p: any) => p.person.reference === me);
 
@@ -58,7 +67,9 @@ export default function Task() {
   };
   const sl = stateLabel(task, me);
   let actions = null;
-  if (task.status === "ready") actions = <Buttons><Primary label="I'll take it" busy={busy} onPress={() => run(act.claim(task, me))} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
+  if (waitingOn.length && ["ready", "requested"].includes(task.status)) actions = <View style={{ marginTop: 14 }}><Sand><IconCircle name="pending" tone="white" />
+    <View style={{ flex: 1 }}><Text style={t.row}>{`Waiting on ${waitingOn[0]!.title}`}</Text><Meta>You can prepare now. It can be taken once that's done.</Meta></View></Sand></View>;
+  else if (task.status === "ready") actions = <Buttons><Primary label="I'll take it" busy={busy} onPress={() => run(act.claim(task, me))} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
   else if (task.status === "requested" && mine) actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.claim(task, me))} /><Outline label="Can't make it" onPress={() => run(act.release(task), "That's okay, thanks for telling us.")} /></Buttons>;
   else if ((task.status === "accepted" || task.status === "in-progress") && (mine || isLead)) actions = <Buttons><Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /><Outline label="Can't make it" onPress={() => run(act.release(task), "That's okay, thanks for telling us.")} /></Buttons>;
   else if ((task.status === "accepted" || task.status === "in-progress") && !onIt) actions = <Buttons><Outline flex label="I'll help" onPress={() => run(act.helpOut(task, me))} /></Buttons>;
@@ -68,11 +79,14 @@ export default function Task() {
     <Screen back>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={task.status === "completed" ? "check" : "pen"} size={56} tone="white" />
         <View style={{ flex: 1 }}><Meta>{[shortRef(task), team?.name].filter(Boolean).join(" · ")}</Meta><Text style={[t.title, { fontSize: 24 }]}>{task.title}</Text></View></View>
-      <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}><Pill tone={sl.tone}>{sl.label}</Pill></View>
-      {task.description ? <View style={{ marginTop: 10 }}><Body>{task.description}</Body></View> : null}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}><Pill tone={sl.tone}>{sl.label}</Pill>{task.due ? <Pill tone="ok">{`Due ${short(task.due)}`}</Pill> : null}{task.milestone ? <Pill tone="ok">Gate</Pill> : null}{task.goodFirstStep ? <Pill tone="ok">Good first step</Pill> : null}</View>
+      {desc !== null ? <><Field value={desc} onChangeText={setDesc} multiline placeholder="What this is, and what done looks like" /><Buttons><Primary label="Save" onPress={() => { run(bix.next(task, { description: desc.trim() || undefined })); setDesc(null); }} /><Outline label="Cancel" onPress={() => setDesc(null)} /></Buttons></>
+        : task.description ? <View style={{ marginTop: 10 }}><Body>{task.description}</Body></View> : null}
       {actions}
       {msg ? <Notice>{msg}</Notice> : null}
 
+      {task.status === "completed" && task.milestone && unblocks.length ? <><Eyebrow>{`The gate is open: ${unblocks.length} can go ahead`}</Eyebrow>
+        <Panel>{unblocks.map((x, i) => <Row key={x.id} left={<IconCircle name="check" />} title={x.title} right={<Pill tone="ok">Ready</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === unblocks.length - 1} />)}</Panel></> : null}
       {task.status === "completed" ? <View style={{ marginTop: 16 }}><Sand><Icon name="lock" color={c.accent} />
         <View style={{ flex: 1 }}><Text style={t.row}>{signed?.allValid ? "Recorded and signed by your group" : "Recorded"}</Text>
           <Meta>{signed?.signatures?.[0] ? `Signed ${new Date(signed.signatures[0].when).toLocaleString()} · unchanged` : "Added to the story of everyone who did it"}</Meta></View></Sand></View> : null}
@@ -84,6 +98,16 @@ export default function Task() {
 
       {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} />} title={parts.map((p: any) => name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? `${name(task.owner.reference)} is accountable` : undefined} last /></Panel></> : null}
 
+      {isLead && task.status !== "completed" ? <><Eyebrow>For the lead</Eyebrow><Panel>
+        <Row left={<IconCircle name="cal" />} title="Due date" meta={task.due ? short(task.due) : "None yet"} onPress={() => setPlanning(true)} />
+        <Row left={<IconCircle name="building" />} title="Others wait on this" meta="Make it a gate on the project page" right={<Check on={!!task.milestone} onPress={() => run(bix.next(task, { milestone: !task.milestone }))} />} />
+        <Row left={<IconCircle name="pending" />} title="Waits on" meta={deps.length ? deps.map((x) => x.title).join(", ") : "Nothing"} onPress={() => setPlanning(true)} />
+        <Row left={<IconCircle name="heart" />} title="Anyone can help" meta="Show to outside volunteers" right={<Check on={task.audience === "open"} onPress={() => run(bix.next(task, { audience: task.audience === "open" ? "team" : "open" }))} />} />
+        <Row left={<IconCircle name="smile" />} title="Good first step" meta="Suggested to newcomers" right={<Check on={!!task.goodFirstStep} onPress={() => run(bix.next(task, { goodFirstStep: !task.goodFirstStep }))} />} />
+        <Row left={<IconCircle name="pen" />} title="About this task" onPress={() => setDesc(task.description ?? "")} />
+        {task.partOf ? <Row left={<IconCircle name="flag" />} title="Start a vote about this" onPress={() => router.push({ pathname: "/vote/new" as never, params: { project: task.partOf.reference.split("/")[1], about: `Task/${task.id}` } })} last /> : null}
+      </Panel></> : null}
+
       <Eyebrow right={(task.checklist ?? []).length ? `${(task.checklist ?? []).filter((x: any) => x.done).length} of ${(task.checklist ?? []).length}` : undefined}>Smaller steps</Eyebrow>
       <Panel>
         {(task.checklist ?? []).map((x: any, i: number) => <Row key={i} left={<Check on={!!x.done} onPress={onIt || isLead ? () => run(act.toggle(task, i, me)) : undefined} />} title={x.text} />)}
@@ -91,6 +115,15 @@ export default function Task() {
           onSubmitEditing={() => { if (item.trim()) { run(bix.next(task, { checklist: [...(task.checklist ?? []), { text: item.trim(), done: false }] })); setItem(""); } }} returnKeyType="done" /></View>
           : (task.checklist ?? []).length ? null : <Row title="None yet" last />}
       </Panel>
+
+      <Sheet open={planning} onClose={() => setPlanning(false)}>
+        <Text style={[t.row, { fontSize: 18 }]}>Due date</Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>{quick().map((q) => <Outline key={q.label} label={q.label} onPress={() => { run(bix.next(task, { due: q.iso })); setPlanning(false); }} />)}</View>
+        <Field value={dueText} onChangeText={setDueText} placeholder="or a date, e.g. 2027-02-15" onSubmitEditing={() => { const d = parseDate(dueText); if (d) { run(bix.next(task, { due: d })); setPlanning(false); } }} returnKeyType="done" />
+        <Text style={[t.row, { fontSize: 18, marginTop: 16 }]}>Waits on</Text>
+        <Panel style={{ backgroundColor: c.wash, marginTop: 8 }}>{siblings.slice(0, 12).map((x, i, all) => { const on = (task.dependsOn ?? []).some((d: any) => d.reference === `Task/${x.id}`);
+          return <Row key={x.id} title={x.title} meta={x.milestone ? "Gate" : undefined} last={i === all.length - 1} right={<Check on={on} onPress={() => run(bix.next(task, { dependsOn: on ? task.dependsOn.filter((d: any) => d.reference !== `Task/${x.id}`) : [...(task.dependsOn ?? []), { reference: `Task/${x.id}` }] }))} />} />; })}</Panel>
+      </Sheet>
 
       <Sheet open={adding} onClose={() => setAdding(false)}>
         <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>{task.status === "completed" ? "Add what came out of it" : "Add to Files"}</Text>

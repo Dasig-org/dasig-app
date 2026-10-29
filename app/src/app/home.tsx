@@ -5,7 +5,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, personName, shortRef, stateLabel, teamIcon } from "@/lib/work";
 import { ContextPill } from "@/ui/Context";
-import { Buttons, Eyebrow, Hero, IconCircle, Meta, Nav, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Tip } from "@/ui/kit";
+import { Avatar, Buttons, Eyebrow, Hero, IconCircle, Meta, Nav, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Tip } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
 
 const hello = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
@@ -44,13 +44,13 @@ export default function Home() {
     const needs = ideas.length + waiting.length + noLead.length;
     return (
       <Screen bottom={<Nav active="home" />}>
-        <ContextPill />
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill /><Pressable accessibilityRole="button" accessibilityLabel="Your story and settings" onPress={() => router.push("/story")}><Avatar name={personName(s.person)} size={40} /></Pressable></View>
         <Text style={[t.title, { marginTop: 14 }]}>{`Your week, ${personName(s.person)}`}</Text>
         <Text style={t.body}>{needs ? `${needs === 1 ? "One thing needs" : `${needs} things need`} you.` : "Everything is on track."}</Text>
         {error ? <Notice>{error}</Notice> : null}
         <Tip id="coordinator-home" title="Your week, at a glance">What needs you comes first. Tap a team to see its work, or People to bring more hands in.</Tip>
         {needs ? <><Eyebrow>Needs you</Eyebrow><Hero>
-          {ideas.slice(0, 2).map((x) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta="An idea from the team" onPress={() => router.push(`/task/${x.id}`)} />)}
+          {ideas.length ? <Row left={<IconCircle name="pen" />} title={`${ideas.length} idea${ideas.length === 1 ? "" : "s"} from the team`} meta="Accept or keep for later" onPress={() => router.push("/ideas" as never)} /> : null}
           {waiting.slice(0, 2).map((x) => <Row key={x.id} left={<IconCircle name="pending" tone="grey" />} title={`${x.title}`} meta="Asked, no answer yet" onPress={() => router.push(`/task/${x.id}`)} />)}
           {noLead.slice(0, 2).map((x) => <Row key={x.id} left={<IconCircle name={teamIcon(x.name)} />} title={`${x.name} needs a lead`} meta="Ask someone from People" onPress={() => router.push(`/team/${x.id}`)} />)}
         </Hero></> : null}

@@ -10,7 +10,7 @@ export default function Projects() {
   const s = useSession();
   const { data, error } = useLoad(async () => (s.current ? bix.search("Initiative", { organization: `Organization/${s.current.id}` }) : s.person ? bix.search("Initiative", { person: `Person/${s.person.id}` }) : []), [s.current?.id]);
   return (
-    <Screen bottom={<Nav active="project" />}>
+    <Screen bottom={<Nav active="plan" />}>
       <ContextPill /><View style={{ height: 14 }} />
       <Title>Projects</Title>
       {error ? <Notice>{error}</Notice> : null}

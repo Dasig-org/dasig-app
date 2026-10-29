@@ -47,7 +47,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#FFF6E9"
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": false,

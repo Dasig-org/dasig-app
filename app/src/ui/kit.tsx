@@ -53,13 +53,15 @@ export const Faces = ({ names }: { names: string[] }) => (
 );
 
 export function Row({ left, title, meta, right, onPress, last }: { left?: ReactNode; title: string; meta?: string; right?: ReactNode; onPress?: () => void; last?: boolean }) {
-  return (
-    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={meta ? `${title}, ${meta}` : title} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, minHeight: 56, borderBottomWidth: last ? 0 : 1, borderBottomColor: c.s200, opacity: pressed ? 0.7 : 1 })}>
-      {left}
-      <View style={{ flex: 1 }}><Text style={type.row}>{title}</Text>{meta ? <Text style={[type.meta, { marginTop: 2 }]}>{meta}</Text> : null}</View>
-      {right ?? (onPress ? <Icon name="chevron" size={18} color={c.s300} /> : null)}
-    </Pressable>
-  );
+  const style = { flexDirection: "row" as const, alignItems: "center" as const, gap: 12, paddingVertical: 13, minHeight: 56, borderBottomWidth: last ? 0 : 1, borderBottomColor: c.s200 };
+  const body = <>
+    {left}
+    <View style={{ flex: 1 }}><Text style={type.row}>{title}</Text>{meta ? <Text style={[type.meta, { marginTop: 2 }]}>{meta}</Text> : null}</View>
+    {right ?? (onPress ? <Icon name="chevron" size={18} color={c.s300} /> : null)}
+  </>;
+  // A row without its own action must not be a (disabled) button: that would mark buttons inside it as disabled for screen readers.
+  if (!onPress) return <View style={style}>{body}</View>;
+  return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={meta ? `${title}, ${meta}` : title} style={({ pressed }) => ({ ...style, opacity: pressed ? 0.7 : 1 })}>{body}</Pressable>;
 }
 export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "ok" | "state" }) {
   const s = { neutral: { bg: c.wash, fg: c.ink, b: c.wash }, ok: { bg: c.white, fg: c.slate, b: c.s200 }, state: { bg: c.accent, fg: c.white, b: c.accent } }[tone];

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { Text, View } from "react-native";
-import Svg, { Circle, Path, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, G, Path, Text as SvgText } from "react-native-svg";
 import * as Network from "expo-network";
 import { networkUrl } from "@/lib/env";
 import { CAUSES } from "@/lib/org";
@@ -18,7 +18,7 @@ function MapPreview({ dim }: { dim?: boolean }) {
     <Svg width="100%" height={180} viewBox="0 0 354 180">
       <Path d="M0 0H354V180H0Z" fill="#e0f2fe" /><Path d="M0 100 C80 80 120 125 200 108 S320 72 354 90 V180 H0Z" fill={c.sand} />
       <Path d="M40 180 L120 20 M180 180 L260 10 M0 145 L354 125" stroke="#fff" strokeWidth={6} />
-      {pins.map(([x, y, n]) => <View key={n}><Circle cx={x} cy={y} r={16} fill={c.accent} /><SvgText x={x} y={y + 4} fontSize={12} fontWeight="700" fill="#fff" textAnchor="middle">{n}</SvgText></View>)}
+      {pins.map(([x, y, n]) => <G key={n}><Circle cx={x} cy={y} r={16} fill={c.accent} /><SvgText x={x} y={y + 4} fontSize={12} fontWeight="700" fill="#fff" textAnchor="middle">{n}</SvgText></G>)}
     </Svg>
   </View>;
 }

@@ -50,6 +50,11 @@ export const bix = {
   link: (target: Ref, grants: string[], preview = "title-only") => call<{ token: string; link: R; pairingCode?: string }>("POST", "/$links", { target, grants, preview }),
   openLink: (token: string) => call<any>("GET", `/$link/${token}`),
   joinByLink: (token: string) => call<R>("POST", `/$link/${token}/join`, {}),
+  tally: (decisionId: string) => call<{ voted: number; eligible: number; mine: string[] | null; tally: Record<string, number> | null }>("GET", `/Decision/${decisionId}/$tally`),
+  links: () => call<{ link: R; target: { resourceType: string; id: string; title?: string } | null }[]>("GET", "/$links"),
+  revokeLink: (id: string) => call<R>("POST", `/$links/${id}/revoke`, {}),
+  deleteMe: (cancel = false) => call<{ deleteAfter: string | null }>("POST", `/$me/delete${cancel ? "?cancel=1" : ""}`, {}),
+  exportOrg: (orgId: string) => call<{ entry: unknown[] }>("GET", `/Organization/${orgId}/$export`),
   /** Everything that names you, as a BIX Bundle (rule 18). */
-  exportMe: (personId: string) => call<object>("GET", `/Person/${personId}/$export`),
+  exportMe: (personId: string) => call<{ entry: { resource: R }[] }>("GET", `/Person/${personId}/$export`),
 };

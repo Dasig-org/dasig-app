@@ -33,7 +33,7 @@ export default function Team() {
   if (!data) return <Screen back><Meta>Loading…</Meta></Screen>;
   const { team, tasks, parts, people } = data;
   const name = (ref: string) => people[ref]?.name?.text ?? "Someone";
-  const lead = parts.some((p: any) => p.person.reference === me && p.role === "lead");
+  const lead = parts.some((p: any) => p.person.reference === me && p.role === "lead") || s.isLead;
   const byRole = (r: string) => parts.filter((p: any) => p.role === r).map((p: any) => name(p.person.reference));
   const who = (n: string[]) => (n.length ? <View style={{ width: 54 }}><Faces names={n} /></View> : <View style={{ width: 54 }}><IconCircle name="users" tone="grey" size={30} /></View>);
   const ideas = tasks.filter((x) => x.status === "draft");
@@ -41,7 +41,8 @@ export default function Team() {
 
   const add = async () => {
     if (!title.trim()) return;
-    const task = bix.create("Task", { intent: lead ? "plan" : "proposal", status: lead ? "ready" : "draft", title: title.trim(), owner: { reference: `Team/${id}` }, team: { reference: `Team/${id}` }, partOf: team.initiative, audience: "team" });
+    const task = bix.create("Task", { intent: lead ? "plan" : "proposal", status: lead ? "ready" : "draft", title: title.trim(), owner: { reference: `Team/${id}` }, team: { reference: `Team/${id}` }, partOf: team.initiative, audience: "team",
+      ...(lead ? {} : { note: [{ author: { reference: me }, time: new Date().toISOString(), text: "Suggested" }] }) });
     try { await bix.commit(task); setTitle(""); setMsg(lead ? null : "Suggested. Your lead will see it."); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
     reload();
   };
@@ -62,7 +63,7 @@ export default function Team() {
     <Screen back>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={teamIcon(team.name)} size={56} tone="white" />
         <View style={{ flex: 1 }}><Meta>{lead ? "You lead it" : "Team"}</Meta><Text style={[t.title, { fontSize: 24 }]}>{team.name}</Text></View></View>
-      {lead && ideas.length ? <View style={{ marginTop: 14 }}><Panel>{ideas.map((x, i) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta="Suggested by the team"
+      {lead && ideas.length ? <View style={{ marginTop: 14 }}><Panel>{ideas.map((x, i) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta={`Suggested by ${name(x.note?.[0]?.author?.reference ?? "")}`}
         right={<Outline label="Accept" onPress={async () => { try { await bix.commit(act.accept(x)); } catch {} reload(); }} />} last={i === ideas.length - 1} />)}</Panel></View> : null}
       <Eyebrow right={lead ? undefined : undefined}>The team</Eyebrow>
       <Panel>
