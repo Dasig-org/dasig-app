@@ -14,7 +14,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/adaptive-foreground.png",
-        "backgroundColor": "#F85613"
+        "backgroundColor": "#FFFFFF"
       },
       "predictiveBackGestureEnabled": false,
       "package": "org.dasig.bayanihan",

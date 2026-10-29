@@ -145,5 +145,5 @@ export function Tip({ id, title, children }: { id: string; title: string; childr
 /** The Dasig mark (carabao emblem), used on boot, welcome and the app bar. */
 export function Mark({ size = 72 }: { size?: number }) {
   const { Image } = require("react-native") as typeof import("react-native");
-  return <Image source={require("../../assets/brand/emblem.png")} accessibilityLabel="Dasig" style={{ width: size, height: size, borderRadius: size * 0.22 }} />;
+  return <Image source={require("../../assets/brand/emblem.png")} accessibilityLabel="Dasig" style={{ width: size, height: size }} />;
 }
