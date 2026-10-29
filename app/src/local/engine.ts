@@ -1,13 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { randomUUID, getRandomValues } from "expo-crypto";
+import { randomUUID } from "expo-crypto";
 import * as Network from "expo-network";
 import { createApp, hashToken, newToken, serveTcp, sqliteStore, type CreateServer } from "@bayanihan/server";
 import { openDb } from "./db";
 
-// Hermes has no crypto.getRandomValues; the signing library needs it.
-const g = globalThis as { crypto?: { getRandomValues?: unknown } };
-g.crypto = g.crypto ?? {};
-if (!g.crypto.getRandomValues) g.crypto.getRandomValues = getRandomValues as never;
+// crypto.getRandomValues is polyfilled in index.js, before this module loads.
 
 export const HUB_PORT = 8787;
 type Engine = { fetch: (req: Request) => Promise<Response>; pairingCode: string; startHub(): Promise<string>; stopHub(): void; hubAddress(): Promise<string> };

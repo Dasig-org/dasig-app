@@ -1,52 +1,100 @@
 import { router } from "expo-router";
-import { Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, personName, shortRef, stateLabel, teamIcon } from "@/lib/work";
 import { ContextPill } from "@/ui/Context";
-import { Buttons, Eyebrow, Hero, IconCircle, Meta, Nav, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen } from "@/ui/kit";
-import { type as t } from "@/ui/theme";
+import { Buttons, Eyebrow, Hero, IconCircle, Meta, Nav, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Tip } from "@/ui/kit";
+import { c, radius, type as t } from "@/ui/theme";
 
-/** My work (home): what's asked of you first, then what's yours, then your teams. */
+const hello = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
+
+/** Load everything a home screen needs for the current context. */
+async function load(me: string, orgId: string | null) {
+  const orgs = orgId ? [orgId] : (await bix.search("Role", { person: me })).filter((r) => r.status === "active").map((r) => r.organization.reference.split("/")[1]);
+  const projects = (await Promise.all(orgs.map((o) => bix.search("Initiative", { organization: `Organization/${o}` })))).flat().filter((p) => p.status !== "completed");
+  const [teams, tasks] = await Promise.all([
+    Promise.all(projects.map((p) => bix.search("Team", { initiative: `Initiative/${p.id}` }))).then((x) => x.flat()),
+    Promise.all(projects.map((p) => bix.search("Task", { partOf: `Initiative/${p.id}` }))).then((x) => x.flat()),
+  ]);
+  return { projects, teams, tasks };
+}
+
 export default function Home() {
   const s = useSession();
   const me = s.person ? `Person/${s.person.id}` : "";
-  const { data, error, reload } = useLoad(async () => {
-    if (!me) return null;
-    const [mine, teams] = await Promise.all([bix.search("Task", { owner: me }), bix.search("Team", { participant: me })]);
-    const helping = (await bix.search("Task", { participant: me })).filter((x) => !mine.some((m) => m.id === x.id));
-    return { mine: [...mine, ...helping], teams };
-  }, [me]);
-  const asked = (data?.mine ?? []).filter((x) => x.status === "requested");
-  const doing = (data?.mine ?? []).filter((x) => x.status !== "requested" && x.status !== "completed");
-  const done = (data?.mine ?? []).filter((x) => x.status === "completed");
-  const teams = (data?.teams ?? []).filter((x) => !s.current || x.organization?.reference === `Organization/${s.current.id}`);
+  const lead = s.isLead;
+  const { data, error, reload } = useLoad(() => (me ? load(me, s.current?.id ?? null) : Promise.resolve(null)), [me, s.current?.id]);
+  const tasks = data?.tasks ?? [];
+  const myTeams = (data?.teams ?? []).filter((tm) => (tm.participant ?? []).some((p: any) => p.person.reference === me && p.status === "active"));
+  const myTeamRefs = new Set(myTeams.map((tm) => `Team/${tm.id}`));
+  const asked = tasks.filter((x) => x.status === "requested" && x.owner?.reference === me);
+  const mine = tasks.filter((x) => ["accepted", "in-progress"].includes(x.status) && (x.participant ?? []).some((p: any) => p.person.reference === me && p.status === "active"));
+  const open = tasks.filter((x) => x.status === "ready" && (x.audience === "open" || x.audience === "organization" || myTeamRefs.has(x.team?.reference)));
+  const done = tasks.filter((x) => x.status === "completed" && (x.participant ?? []).some((p: any) => p.person.reference === me));
+  const answer = async (x: R, yes: boolean) => { try { await bix.commit(yes ? act.claim(x, me) : act.release(x)); } catch {} reload(); };
 
-  const answer = async (t: R, yes: boolean) => {
-    try { await bix.commit(yes ? act.claim(t, me) : act.release(t)); } catch {} reload();
-  };
+  if (lead) {
+    const leadTeams = myTeams.filter((tm) => (tm.participant ?? []).some((p: any) => p.person.reference === me && p.role === "lead"));
+    const leadRefs = new Set(leadTeams.map((tm) => `Team/${tm.id}`));
+    const ideas = tasks.filter((x) => x.status === "draft" && (leadRefs.has(x.team?.reference) || s.isLead));
+    const waiting = tasks.filter((x) => x.status === "requested");
+    const noLead = (data?.teams ?? []).filter((tm) => !(tm.participant ?? []).some((p: any) => p.role === "lead" && p.status === "active"));
+    const needs = ideas.length + waiting.length + noLead.length;
+    return (
+      <Screen bottom={<Nav active="home" />}>
+        <ContextPill />
+        <Text style={[t.title, { marginTop: 14 }]}>{`Your week, ${personName(s.person)}`}</Text>
+        <Text style={t.body}>{needs ? `${needs === 1 ? "One thing needs" : `${needs} things need`} you.` : "Everything is on track."}</Text>
+        {error ? <Notice>{error}</Notice> : null}
+        <Tip id="coordinator-home" title="Your week, at a glance">What needs you comes first. Tap a team to see its work, or People to bring more hands in.</Tip>
+        {needs ? <><Eyebrow>Needs you</Eyebrow><Hero>
+          {ideas.slice(0, 2).map((x) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta="An idea from the team" onPress={() => router.push(`/task/${x.id}`)} />)}
+          {waiting.slice(0, 2).map((x) => <Row key={x.id} left={<IconCircle name="pending" tone="grey" />} title={`${x.title}`} meta="Asked, no answer yet" onPress={() => router.push(`/task/${x.id}`)} />)}
+          {noLead.slice(0, 2).map((x) => <Row key={x.id} left={<IconCircle name={teamIcon(x.name)} />} title={`${x.name} needs a lead`} meta="Ask someone from People" onPress={() => router.push(`/team/${x.id}`)} />)}
+        </Hero></> : null}
+        <Eyebrow right={data?.projects.length ? "See all" : undefined}>Projects</Eyebrow>
+        <Panel>
+          {(data?.projects ?? []).map((p) => { const ts = tasks.filter((x) => x.partOf?.reference === `Initiative/${p.id}` && x.status !== "draft"); const d = ts.filter((x) => x.status === "completed").length;
+            return <Row key={p.id} left={<IconCircle name="flag" />} title={p.title} meta={ts.length ? `${d} of ${ts.length} done` : "No work added yet"} onPress={() => router.push(`/project/${p.id}`)}
+              right={<View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${ts.length ? (d / ts.length) * 100 : 0}%`, height: 8, backgroundColor: c.accent }} /></View>} />; })}
+          <Row left={<IconCircle name="plus" tone="grey" />} title="Start a project" onPress={() => router.push("/new-project")} last />
+        </Panel>
+        {open.length ? <><Eyebrow right={`${open.length}`}>Open work</Eyebrow><Panel>
+          {open.slice(0, 5).map((x, i) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta={shortRef(x)} right={<Pill>Open</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === Math.min(open.length, 5) - 1} />)}
+        </Panel></> : null}
+        <Eyebrow>Your group</Eyebrow>
+        <Panel>
+          <Row left={<IconCircle name="users" />} title="People" meta="Invite, roles, teams" onPress={() => router.push(`/org/${s.current!.id}/people` as never)} />
+          <Row left={<IconCircle name="building" />} title="Group profile" onPress={() => router.push(`/org/${s.current!.id}` as never)} last />
+        </Panel>
+      </Screen>
+    );
+  }
+
   return (
     <Screen bottom={<Nav active="home" />}>
       <ContextPill />
-      <Text style={[t.title, { marginTop: 14 }]}>{`Good day, ${personName(s.person)}`}</Text>
+      <Text style={[t.title, { marginTop: 14, marginBottom: 6 }]}>{`${hello()}, ${personName(s.person)}`}</Text>
       {error ? <Notice>{error}</Notice> : null}
-
-      {asked.map((x) => (
-        <View key={x.id}><Eyebrow>Asked of you</Eyebrow>
-          <Hero><Text style={t.row}>{x.title}</Text><Meta>{shortRef(x) ?? "A task"}</Meta>
-            <Buttons><Primary label="I'm in" onPress={() => answer(x, true)} /><Outline label="Can't make it" onPress={() => answer(x, false)} /></Buttons></Hero></View>
-      ))}
-
-      <Eyebrow right={doing.length ? `${doing.length}` : undefined}>Yours now</Eyebrow>
-      {doing.length ? <Panel>{doing.map((x, i) => <Row key={x.id} left={<IconCircle name="check" />} title={x.title} meta={shortRef(x)} right={<Pill tone={stateLabel(x, me).tone}>{stateLabel(x, me).label}</Pill>} last={i === doing.length - 1} onPress={() => router.push(`/task/${x.id}`)} />)}</Panel>
-        : <Sand><IconCircle name="heart" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>Nothing on your plate</Text><Meta>Open a team to find something to take.</Meta></View></Sand>}
-
-      <Eyebrow>Your teams</Eyebrow>
-      {teams.length ? <Panel>{teams.map((x, i) => <Row key={x.id} left={<IconCircle name={teamIcon(x.name)} />} title={x.name} meta={(x.participant ?? []).find((p: any) => p.person.reference === me)?.role === "lead" ? "You lead it" : "You're on it"} last={i === teams.length - 1} onPress={() => router.push(`/team/${x.id}`)} />)}</Panel>
-        : <Panel><Row left={<IconCircle name="flag" />} title={s.current ? "Start a project" : "Start or join a group"} meta="Teams appear here" onPress={() => router.push(s.current ? "/new-project" : "/doors")} last /></Panel>}
-
-      {done.length ? <><Eyebrow>Your story</Eyebrow><Sand><IconCircle name="check" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>{`${done.length} thing${done.length === 1 ? "" : "s"} done`}</Text><Meta>Recorded and signed by your groups</Meta></View></Sand></> : null}
+      <Tip id="volunteer-home" title="Find something worthwhile">Open work from your groups shows up here. Tap “I'm in” to take it. Nothing here? Ask your coordinator for their code.</Tip>
+      {asked.map((x) => <View key={x.id}><Eyebrow>Asked of you</Eyebrow>
+        <Hero><View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><IconCircle name="pen" size={48} /><View style={{ flex: 1 }}><Text style={t.row}>{x.title}</Text><Meta>{shortRef(x) ?? ""}</Meta></View></View>
+          <Buttons><Primary label="I'm in" onPress={() => answer(x, true)} /><Outline label="Can't make it" onPress={() => answer(x, false)} /></Buttons></Hero></View>)}
+      {mine.length ? <><Eyebrow>Yours now</Eyebrow><Panel>{mine.map((x, i) => <Row key={x.id} left={<IconCircle name="check" />} title={x.title} meta={shortRef(x)} right={<Pill tone={stateLabel(x, me).tone}>{stateLabel(x, me).label}</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === mine.length - 1} />)}</Panel></> : null}
+      <Eyebrow right={open.length ? `${open.length}` : undefined}>Lend a hand</Eyebrow>
+      {open.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+        {open.map((x) => { const tm = (data?.teams ?? []).find((y) => `Team/${y.id}` === x.team?.reference);
+          return <Pressable key={x.id} onPress={() => router.push(`/task/${x.id}`)} accessibilityRole="button" accessibilityLabel={`${x.title}, ${tm?.name ?? ""}`} style={{ width: 220 }}>
+            <View style={{ height: 120, borderRadius: radius.tile, backgroundColor: c.sand, alignItems: "center", justifyContent: "center" }}><IconCircle name={teamIcon(tm?.name ?? "")} size={56} tone="white" /></View>
+            <Text style={[t.row, { marginTop: 8 }]} numberOfLines={1}>{x.title}</Text><Meta>{tm?.name ?? "Open"}</Meta></Pressable>; })}
+      </ScrollView> : <Sand><IconCircle name="heart" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>Nothing open right now</Text><Meta>{s.groups.length ? "Your groups will post work here." : "Join a group to see their work."}</Meta></View></Sand>}
+      {!s.groups.length ? <Buttons><Primary label="Join a group" onPress={() => router.push("/volunteer" as never)} /></Buttons> : null}
+      <Eyebrow>Near you</Eyebrow>
+      <Panel><Row left={<IconCircle name="pin" />} title="Groups working near you" meta="Needs internet and the Dasig Ecosystem" onPress={() => router.push("/nearby")} last /></Panel>
+      <Eyebrow>Your story</Eyebrow>
+      <Sand><IconCircle name="check" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>{done.length ? `${done.length} thing${done.length === 1 ? "" : "s"} done` : "Your story starts with your first “I'm in”"}</Text><Meta>Recorded and signed by your groups</Meta></View></Sand>
     </Screen>
   );
 }

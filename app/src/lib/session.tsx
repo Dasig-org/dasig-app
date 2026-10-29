@@ -7,6 +7,10 @@ type Group = { org: R; role: R };
 type Session = {
   ready: boolean;
   person: R | null;
+  /** The person finished (or skipped) their profile. */
+  profileDone: boolean;
+  /** Officer or core member of the current group. */
+  isLead: boolean;
   groups: Group[];
   current: R | null;
   connection: Connection | null;
@@ -80,7 +84,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setPerson(null); setGroups([]); setCurrent(null); await refresh();
   };
 
-  return <Ctx.Provider value={{ ready, person, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, refresh, signOut }}>{children}</Ctx.Provider>;
+  const profileDone = !!(person?.extension ?? []).find((x: any) => x.url === "bayanihan:profile-done");
+  const isLead = !!current && groups.some((g) => g.org.id === current.id && ["officer", "core-member"].includes(g.role.code?.code));
+  return <Ctx.Provider value={{ ready, person, profileDone, isLead, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, refresh, signOut }}>{children}</Ctx.Provider>;
 }
 
 /** The phone's own token, remembered when switching to a hub, so going back keeps your local records. */

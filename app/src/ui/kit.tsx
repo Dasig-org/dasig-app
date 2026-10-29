@@ -54,7 +54,7 @@ export const Faces = ({ names }: { names: string[] }) => (
 
 export function Row({ left, title, meta, right, onPress, last }: { left?: ReactNode; title: string; meta?: string; right?: ReactNode; onPress?: () => void; last?: boolean }) {
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, borderBottomWidth: last ? 0 : 1, borderBottomColor: c.s200, opacity: pressed ? 0.7 : 1 })}>
+    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? "button" : undefined} accessibilityLabel={meta ? `${title}, ${meta}` : title} style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, minHeight: 56, borderBottomWidth: last ? 0 : 1, borderBottomColor: c.s200, opacity: pressed ? 0.7 : 1 })}>
       {left}
       <View style={{ flex: 1 }}><Text style={type.row}>{title}</Text>{meta ? <Text style={[type.meta, { marginTop: 2 }]}>{meta}</Text> : null}</View>
       {right ?? (onPress ? <Icon name="chevron" size={18} color={c.s300} /> : null)}
@@ -67,17 +67,17 @@ export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone
     <Text style={{ fontSize: 12, fontWeight: "600", color: s.fg }}>{children}</Text></View>;
 }
 export function Primary({ label, onPress, busy, disabled }: { label: string; onPress: () => void; busy?: boolean; disabled?: boolean }) {
-  return <Pressable onPress={onPress} disabled={busy || disabled} style={({ pressed }) => ({ flex: 1, height: 48, borderRadius: radius.pill, backgroundColor: pressed ? c.accent : c.primary, opacity: disabled ? 0.5 : 1, alignItems: "center", justifyContent: "center" })}>
+  return <Pressable onPress={onPress} disabled={busy || disabled} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!(busy || disabled), busy: !!busy }} style={({ pressed }) => ({ flex: 1, minHeight: 48, borderRadius: radius.pill, backgroundColor: pressed ? c.accent : c.primary, opacity: disabled ? 0.5 : 1, alignItems: "center", justifyContent: "center" })}>
     {busy ? <ActivityIndicator color={c.white} /> : <Text style={{ color: c.white, fontWeight: "700", fontSize: 15 }}>{label}</Text>}
   </Pressable>;
 }
 export function Outline({ label, onPress, flex }: { label: string; onPress: () => void; flex?: boolean }) {
-  return <Pressable onPress={onPress} style={({ pressed }) => ({ flex: flex ? 1 : undefined, height: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: c.white, borderWidth: 1.5, borderColor: pressed ? c.ink : c.s300, alignItems: "center", justifyContent: "center" })}>
+  return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ flex: flex ? 1 : undefined, minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: c.white, borderWidth: 1.5, borderColor: pressed ? c.ink : c.s300, alignItems: "center", justifyContent: "center" })}>
     <Text style={{ color: c.ink, fontWeight: "600", fontSize: 15 }}>{label}</Text></Pressable>;
 }
 export const Buttons = ({ children }: { children: ReactNode }) => <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>{children}</View>;
 export const LinkText = ({ children, onPress }: { children: ReactNode; onPress: () => void }) => (
-  <Text onPress={onPress} style={{ fontSize: 14, fontWeight: "600", color: c.ink, textDecorationLine: "underline" }}>{children}</Text>
+  <Text onPress={onPress} accessibilityRole="link" suppressHighlighting style={{ fontSize: 14, fontWeight: "600", color: c.ink, textDecorationLine: "underline", paddingVertical: 6 }}>{children}</Text>
 );
 export function RoundButton({ icon, onPress, style, label }: { icon: IconName; onPress: () => void; style?: ViewStyle; label: string }) {
   return <Pressable accessibilityLabel={label} onPress={onPress} style={[{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.white, alignItems: "center", justifyContent: "center" }, style]}>
@@ -91,12 +91,12 @@ export const Field = (p: TextInputProps & { label?: string }) => (
 );
 export function Chips<T extends string>({ options, value, onChange }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
   return <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-    {options.map((o) => <Pressable key={o.value} onPress={() => onChange(o.value)} style={{ height: 36, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: o.value === value ? c.accent : c.white, justifyContent: "center" }}>
+    {options.map((o) => <Pressable key={o.value} onPress={() => onChange(o.value)} accessibilityRole="radio" accessibilityState={{ selected: o.value === value }} accessibilityLabel={o.label} style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: o.value === value ? c.accent : c.white, justifyContent: "center" }}>
       <Text style={{ fontSize: 13.5, fontWeight: "600", color: o.value === value ? c.white : c.ink }}>{o.label}</Text></Pressable>)}
   </View>;
 }
 export function Check({ on, onPress }: { on: boolean; onPress?: () => void }) {
-  return <Pressable onPress={onPress} disabled={!onPress} style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: on ? c.accent : c.white, borderWidth: on ? 0 : 1.5, borderColor: c.s300, alignItems: "center", justifyContent: "center" }}>
+  return <Pressable onPress={onPress} disabled={!onPress} accessibilityRole="checkbox" accessibilityState={{ checked: on }} hitSlop={12} style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: on ? c.accent : c.white, borderWidth: on ? 0 : 1.5, borderColor: c.s300, alignItems: "center", justifyContent: "center" }}>
     {on ? <Icon name="check" size={14} color={c.white} /> : null}</Pressable>;
 }
 export function Sand({ children }: { children: ReactNode }) {
@@ -113,17 +113,37 @@ export function Sheet({ open, onClose, children }: { open: boolean; onClose: () 
 export const Loading = () => <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.wash }}><ActivityIndicator color={c.accent} /></View>;
 export const Notice = ({ children }: { children: ReactNode }) => <Text role="alert" style={{ fontSize: 13, fontWeight: "600", color: c.ink, marginTop: 8, marginHorizontal: 4 }}>{children}</Text>;
 
-/** Bottom navigation (design: My work · Teams · Inbox · Project). */
-export function Nav({ active }: { active: "home" | "project" | "story" }) {
+/** Bottom navigation. Volunteers: Today · Groups · Nearby · Your story. Coordinators: This week · Plan · People · Nearby. */
+export function Nav({ active }: { active: string }) {
   const inset = useSafeAreaInsets();
-  const items: { k: typeof active; label: string; icon: IconName; to: string }[] = [
-    { k: "home", label: "My work", icon: "check", to: "/home" },
-    { k: "project", label: "Projects", icon: "flag", to: "/projects" },
-    { k: "story", label: "Your story", icon: "heart", to: "/story" },
-  ];
-  return <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: c.white, paddingBottom: inset.bottom + 8, paddingTop: 10, flexDirection: "row", justifyContent: "space-around" }}>
-    {items.map((i) => <Pressable key={i.k} onPress={() => router.replace(i.to as never)} style={{ alignItems: "center", gap: 4 }}>
+  const { useSession } = require("@/lib/session") as typeof import("@/lib/session");
+  const s = useSession();
+  const lead = !!s.current && s.groups.some((g) => g.org.id === s.current!.id && ["officer", "core-member"].includes(g.role.code?.code));
+  const items: { k: string; label: string; icon: IconName; to: string }[] = lead
+    ? [{ k: "home", label: "This week", icon: "cal", to: "/home" }, { k: "plan", label: "Plan", icon: "flag", to: "/projects" }, { k: "people", label: "People", icon: "users", to: `/org/${s.current!.id}/people` }, { k: "nearby", label: "Nearby", icon: "pin", to: "/nearby" }]
+    : [{ k: "home", label: "Today", icon: "check", to: "/home" }, { k: "groups", label: "Groups", icon: "users", to: "/groups" }, { k: "nearby", label: "Nearby", icon: "pin", to: "/nearby" }, { k: "story", label: "Your story", icon: "heart", to: "/story" }];
+  return <View accessibilityRole="tablist" style={{ position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: c.white, paddingBottom: inset.bottom + 8, paddingTop: 10, flexDirection: "row", justifyContent: "space-around" }}>
+    {items.map((i) => <Pressable key={i.k} onPress={() => router.replace(i.to as never)} accessibilityRole="tab" accessibilityState={{ selected: i.k === active }} accessibilityLabel={i.label} style={{ alignItems: "center", gap: 4, minWidth: 64, minHeight: 44 }}>
       <Icon name={i.icon} size={22} color={i.k === active ? c.accent : c.s400} />
       <Text style={{ fontSize: 11.5, fontWeight: "600", color: i.k === active ? c.accent : c.s400 }}>{i.label}</Text></Pressable>)}
   </View>;
+}
+
+/** A first-time tip (guides). Dismissed once, remembered. */
+export function Tip({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  const { useEffect, useState } = require("react") as typeof import("react");
+  const AsyncStorage = (require("@react-native-async-storage/async-storage") as { default: { getItem(k: string): Promise<string | null>; setItem(k: string, v: string): Promise<void> } }).default;
+  const [show, setShow] = useState(false);
+  useEffect(() => { AsyncStorage.getItem(`dasig.tip.${id}`).then((v) => setShow(!v)); }, [id]);
+  if (!show) return null;
+  return <View accessibilityRole="summary" style={{ backgroundColor: c.sand, borderRadius: radius.tile, padding: 14, marginTop: 12, flexDirection: "row", gap: 12 }}>
+    <IconCircle name="spark" size={34} tone="white" />
+    <View style={{ flex: 1 }}><Text style={type.row}>{title}</Text><Text style={[type.body, { marginTop: 2 }]}>{children}</Text>
+      <Text onPress={() => { AsyncStorage.setItem(`dasig.tip.${id}`, "1"); setShow(false); }} accessibilityRole="button" style={{ marginTop: 8, fontWeight: "600", color: c.ink, textDecorationLine: "underline" }}>Got it</Text></View>
+  </View>;
+}
+/** The Dasig mark (carabao emblem), used on boot, welcome and the app bar. */
+export function Mark({ size = 72 }: { size?: number }) {
+  const { Image } = require("react-native") as typeof import("react-native");
+  return <Image source={require("../../assets/brand/emblem.png")} accessibilityLabel="Dasig" style={{ width: size, height: size, borderRadius: size * 0.22 }} />;
 }
