@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
 import { useSession } from "@/lib/session";
 import { personName } from "@/lib/work";
 import { Field, IconCircle, Primary, Screen, Sheet, Title, Buttons } from "@/ui/kit";
@@ -23,7 +23,7 @@ export default function Doors() {
     <Screen>
       <View style={{ height: 30 }} />
       <Title>{`Hi, ${personName(s.person)}.\nWhat brings you here?`}</Title>
-      <Door icon="users" title="Join a group" meta="You have an invite link" onPress={() => setJoining(true)} />
+      <Door icon="users" title="Join a group" meta={Platform.OS === "web" ? "You have an invite link" : "Scan the hub's code, or paste a link"} onPress={() => (Platform.OS === "web" ? setJoining(true) : router.push("/scan" as never))} />
       <Door icon="flag" title="Start a group" meta="A club, a community, an event team" onPress={() => router.push("/start-group")} />
       <Door icon="heart" title="Just help out" meta="See your work and your story" onPress={() => router.replace("/home")} />
       <Sheet open={joining} onClose={() => setJoining(false)}>

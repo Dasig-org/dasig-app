@@ -23,7 +23,7 @@ export default function Welcome() {
       <Field value={name} onChangeText={setName} placeholder="e.g. Don" autoFocus onSubmitEditing={go} returnKeyType="go" />
       {err ? <Notice>{err}</Notice> : null}
       <Buttons><Primary label="Continue" onPress={go} busy={busy} disabled={!name.trim()} /></Buttons>
-      <Text style={[t.meta, { textAlign: "center", marginTop: 14 }]}>You can keep your story with Google or email later.</Text>
+      <Text style={[t.meta, { textAlign: "center", marginTop: 14 }]}>Everything is kept on this phone. No account or internet needed.</Text>
     </Screen>
   );
 }

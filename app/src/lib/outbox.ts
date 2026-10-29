@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { env } from "./env";
-import { supabase } from "./supabase";
+import { send } from "./transport";
 import type { R } from "./bix";
 
 /** Changes made while offline, replayed in order when back online (BIX rule 10). */
@@ -30,9 +29,7 @@ export function flush() { return (flushing ??= doFlush().finally(() => { flushin
 async function doFlush(): Promise<{ sent: number; refused: Refusal[] }> {
   const p = await pending();
   if (!p.length) return { sent: 0, refused: [] };
-  const { data } = await supabase.auth.getSession();
-  const res = await fetch(env.bixUrl + "/", { method: "POST", headers: { "content-type": "application/json", ...(data.session ? { authorization: `Bearer ${data.session.access_token}` } : {}) },
-    body: JSON.stringify({ type: "sync", entry: p }) });
+  const res = await send("POST", "/", JSON.stringify({ type: "sync", entry: p }));
   if (!res.ok) throw new Error(`sync failed: ${res.status}`);
   const out = (await res.json()) as { accepted: R[]; refused: Refusal[] };
   await save([]);

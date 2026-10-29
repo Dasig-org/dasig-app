@@ -1,16 +1,12 @@
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { env } from "./env";
-import { supabase } from "./supabase";
+import { send } from "./transport";
 
 export type Attachment = { contentType: string; url: string; hash: string; size: number; title?: string; showsMinors?: boolean; capturedAt?: string };
 
 async function upload(uri: string, contentType: string, title: string, showsMinors: boolean): Promise<Attachment> {
   const blob = await (await fetch(uri)).blob();
-  const { data } = await supabase.auth.getSession();
-  const res = await fetch(`${env.bixUrl}/$files?${new URLSearchParams({ title, showsMinors: String(showsMinors) })}`, {
-    method: "POST", headers: { "content-type": contentType, ...(data.session ? { authorization: `Bearer ${data.session.access_token}` } : {}) }, body: blob,
-  });
+  const res = await send("POST", `/$files?title=${encodeURIComponent(title)}&showsMinors=${showsMinors}`, blob, contentType);
   const json = await res.json();
   if (!res.ok) throw new Error(json.error ?? `upload failed (${res.status})`);
   return json as Attachment;
@@ -31,8 +27,7 @@ export async function pickDocument(): Promise<Attachment | null> {
 }
 /** Files need sign-in to download, so fetch with the token and hand back something an <Image> can show. */
 export async function fileUri(a: Attachment): Promise<string> {
-  const { data } = await supabase.auth.getSession();
-  const res = await fetch(env.bixUrl + a.url, { headers: data.session ? { authorization: `Bearer ${data.session.access_token}` } : {} });
+  const res = await send("GET", a.url);
   const blob = await res.blob();
   if (typeof URL !== "undefined" && "createObjectURL" in URL) return URL.createObjectURL(blob);
   return await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.readAsDataURL(blob); });

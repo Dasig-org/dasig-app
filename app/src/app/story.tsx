@@ -1,4 +1,5 @@
 import { Platform, Share, Text, View } from "react-native";
+import { router } from "expo-router";
 import { bix } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
@@ -27,7 +28,15 @@ export default function Story() {
           const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type: "application/json" })); a.download = "my-dasig-story.bix.json"; a.click();
         } else await Share.share({ message: json, title: "My Dasig story (BIX)" });
       }} /></Panel>
-      <View style={{ marginTop: 18, alignItems: "center" }}><LinkText onPress={() => s.signOut()}>Sign out</LinkText></View>
+      <Eyebrow>Where your records live</Eyebrow>
+      <Panel>
+        <Row left={<IconCircle name={s.connection?.kind === "hub" ? "link" : s.connection?.kind === "cloud" ? "building" : "lock"} />}
+          title={s.connection?.kind === "hub" ? "Connected to your group's hub" : s.connection?.kind === "cloud" ? "Online server" : "On this phone"}
+          meta={s.connection?.kind === "hub" ? s.connection.url : s.connection?.kind === "cloud" ? "Bayanihan Server" : "Works with no internet"} last={s.connection?.kind === "cloud"} />
+        {s.connection?.kind === "phone" ? <Row left={<IconCircle name="users" />} title="Make this phone your group's hub" meta="Others join over its hotspot" onPress={() => router.push("/hub" as never)} last /> : null}
+        {s.connection?.kind === "hub" ? <Row left={<IconCircle name="back" />} title="Use this phone on its own" meta="Your own records stay on this phone" onPress={() => s.useThisPhone()} last /> : null}
+      </Panel>
+      {s.connection?.kind === "cloud" ? <View style={{ marginTop: 18, alignItems: "center" }}><LinkText onPress={() => s.signOut()}>Sign out</LinkText></View> : null}
     </Screen>
   );
 }

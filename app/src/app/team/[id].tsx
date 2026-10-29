@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Share, Text, View } from "react-native";
+import { Platform, Share, Text, View } from "react-native";
+import QRCode from "react-native-qrcode-svg";
+import { pairUrl } from "@/lib/pairing";
+import { getConnection } from "@/lib/connection";
 import { bix, type R } from "@/lib/bix";
 import { appUrl } from "@/lib/env";
 import { useSession } from "@/lib/session";
@@ -17,6 +20,7 @@ export default function Team() {
   const [title, setTitle] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [invite, setInvite] = useState<string | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
   const { data, error, reload } = useLoad(async () => {
     const team = await bix.get("Team", id);
     const tasks = await bix.search("Task", { team: `Team/${id}` });
@@ -42,7 +46,17 @@ export default function Team() {
     reload();
   };
   const makeInvite = async () => {
-    try { const l = await bix.link({ reference: `Team/${id}` }, ["view", "join-team"]); setInvite(`${appUrl()}/join/${l.token}`); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
+    try {
+      const l = await bix.link({ reference: `Team/${id}` }, ["view", "join-team"]);
+      const conn = await getConnection();
+      if (Platform.OS !== "web" && conn.kind !== "cloud" && l.pairingCode !== undefined) {
+        // On a hub: one QR pairs the phone with the hub and joins the team.
+        const { localEngine } = await import("@/local/engine");
+        const hub = conn.kind === "hub" ? conn.url : await (await localEngine()).startHub();
+        setQr(pairUrl({ hub, code: l.pairingCode, link: l.token }));
+        setInvite(pairUrl({ hub, code: l.pairingCode, link: l.token }));
+      } else setInvite(`${appUrl()}/join/${l.token}`);
+    } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
   };
   return (
     <Screen back>
@@ -65,9 +79,10 @@ export default function Team() {
         <View style={{ paddingVertical: 8 }}><Field value={title} onChangeText={setTitle} placeholder={lead ? "Add something to do" : "Suggest something to do"} onSubmitEditing={add} returnKeyType="done" style={{ backgroundColor: c.wash }} /></View>
       </Panel>
       {msg ? <Notice>{msg}</Notice> : null}
-      <Sheet open={!!invite} onClose={() => setInvite(null)}>
+      <Sheet open={!!invite} onClose={() => { setInvite(null); setQr(null); }}>
         <Text style={[t.row, { fontSize: 18 }]}>{`Invite people to ${team.name}`}</Text>
-        <Meta>Anyone with this link can see the team and join it as a volunteer. You can turn it off later.</Meta>
+        <Meta>{qr ? "Have them join this phone's hotspot, then scan this in Dasig (Join a group). It connects them to the hub and adds them to the team." : "Anyone with this link can see the team and join it as a volunteer. You can turn it off later."}</Meta>
+        {qr ? <View style={{ alignItems: "center", marginTop: 14 }}><QRCode value={qr} size={200} color={c.ink} backgroundColor={c.white} /></View> : null}
         <View style={{ backgroundColor: c.wash, borderRadius: 16, padding: 12, marginTop: 12 }}><Text selectable style={{ fontSize: 13, color: c.ink }}>{invite}</Text></View>
         <Buttons><Primary label="Share" onPress={() => { Share.share({ message: `Join ${team.name}: ${invite}` }).catch(() => {}); }} /></Buttons>
       </Sheet>

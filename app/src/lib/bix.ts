@@ -1,6 +1,5 @@
 import { randomUUID } from "expo-crypto";
-import { env } from "./env";
-import { supabase } from "./supabase";
+import { send } from "./transport";
 
 export type Ref = { reference: string };
 export type R = { resourceType: string; id: string; meta: { version: number }; [k: string]: any };
@@ -13,13 +12,8 @@ export class BixError extends Error {
   constructor(public reasons: string[], public current: R | null = null) { super(reasons.join("; ")); }
 }
 
-async function headers(extra: Record<string, string> = {}) {
-  const { data } = await supabase.auth.getSession();
-  const t = data.session?.access_token;
-  return { "content-type": "application/json", ...(t ? { authorization: `Bearer ${t}` } : {}), ...extra };
-}
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(env.bixUrl + path, { method, headers: await headers(), ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+  const res = await send(method, path, body === undefined ? undefined : JSON.stringify(body));
   const text = await res.text();
   const json = text ? JSON.parse(text) : null;
   if (!res.ok && !(res.status === 409 && json?.entry)) throw new BixError([json?.error ? String(json.error) : `HTTP ${res.status}`]);
@@ -53,7 +47,7 @@ export const bix = {
   create: (resourceType: string, fields: Record<string, any>): R => ({ resourceType, id: newId(), meta: { version: 1 }, ...fields }),
   /** The next version of a record. */
   next: (r: R, fields: Record<string, any>): R => ({ ...r, ...fields, meta: { ...r.meta, version: r.meta.version + 1 } }),
-  link: (target: Ref, grants: string[], preview = "title-only") => call<{ token: string; link: R }>("POST", "/$links", { target, grants, preview }),
+  link: (target: Ref, grants: string[], preview = "title-only") => call<{ token: string; link: R; pairingCode?: string }>("POST", "/$links", { target, grants, preview }),
   openLink: (token: string) => call<any>("GET", `/$link/${token}`),
   joinByLink: (token: string) => call<R>("POST", `/$link/${token}/join`, {}),
   /** Everything that names you, as a BIX Bundle (rule 18). */
