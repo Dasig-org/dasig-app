@@ -1,16 +1,18 @@
-import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { fileUri } from "@/lib/files";
 import * as Haptics from "expo-haptics";
-import { ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View, type TextInputProps, type ViewStyle } from "react-native";
+import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View, type TextInputProps, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Icon, type IconName } from "./Icon";
 import { SyncBar } from "./SyncBar";
 import { KScroll, KSticky } from "./kbd";
+import { Where } from "./Where";
 import { avatarColors, c, radius, type } from "./theme";
 
 /** A screen on the wash, phone-first, with an optional fixed bottom bar. */
 /** `dock` is a composer pinned to the bottom that rises with the keyboard (e.g. "Add something to do"). */
-export function Screen({ children, bottom, back, onRefresh, dock, right }: { children: ReactNode; bottom?: ReactNode; back?: boolean; onRefresh?: () => Promise<unknown> | void; dock?: ReactNode; right?: ReactNode }) {
+export function Screen({ children, bottom, back, onRefresh, dock, right, where }: { children: ReactNode; bottom?: ReactNode; back?: boolean; onRefresh?: () => Promise<unknown> | void; dock?: ReactNode; right?: ReactNode; where?: false }) {
   const inset = useSafeAreaInsets();
   const { useState } = require("react") as typeof import("react");
   const [refreshing, setRefreshing] = useState(false);
@@ -20,8 +22,11 @@ export function Screen({ children, bottom, back, onRefresh, dock, right }: { chi
         keyboardShouldPersistTaps="handled" refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} colors={[c.accent]} tintColor={c.accent}
           onRefresh={async () => { setRefreshing(true); try { await onRefresh(); } finally { setRefreshing(false); } }} /> : undefined}>
         <SyncBar />
-        {back || right ? <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          {back ? <RoundButton icon="back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} label="Back" /> : <View />}{right}</View> : null}
+        {where === false ? null : back || right ? <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 8 }}>
+          {back ? <RoundButton icon="back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} label="Back" /> : <View style={{ width: 40 }} />}
+          <View style={{ flex: 1, alignItems: "center" }}><Where /></View>
+          {right ?? <View style={{ width: 40 }} />}</View>
+          : <View style={{ alignItems: "flex-end", marginBottom: 6 }}><Where /></View>}
         {children}
       </KScroll>
       {bottom}
@@ -52,15 +57,28 @@ export function IconCircle({ name, size = 40, tone = "sand" }: { name: IconName;
     <Icon name={name} size={size * 0.5} color={tone === "grey" ? c.slate : tone === "bayani" ? c.white : c.accent} />
   </View>;
 }
-export function Avatar({ name, size = 30, index }: { name: string; size?: number; index?: number }) {
+/** A photo's displayable URI, or null while it loads (or when there is none). Cached per file. */
+export function usePhoto(a?: { hash?: string } | null) {
+  const [uri, setUri] = useState<string | null>(null);
+  useEffect(() => {
+    let on = true; setUri(null);
+    if (a?.hash) fileUri(a as never).then((u) => on && setUri(u)).catch(() => {});
+    return () => { on = false; };
+  }, [a?.hash]);
+  return uri;
+}
+/** A person's face: their photo when they have one, otherwise their initial on a warm colour. */
+export function Avatar({ name, size = 30, index, photo }: { name: string; size?: number; index?: number; photo?: { hash?: string } | null }) {
+  const uri = usePhoto(photo);
   const i = index ?? [...name].reduce((a, ch) => a + ch.charCodeAt(0), 0);
   const bg = avatarColors[i % avatarColors.length]!;
+  if (uri) return <Image source={{ uri }} accessibilityLabel={name} style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: c.white, backgroundColor: c.s200 }} />;
   return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: c.white }}>
     <Text style={{ color: bg === c.gold ? c.ink : c.white, fontWeight: "700", fontSize: size * 0.4 }}>{(name[0] ?? "?").toUpperCase()}</Text>
   </View>;
 }
-export const Faces = ({ names }: { names: string[] }) => (
-  <View style={{ flexDirection: "row" }}>{names.slice(0, 5).map((n, i) => <View key={i} style={{ marginLeft: i ? -7 : 0 }}><Avatar name={n} size={24} /></View>)}</View>
+export const Faces = ({ names, photos }: { names: string[]; photos?: ({ hash?: string } | null | undefined)[] }) => (
+  <View style={{ flexDirection: "row" }}>{names.slice(0, 5).map((n, i) => <View key={i} style={{ marginLeft: i ? -7 : 0 }}><Avatar name={n} size={24} photo={photos?.[i]} /></View>)}</View>
 );
 
 export function Row({ left, title, meta, right, onPress, last }: { left?: ReactNode; title: string; meta?: string; right?: ReactNode; onPress?: () => void; last?: boolean }) {

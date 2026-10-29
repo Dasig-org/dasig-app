@@ -53,7 +53,7 @@ export default function Need() {
       {msg ? <Notice>{msg}</Notice> : null}
       <Eyebrow right={`${offers.length}`}>Offers</Eyebrow>
       <Panel>{offers.map((o, i) => { const who = o.offeredBy?.reference; const nm = people[who]?.name?.text ?? "Someone";
-        return <Row key={o.id} left={<Avatar name={nm} />} title={nm} meta={[o.quantity ? `${o.quantity.value} ${o.quantity.unit}` : null, o.description].filter(Boolean).join(" · ")} last={i === offers.length - 1}
+        return <Row key={o.id} left={<Avatar name={nm} photo={people[who]?.photo} />} title={nm} meta={[o.quantity ? `${o.quantity.value} ${o.quantity.unit}` : null, o.description].filter(Boolean).join(" · ")} last={i === offers.length - 1}
           right={o.status === "matched" ? <Pill tone="ok">Accepted</Pill> : lead ? <Outline label="Accept" onPress={() => accept(o)} /> : <Pill>Offered</Pill>} />; })}
         {!offers.length ? <Row title="No offers yet" meta="Share the project so people can help" last /> : null}</Panel>
       <Sheet open={offering} onClose={() => setOffering(false)}>

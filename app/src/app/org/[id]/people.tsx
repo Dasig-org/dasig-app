@@ -58,7 +58,7 @@ export default function People() {
   const byRole = (codes: string[]) => active.filter((r) => codes.includes(r.code?.code));
   const pos = (r: R) => data?.positions.find((p) => `Position/${p.id}` === r.position?.reference)?.title;
   const list = (title: string, rs: R[]) => rs.length ? <><Eyebrow right={`${rs.length}`}>{title}</Eyebrow><Panel>
-    {rs.map((r, i) => <Row key={r.id} left={<Avatar name={name(r)} />} title={name(r)} meta={[pos(r), ROLE_WORDS[r.code?.code] ?? "", data?.people[r.person.reference]?.managedBy ? "added by the group" : ""].filter(Boolean).join(" · ")}
+    {rs.map((r, i) => <Row key={r.id} left={<Avatar name={name(r)} photo={data?.people[r.person.reference]?.photo} />} title={name(r)} meta={[pos(r), ROLE_WORDS[r.code?.code] ?? "", data?.people[r.person.reference]?.managedBy ? "added by the group" : ""].filter(Boolean).join(" · ")}
       onPress={manage ? () => setOpen({ role: r, person: data?.people[r.person.reference] ?? null }) : undefined} last={i === rs.length - 1} />)}
   </Panel></> : null;
 
@@ -69,7 +69,7 @@ export default function People() {
       {manage ? <Buttons><Primary label="Invite people" onPress={invite} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}
       {msg ? <Notice>{msg}</Notice> : null}
       {requests.length && manage ? <><Eyebrow right={`${requests.length}`}>Asking to join</Eyebrow><Panel>
-        {requests.map((r, i) => <Row key={r.id} left={<Avatar name={name(r)} />} title={name(r)} meta="Wants to join as a volunteer" last={i === requests.length - 1}
+        {requests.map((r, i) => <Row key={r.id} left={<Avatar name={name(r)} photo={data?.people[r.person.reference]?.photo} />} title={name(r)} meta="Wants to join as a volunteer" last={i === requests.length - 1}
           right={<View style={{ flexDirection: "row", gap: 6 }}><Outline label="Accept" onPress={() => act(() => bix.commit(bix.next(r, { status: "active", period: { start: now() } })))} /></View>} />)}
       </Panel></> : null}
       {list("Officers", byRole(["officer"]))}
@@ -93,7 +93,7 @@ export default function People() {
       </Sheet>
       <Sheet open={!!open} onClose={() => setOpen(null)}>
         {open ? <>
-          <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><Avatar name={name(open.role)} size={44} /><View><Text style={[t.row, { fontSize: 18 }]}>{name(open.role)}</Text><Meta>{open.person?.description ?? ""}</Meta></View></View>
+          <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><Avatar name={name(open.role)} size={44} photo={open.person?.photo} /><View><Text style={[t.row, { fontSize: 18 }]}>{name(open.role)}</Text><Meta>{open.person?.description ?? ""}</Meta></View></View>
           <Eyebrow>Role</Eyebrow>
           <Chips options={[...ROLES]} value={open.role.code?.code} onChange={(v) => { act(() => bix.commit(bix.next(open.role, { code: { system: "bayanihan:role", code: v } }))); setOpen(null); }} />
           {data?.positions.length ? <><Eyebrow>Position</Eyebrow>

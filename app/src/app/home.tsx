@@ -44,7 +44,7 @@ export default function Home() {
     const needs = (ideas.length ? 1 : 0) + waiting.length + (noLead.length ? 1 : 0);
     return (
       <Screen onRefresh={reload} bottom={<Nav active="home" />}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill /><Pressable accessibilityRole="button" accessibilityLabel="Your story and settings" onPress={() => router.push("/story")}><Avatar name={personName(s.person)} size={40} /></Pressable></View>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill /><Pressable accessibilityRole="button" accessibilityLabel="Your story and settings" onPress={() => router.push("/story")}><Avatar name={personName(s.person)} size={40} photo={s.person?.photo} /></Pressable></View>
         <Text style={[t.title, { marginTop: 14 }]}>{`Your week, ${personName(s.person)}`}</Text>
         <Text style={t.body}>{needs ? `${needs === 1 ? "One thing needs" : `${needs} things need`} you.` : "Everything is on track."}</Text>
         {error ? <Notice>{error}</Notice> : null}

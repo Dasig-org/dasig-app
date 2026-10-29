@@ -105,7 +105,7 @@ export default function Task() {
       {outputs.length || (canAdd && task.status === "completed") ? <><Eyebrow>What came out of it</Eyebrow>
         <Files items={outputs} onAdd={canAdd ? () => setAdding(true) : undefined} /></> : null}
 
-      {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} />} title={parts.map((p: any) => name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? `${name(task.owner.reference)} is accountable` : undefined} last /></Panel></> : null}
+      {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} photos={parts.map((p: any) => people[p.person.reference]?.photo)} />} title={parts.map((p: any) => name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? `${name(task.owner.reference)} is accountable` : undefined} last /></Panel></> : null}
 
 
       {isLead && task.status !== "completed" ? <View style={{ marginTop: 20 }}><Panel>
@@ -149,7 +149,7 @@ export default function Task() {
         <Meta>They'll get an ask they can say yes or no to.</Meta>
         <Panel style={{ backgroundColor: c.wash, marginTop: 10 }}>
           {(team?.participant ?? []).filter((p: any) => p.status === "active" && p.person.reference !== me).map((p: any) =>
-            <Row key={p.person.reference} left={<Avatar name={name(p.person.reference)} />} title={name(p.person.reference)} meta={p.role}
+            <Row key={p.person.reference} left={<Avatar name={name(p.person.reference)} photo={people[p.person.reference]?.photo} />} title={name(p.person.reference)} meta={p.role}
               onPress={() => { setAsking(false); run(act.ask(task, p.person.reference), `Asked ${name(p.person.reference)}.`); }} />)}
         </Panel>
         <View style={{ marginTop: 12 }}><LinkText onPress={() => setAsking(false)}>Not now</LinkText></View>

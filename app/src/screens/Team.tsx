@@ -42,7 +42,8 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
   const leadsIt = parts.some((p: any) => p.person.reference === me && p.role === "lead");
   const lead = leadsIt || s.isLead;
   const byRole = (r: string) => parts.filter((p: any) => p.role === r).map((p: any) => name(p.person.reference));
-  const who = (n: string[]) => (n.length ? <View style={{ width: 54 }}><Faces names={n} /></View> : <View style={{ width: 54 }}><IconCircle name="users" tone="grey" size={30} /></View>);
+  const photosOf = (r: string) => parts.filter((p: any) => p.role === r).map((p: any) => people[p.person.reference]?.photo);
+  const who = (n: string[], ph?: any[]) => (n.length ? <View style={{ width: 54 }}><Faces names={n} photos={ph} /></View> : <View style={{ width: 54 }}><IconCircle name="users" tone="grey" size={30} /></View>);
   const ideas = tasks.filter((x) => x.status === "draft");
   const work = tasks.filter((x) => x.status !== "draft");
 
@@ -71,7 +72,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
   const count = (n: number, one: string, many: string) => (n ? `${n} ${n === 1 ? one : many}` : null);
   const summary = (
     <View style={{ marginTop: 14 }}><Panel>
-      <Row left={everyone.length ? <View style={{ width: 54 }}><Faces names={everyone} /></View> : <IconCircle name="users" tone="grey" />}
+      <Row left={everyone.length ? <View style={{ width: 54 }}><Faces names={everyone} photos={parts.map((p: any) => people[p.person.reference]?.photo)} /></View> : <IconCircle name="users" tone="grey" />}
         title={byRole("lead").length ? `${byRole("lead")[0]} leads` : "No lead yet"}
         meta={[count(byRole("member").length, "member", "members"), count(byRole("volunteer").length, "volunteer", "volunteers")].filter(Boolean).join(" · ") || "Just the lead so far"}
         onPress={() => router.push(`/team/${id}/people`)} last />
@@ -80,7 +81,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
   const roster = (<>
       <Eyebrow right={lead ? undefined : undefined}>The team</Eyebrow>
       <Panel>
-        <Row left={who(byRole("lead"))} title="Lead" meta={byRole("lead").join(", ") || (s.isLead ? "No lead yet · tap to choose" : "No lead yet")}
+        <Row left={who(byRole("lead"), photosOf("lead"))} title="Lead" meta={byRole("lead").join(", ") || (s.isLead ? "No lead yet · tap to choose" : "No lead yet")}
           onPress={s.isLead ? async () => {
             const org = team.organization?.reference;
             const roles = org ? (await bix.search("Role", { organization: org })).filter((r) => r.status === "active") : [];
@@ -88,8 +89,8 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
             for (const r of roles) { try { ps.push(await bix.get("Person", r.person.reference.split("/")[1])); } catch {} }
             setChoosing(ps);
           } : undefined} />
-        <Row left={who(byRole("member"))} title="Members" meta={byRole("member").join(", ") || "None yet"} />
-        <Row left={who(byRole("volunteer"))} title="Volunteers" meta={byRole("volunteer").join(", ") || "None yet"} last />
+        <Row left={who(byRole("member"), photosOf("member"))} title="Members" meta={byRole("member").join(", ") || "None yet"} />
+        <Row left={who(byRole("volunteer"), photosOf("volunteer"))} title="Volunteers" meta={byRole("volunteer").join(", ") || "None yet"} last />
       </Panel>
       <Buttons><Outline flex label={parts.length > 1 ? "Invite more people" : "Invite your team"} onPress={makeInvite} /></Buttons>
   </>);
@@ -115,7 +116,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
         <Text style={[t.row, { fontSize: 18 }]}>{`Who leads ${team.name}?`}</Text>
         <Meta>Leads hand out work and accept ideas for this team.</Meta>
         <Panel style={{ backgroundColor: c.wash, marginTop: 10 }}>
-          {(choosing ?? []).map((p, i) => <Row key={p.id} left={<Avatar name={p.name?.text ?? "?"} />} title={p.name?.text ?? "Someone"} last={i === (choosing?.length ?? 0) - 1}
+          {(choosing ?? []).map((p, i) => <Row key={p.id} left={<Avatar name={p.name?.text ?? "?"} photo={p.photo} />} title={p.name?.text ?? "Someone"} last={i === (choosing?.length ?? 0) - 1}
             onPress={async () => { setChoosing(null); try {
               const others = (team.participant ?? []).filter((x: any) => x.person.reference !== `Person/${p.id}`);
               await bix.commit(bix.next(team, { participant: [...others, { person: { reference: `Person/${p.id}` }, role: "lead", status: "active" }] })); setMsg(`${p.name?.text} now leads ${team.name}.`); reload();

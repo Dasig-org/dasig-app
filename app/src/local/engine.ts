@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { randomUUID } from "expo-crypto";
 import * as Network from "expo-network";
 import { createApp, hashToken, newToken, serveTcp, sqliteStore, type CreateServer } from "@bayanihan/server";
+import { hosting } from "@/lib/reach";
 import { openDb } from "./db";
 
 // crypto.getRandomValues is polyfilled in index.js, before this module loads.
@@ -37,9 +38,10 @@ export function localEngine(): Promise<Engine> {
           const Tcp = (await import("react-native-tcp-socket")).default;
           server = serveTcp(Tcp.createServer as unknown as CreateServer, app.fetch, { port: HUB_PORT, origin: () => `http://hub.local:${HUB_PORT}` });
         }
+        hosting(true);
         return hubAddress();
       },
-      stopHub() { server?.close(); server = null; code = newToken(); AsyncStorage.setItem("dasig.hub.code", code); },
+      stopHub() { server?.close(); server = null; hosting(false); code = newToken(); AsyncStorage.setItem("dasig.hub.code", code); },
       hubAddress,
     };
   })());
