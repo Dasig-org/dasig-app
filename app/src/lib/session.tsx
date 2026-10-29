@@ -38,7 +38,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setConn(c);
     const signedIn = c.kind === "cloud" ? !!(await supabase.auth.getSession()).data.session : !!c.token;
     if (!signedIn) { setPerson(null); setGroups([]); return; }
-    const me = await bix.me();
+    let me = await bix.me();
+    // Make sure this phone's own key is on the person's record (once per phone; quietly retried next time if offline).
+    try { const { withMyKey } = await import("./keys"); const add = await withMyKey(me); if (add) me = (await bix.commitNow(bix.next(me, add)))[0] ?? me; } catch {}
     setPerson(me);
     const roles = (await bix.search("Role", { person: `Person/${me.id}` })).filter((r) => r.status === "active");
     const gs: Group[] = [];
@@ -69,7 +71,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const pairWithHub = async (hub: string, code: string, nickname?: string) => {
     const url = hub.replace(/\/$/, "");
     const res = await fetch(`${url}/$pair`, { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code, nickname: nickname ?? person?.name?.text, ...(person ? { person } : {}) }) });
+      body: JSON.stringify({ code, nickname: nickname ?? person?.name?.text, ...(person ? { person, proof: await (await import("./keys")).pairingProof(person.id, code) } : {}) }) });
     const out = await res.json().catch(() => ({ error: `the hub didn't answer (${res.status})` }));
     if (!res.ok) throw new Error(String(out.error));
     await setConnection({ kind: "hub", url, token: out.token });
