@@ -17,7 +17,7 @@ export default function GroupReady() {
         <Row left={<IconCircle name="pen" />} title="Finish your group's profile" meta="Logo, about, causes, how you're run" onPress={() => router.push(`/org/${org}` as never)} last />
       </Panel>
       <Eyebrow>Later</Eyebrow>
-      <Body>Your group lives on this phone. When your people are together, make this phone the group's hub so everyone can join from theirs (Your story → Make this phone your group's hub).</Body>
+      <Body>Everything stays on your phones. When your people are together, make this phone the group's hub. You can connect to the Dasig Ecosystem any time.</Body>
       <Row title="Go to This week" onPress={() => router.replace("/home")} last />
     </Screen>
   );

@@ -49,6 +49,7 @@ export default function Home() {
         <Text style={t.body}>{needs ? `${needs === 1 ? "One thing needs" : `${needs} things need`} you.` : "Everything is on track."}</Text>
         {error ? <Notice>{error}</Notice> : null}
         <Tip id="coordinator-home" title="Your week">What needs you comes first.</Tip>
+        {s.connection?.kind !== "cloud" && tasks.some((x) => x.status === "completed") ? <Tip id="keep-a-copy" title="Everything is on your phones" onPress={() => router.push("/network" as never)}>If one is lost, its records go with it.</Tip> : null}
         {needs ? <><Eyebrow>Needs you</Eyebrow><Hero>
           {ideas.length ? <Row left={<IconCircle name="pen" />} title={`${ideas.length} idea${ideas.length === 1 ? "" : "s"} from the team`} meta="Accept or keep for later" onPress={() => router.push("/ideas" as never)} /> : null}
           {waiting.slice(0, 2).map((x) => <Row key={x.id} left={<IconCircle name="pending" tone="grey" />} title={`${x.title}`} meta="Asked, no answer yet" onPress={() => router.push(`/task/${x.id}`)} />)}

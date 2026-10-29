@@ -198,7 +198,7 @@ export function Nav({ active }: { active: string }) {
 }
 
 /** A first-time tip (guides). One line or two, dismissed with ×, remembered. */
-export function Tip({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+export function Tip({ id, title, children, onPress }: { id: string; title: string; children: ReactNode; onPress?: () => void }) {
   const { useState } = require("react") as typeof import("react");
   const AsyncStorage = (require("@react-native-async-storage/async-storage") as { default: { getItem(k: string): Promise<string | null>; setItem(k: string, v: string): Promise<void> } }).default;
   const [show, setShow] = useState(false);
@@ -206,7 +206,7 @@ export function Tip({ id, title, children }: { id: string; title: string; childr
   if (!show) return null;
   return <View accessibilityRole="summary" style={{ backgroundColor: c.sand, borderRadius: radius.tile, paddingVertical: 10, paddingLeft: 12, paddingRight: 6, marginTop: 10, flexDirection: "row", gap: 10, alignItems: "center" }}>
     <Icon name="spark" size={18} />
-    <Text style={{ flex: 1, fontSize: 13.5, lineHeight: 19, color: c.slate }}><Text style={{ fontWeight: "700", color: c.ink }}>{title}. </Text>{children}</Text>
+    <Text onPress={onPress} accessibilityRole={onPress ? "button" : undefined} style={{ flex: 1, fontSize: 13.5, lineHeight: 19, color: c.slate }}><Text style={{ fontWeight: "700", color: c.ink }}>{title}. </Text>{children}{onPress ? <Text style={{ fontWeight: "700", color: c.accent }}>{" Learn more"}</Text> : null}</Text>
     <Pressable accessibilityRole="button" accessibilityLabel="Dismiss tip" hitSlop={10} onPress={() => { AsyncStorage.setItem(`dasig.tip.${id}`, "1"); setShow(false); }} style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center" }}>
       <Text style={{ fontSize: 18, color: c.s500 }}>×</Text></Pressable>
   </View>;
