@@ -118,7 +118,7 @@ const OnSheet = createContext(false);
 export const Field = (p: TextInputProps & { label?: string }) => { const onSheet = useContext(OnSheet); return (
   <View style={{ marginTop: 10 }}>
     {p.label ? <Text style={{ fontSize: 12.5, fontWeight: "600", color: c.s500, marginBottom: 6, marginLeft: 4 }}>{p.label}</Text> : null}
-    <TextInput placeholderTextColor={c.s400} {...p} style={[{ backgroundColor: onSheet ? c.wash : c.white, borderRadius: radius.field, paddingHorizontal: 19, paddingVertical: 15, fontSize: 16, color: c.ink, minHeight: p.multiline ? 84 : undefined, textAlignVertical: p.multiline ? "top" : "center", ...(Platform.OS === "web" ? { outlineColor: c.accent } as object : {}) }, p.style]} />
+    <TextInput placeholderTextColor={c.s400} accessibilityLabel={p.accessibilityLabel ?? p.label} {...p} style={[{ backgroundColor: onSheet ? c.wash : c.white, borderRadius: radius.field, paddingHorizontal: 19, paddingVertical: 15, fontSize: 16, color: c.ink, minHeight: p.multiline ? 84 : undefined, textAlignVertical: p.multiline ? "top" : "center", ...(Platform.OS === "web" ? { outlineColor: c.accent } as object : {}) }, p.style]} />
   </View>
 ); };
 export function Chips<T extends string>({ options, value, onChange }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {

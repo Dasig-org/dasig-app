@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Text, View } from "react-native";
+import { Alert, Image, Platform, Pressable, Text, View } from "react-native";
 import { bix } from "@/lib/bix";
-import { short } from "@/lib/dates";
+import { parseDate, short } from "@/lib/dates";
 import { pickDocument, pickPhoto } from "@/lib/files";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { shortRef, teamIcon } from "@/lib/work";
 import { Files } from "@/ui/Files";
-import { Body, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Tip , Skeleton} from "@/ui/kit";
+import { Body, Buttons, Eyebrow, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Sheet, Tip, Skeleton, usePhoto } from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 
 /** The project page (sketch: running-sketches #1, page anatomy §1b). */
@@ -17,17 +17,20 @@ export default function Project() {
   const s = useSession();
   const [msg, setMsg] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [about, setAbout] = useState("");
+  const [form, setForm] = useState<{ title: string; about: string; start: string; image: any }>({ title: "", about: "", start: "", image: null });
   const [addingFile, setAddingFile] = useState(false);
   const { data, error, reload } = useLoad(async () => {
     const p = await bix.get("Initiative", id);
     const ref = `Initiative/${id}`;
     const [teams, tasks, needs, decisions] = await Promise.all([bix.search("Team", { initiative: ref }), bix.search("Task", { partOf: ref }), bix.search("Need", { initiative: ref }), bix.search("Decision", { partOf: ref })]);
-    return { p, teams, tasks, needs, decisions };
+    const can = await bix.can("Initiative", id);
+    return { p, teams, tasks, needs, decisions, can };
   }, [id]);
+  const logo = usePhoto(data?.p.image);
+  const formLogo = usePhoto(form.image);
   if (error) return <Screen onRefresh={reload} back><Notice>{error}</Notice></Screen>;
   if (!data) return <Screen onRefresh={reload} back><Skeleton /></Screen>;
-  const { p, teams, tasks, needs, decisions } = data;
+  const { p, teams, tasks, needs, decisions, can } = data;
   const lead = s.isLead || teams.some((tm) => (tm.participant ?? []).some((x: any) => x.person.reference === `Person/${s.person?.id}` && x.role === "lead" && x.status === "active"));
   const people = new Set(teams.flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)));
   const gates = tasks.filter((x) => x.milestone && x.status !== "completed");
@@ -35,14 +38,26 @@ export default function Project() {
   const run = async (next: any, ok?: string) => { try { await bix.commit(next); if (ok) setMsg(ok); reload(); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };
   const addFile = async (pick: () => Promise<any>) => { setAddingFile(false); const a = await pick().catch((e: any) => { setMsg(String(e?.message ?? e)); return null; }); if (a) run(bix.next(p, { attachment: [...(p.attachment ?? []), a] })); };
   const openVotes = decisions.filter((d) => d.status === "open");
+  const edit = () => { setForm({ title: p.title ?? "", about: p.description ?? "", start: p.period?.start?.slice(0, 10) ?? "", image: p.image ?? null }); setEditing(true); };
+  const save = () => {
+    if (!form.title.trim()) return;
+    const start = form.start.trim() ? parseDate(form.start) : null;
+    if (form.start.trim() && !start) { setMsg("That date didn't read right. Try 2027-02-15."); return; }
+    setEditing(false);
+    run(bix.next(p, { title: form.title.trim(), description: form.about.trim() || undefined, image: form.image ?? undefined, period: start ? { ...(p.period ?? {}), start } : p.period?.end ? { end: p.period.end } : undefined }), "Saved.");
+  };
+  const cancelProject = () => {
+    const go = () => { setEditing(false); run(bix.next(p, { status: "cancelled" }), "The project is cancelled. Its history is kept."); };
+    if (Platform.OS === "web") return go();
+    Alert.alert("Cancel this project?", "Nobody can add work to it after this. Everything done so far stays on record.", [{ text: "Keep it", style: "cancel" }, { text: "Cancel the project", style: "destructive", onPress: go }]);
+  };
+  const removeFile = (a: any) => run(bix.next(p, { attachment: (p.attachment ?? []).filter((x: any) => x.hash !== a.hash) }), "File removed.");
   return (
-    <Screen onRefresh={reload} back>
-      <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name="flag" size={56} tone="white" />
+    <Screen onRefresh={reload} back right={can.edit ? <RoundButton icon="pen" label="Edit project" onPress={edit} /> : undefined}>
+      <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>{logo ? <Image source={{ uri: logo }} style={{ width: 56, height: 56, borderRadius: 18 }} /> : <IconCircle name="flag" size={56} tone="white" />}
         <View style={{ flex: 1 }}><Text style={[t.title, { fontSize: 24 }]}>{p.title}</Text>
-          <Meta>{[p.period?.start ? short(p.period.start) : null, `${teams.length} teams · ${people.size} ${people.size === 1 ? "person" : "people"}`, p.status === "completed" ? "Done" : null].filter(Boolean).join(" · ")}</Meta></View></View>
-      {editing ? <><Field label="About" value={about} onChangeText={setAbout} multiline /><Buttons><Primary label="Save" onPress={() => { setEditing(false); run(bix.next(p, { description: about.trim() || undefined })); }} /><Outline label="Cancel" onPress={() => setEditing(false)} /></Buttons></>
-        : <View style={{ marginTop: 10 }}>{p.description ? <Body>{p.description}</Body> : lead ? <Text style={t.meta} onPress={() => { setAbout(""); setEditing(true); }}>＋ Add what this project is about</Text> : null}
-          {p.description && lead ? <Text style={[t.meta, { marginTop: 4 }]} onPress={() => { setAbout(p.description ?? ""); setEditing(true); }}>Edit</Text> : null}</View>}
+          <Meta>{[p.period?.start ? short(p.period.start) : null, `${teams.length} teams · ${people.size} ${people.size === 1 ? "person" : "people"}`, p.status === "completed" ? "Done" : p.status === "cancelled" ? "Cancelled" : null].filter(Boolean).join(" · ")}</Meta></View></View>
+      <View style={{ marginTop: 10 }}>{p.description ? <Body>{p.description}</Body> : can.edit ? <Text style={t.meta} onPress={edit}>＋ Add what this project is about</Text> : null}</View>
       {msg ? <Notice>{msg}</Notice> : null}
       <Tip id="project-page" title="The whole project">Gates, teams, needs and votes, in one place.</Tip>
 
@@ -52,12 +67,12 @@ export default function Project() {
 
       {openVotes.map((d) => <View key={d.id} style={{ marginTop: 12 }}><Panel><Row left={<IconCircle name="flag" />} title={d.question} meta="Vote open" right={<Pill tone="state">Vote</Pill>} onPress={() => router.push(`/vote/${d.id}` as never)} last /></Panel></View>)}
 
-      {(p.attachment ?? []).length || lead ? <><Eyebrow right={(p.attachment ?? []).length ? `${(p.attachment ?? []).length}` : undefined}>Files</Eyebrow><Files items={p.attachment ?? []} onAdd={lead ? () => setAddingFile(true) : undefined} /></> : null}
+      {(p.attachment ?? []).length || can.edit ? <><Eyebrow right={(p.attachment ?? []).length ? `${(p.attachment ?? []).length}` : undefined}>Files</Eyebrow><Files items={p.attachment ?? []} onAdd={can.edit ? () => setAddingFile(true) : undefined} onRemove={can.edit ? removeFile : undefined} /></> : null}
 
       <Eyebrow right={`${teams.length}`}>Teams</Eyebrow>
       <Panel>
         {teams.map((x, i) => {
-          const mine = tasks.filter((k) => k.team?.reference === `Team/${x.id}` && k.status !== "draft");
+          const mine = tasks.filter((k) => k.team?.reference === `Team/${x.id}` && k.status !== "draft" && k.status !== "cancelled");
           const doneN = mine.filter((k) => k.status === "completed").length;
           const pct = mine.length ? doneN / mine.length : 0;
           return <Row key={x.id} left={<IconCircle name={teamIcon(x.name)} />} title={x.name} last={i === teams.length - 1} onPress={() => router.push(`/team/${x.id}`)}
@@ -81,6 +96,21 @@ export default function Project() {
         {lead ? <Row left={<IconCircle name="flag" />} title="Start a vote" meta="Decide something together" onPress={() => router.push({ pathname: "/vote/new" as never, params: { project: id } })} /> : null}
         {lead ? <Row left={<IconCircle name="repeat" />} title={p.status === "completed" ? "Wrapped up" : "Wrap up the project"} meta="Report, credits, save these teams" onPress={() => router.push(`/project/${id}/wrap` as never)} last /> : null}
       </Panel>
+
+      <Sheet open={editing} onClose={() => setEditing(false)}>
+        <Text style={[t.row, { fontSize: 18 }]}>Edit project</Text>
+        <Pressable onPress={async () => { const a = await pickPhoto(false).catch((e: any) => { setMsg(String(e?.message ?? e)); return null; }); if (a) setForm((f) => ({ ...f, image: a })); }}
+          accessibilityRole="button" accessibilityLabel="Change the project's picture" style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12 }}>
+          {formLogo ? <Image source={{ uri: formLogo }} style={{ width: 64, height: 64, borderRadius: 20 }} /> : <IconCircle name="camera" size={64} />}
+          <Text style={[t.row, { color: c.accent }]}>{form.image ? "Change picture" : "Add a picture"}</Text>
+        </Pressable>
+        <Field label="Name" value={form.title} onChangeText={(v) => setForm((f) => ({ ...f, title: v }))} />
+        <Field label="What it's about" value={form.about} onChangeText={(v) => setForm((f) => ({ ...f, about: v }))} multiline />
+        <Field label="Starts" value={form.start} onChangeText={(v) => setForm((f) => ({ ...f, start: v }))} placeholder="e.g. 2027-02-15" />
+        <Buttons><Primary label="Save" onPress={save} disabled={!form.title.trim()} /></Buttons>
+        <Meta>{can.who}</Meta>
+        {p.status !== "cancelled" && p.status !== "completed" ? <View style={{ marginTop: 14 }}><LinkText onPress={cancelProject}>Cancel this project</LinkText></View> : null}
+      </Sheet>
 
       <Sheet open={addingFile} onClose={() => setAddingFile(false)}>
         <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>Add to the project's files</Text>

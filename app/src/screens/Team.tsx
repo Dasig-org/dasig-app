@@ -45,7 +45,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
   const photosOf = (r: string) => parts.filter((p: any) => p.role === r).map((p: any) => people[p.person.reference]?.photo);
   const who = (n: string[], ph?: any[]) => (n.length ? <View style={{ width: 54 }}><Faces names={n} photos={ph} /></View> : <View style={{ width: 54 }}><IconCircle name="users" tone="grey" size={30} /></View>);
   const ideas = tasks.filter((x) => x.status === "draft");
-  const work = tasks.filter((x) => x.status !== "draft");
+  const work = tasks.filter((x) => x.status !== "draft" && x.status !== "cancelled");
 
   const add = async () => {
     if (!title.trim()) return;

@@ -57,6 +57,8 @@ export const bix = {
   link: (target: Ref, grants: string[], preview = "title-only") => call<{ token: string; link: R; pairingCode?: string }>("POST", "/$links", { target, grants, preview }),
   openLink: (token: string) => call<any>("GET", `/$link/${token}`),
   joinByLink: (token: string) => call<R>("POST", `/$link/${token}/join`, {}),
+  /** What you may do with a record, from the server that keeps it. */
+  can: (type: string, id: string) => call<{ edit: boolean; who: string }>("GET", `/${type}/${id}/$can`).catch(() => ({ edit: false, who: "" })),
   tally: (decisionId: string) => call<{ voted: number; eligible: number; mine: string[] | null; tally: Record<string, number> | null }>("GET", `/Decision/${decisionId}/$tally`),
   links: () => call<{ link: R; target: { resourceType: string; id: string; title?: string } | null }[]>("GET", "/$links"),
   revokeLink: (id: string) => call<R>("POST", `/$links/${id}/revoke`, {}),
