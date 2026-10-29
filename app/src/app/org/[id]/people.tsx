@@ -10,7 +10,7 @@ import { pairUrl } from "@/lib/pairing";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { teamIcon } from "@/lib/work";
-import { Avatar, Buttons, Chips, Eyebrow, Field, IconCircle, Meta, Nav, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, Title } from "@/ui/kit";
+import { Avatar, Buttons, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, Title } from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 
 const ROLES = [{ value: "officer", label: "Officer" }, { value: "core-member", label: "Core member" }, { value: "member", label: "Member" }, { value: "volunteer-regular", label: "Regular volunteer" }, { value: "volunteer-episodic", label: "Volunteer" }] as const;
@@ -63,7 +63,7 @@ export default function People() {
   </Panel></> : null;
 
   return (
-    <Screen onRefresh={reload} bottom={<Nav active="people" />}>
+    <Screen onRefresh={reload} back>
       <Title sub={s.current?.name}>People</Title>
       <Tip id="people" title="Everyone counts">Volunteers are part of your group. Give them roles and teams.</Tip>
       {manage ? <Buttons><Primary label="Invite people" onPress={invite} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}

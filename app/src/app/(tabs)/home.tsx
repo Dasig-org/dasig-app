@@ -5,7 +5,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, personName, shortRef, stateLabel, teamIcon } from "@/lib/work";
 import { ContextPill } from "@/ui/Context";
-import { Avatar, Buttons, Eyebrow, Hero, IconCircle, Meta, Nav, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Tip } from "@/ui/kit";
+import { Avatar, Buttons, Eyebrow, Hero, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Tip } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
 
 const hello = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
@@ -43,7 +43,7 @@ export default function Home() {
     const noLead = (data?.teams ?? []).filter((tm) => !(tm.participant ?? []).some((p: any) => p.role === "lead" && p.status === "active"));
     const needs = (ideas.length ? 1 : 0) + waiting.length + (noLead.length ? 1 : 0);
     return (
-      <Screen onRefresh={reload} bottom={<Nav active="home" />}>
+      <Screen onRefresh={reload}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill /><Pressable accessibilityRole="button" accessibilityLabel="Your story and settings" onPress={() => router.push("/story")}><Avatar name={personName(s.person)} size={40} photo={s.person?.photo} /></Pressable></View>
         <Text style={[t.title, { marginTop: 14 }]}>{`Your week, ${personName(s.person)}`}</Text>
         <Text style={t.body}>{needs ? `${needs === 1 ? "One thing needs" : `${needs} things need`} you.` : "Everything is on track."}</Text>
@@ -76,7 +76,7 @@ export default function Home() {
   }
 
   return (
-    <Screen onRefresh={reload} bottom={<Nav active="home" />}>
+    <Screen onRefresh={reload}>
       <ContextPill />
       <Text style={[t.title, { marginTop: 14, marginBottom: 6 }]}>{`${hello()}, ${personName(s.person)}`}</Text>
       {error ? <Notice>{error}</Notice> : null}

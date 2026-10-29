@@ -58,8 +58,8 @@ const teamUrl = don.url(); await don.goto(teamUrl);
 await don.getByText("Don leads").waitFor(); await don.getByText("1 volunteer").waitFor(); await shot(don, "10b-team-compact"); log("team roster collapsed to one line");
 await don.getByText("Don leads").click(); await don.getByText("Volunteers", { exact: true }).waitFor(); await shot(don, "10c-team-people"); log("team people view");
 // Don: people, need, vote, timeline, credits, wrap-up
-await don.goto(APP + "/home"); await don.getByText("Your week, Don").waitFor(); await shot(don, "11-coordinator-home"); log("coordinator home");
-await don.getByRole("tab", { name: "People" }).click();
+await don.goto(APP + "/home"); await don.getByText("Your week, Don").waitFor(); await don.getByRole("tab", { name: "Me", exact: true }).waitFor(); await shot(don, "11-coordinator-home"); log("coordinator home");
+await don.getByRole("button", { name: "Add", exact: true }).click(); await tap(don, "Invite people");
 await don.getByText("Mia", { exact: true }).waitFor(); await shot(don, "12-people"); log("people shows Mia as a volunteer");
 await tap(don, "Add by name"); await don.getByPlaceholder("e.g. Liza").fill("Liza"); await tap(don, "Add");
 await don.getByText("Liza", { exact: true }).waitFor(); log("added Liza by name");

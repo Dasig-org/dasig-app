@@ -2,12 +2,12 @@ import { router } from "expo-router";
 import { useSession } from "@/lib/session";
 import { ROLE_WORDS } from "@/lib/org";
 import { Logo } from "@/ui/Context";
-import { Eyebrow, IconCircle, Nav, Panel, Row, Screen, Title } from "@/ui/kit";
+import { Eyebrow, IconCircle, Panel, Row, Screen, Title } from "@/ui/kit";
 
 export default function Groups() {
   const s = useSession();
   return (
-    <Screen bottom={<Nav active="groups" />}>
+    <Screen>
       <Title>Your groups</Title>
       <Panel>
         {s.groups.map((g) => <Row key={g.org.id} left={<Logo name={g.org.name} size={40} image={g.org.image} />} title={g.org.name} meta={ROLE_WORDS[g.role.code?.code] ?? "Member"} onPress={() => { s.setCurrent(g.org); router.push(`/org/${g.org.id}` as never); }} />)}

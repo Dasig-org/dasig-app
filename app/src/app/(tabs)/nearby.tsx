@@ -6,7 +6,7 @@ import * as Network from "expo-network";
 import { networkUrl } from "@/lib/env";
 import { CAUSES } from "@/lib/org";
 import { useSession } from "@/lib/session";
-import { Body, Buttons, Chips, Eyebrow, IconCircle, Meta, Nav, Outline, Panel, Pill, Primary, Row, Sand, Screen, Title } from "@/ui/kit";
+import { Body, Buttons, Chips, Eyebrow, IconCircle, Meta, Outline, Panel, Pill, Primary, Row, Sand, Screen, Title } from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { c, radius, type as t } from "@/ui/theme";
 
@@ -37,7 +37,7 @@ export default function Nearby() {
   };
   useEffect(() => { check(); }, []);
   return (
-    <Screen bottom={<Nav active="nearby" />}>
+    <Screen>
       <Title sub="Groups, projects and goals near you.">Who's working here</Title>
       <Chips options={CAUSES.slice(0, 6).map((x) => ({ value: x.code, label: x.label }))} value={cause} onChange={setCause} />
       <View style={{ height: 10 }} />

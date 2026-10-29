@@ -10,7 +10,7 @@ export default function Layout() {
       <KProvider>
       <SessionProvider>
         <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false, animation: "slide_from_right", gestureEnabled: true, contentStyle: { backgroundColor: "#f1f5f9" } }} />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#f1f5f9" } }} />
       </SessionProvider>
       </KProvider>
     </SafeAreaProvider>
