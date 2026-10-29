@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { shortRef, teamIcon } from "@/lib/work";
 import { Files } from "@/ui/Files";
-import { Body, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Tip } from "@/ui/kit";
+import { Body, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Tip , Skeleton} from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 
 /** The project page (sketch: running-sketches #1, page anatomy §1b). */
@@ -25,8 +25,8 @@ export default function Project() {
     const [teams, tasks, needs, decisions] = await Promise.all([bix.search("Team", { initiative: ref }), bix.search("Task", { partOf: ref }), bix.search("Need", { initiative: ref }), bix.search("Decision", { partOf: ref })]);
     return { p, teams, tasks, needs, decisions };
   }, [id]);
-  if (error) return <Screen back><Notice>{error}</Notice></Screen>;
-  if (!data) return <Screen back><Meta>Loading…</Meta></Screen>;
+  if (error) return <Screen onRefresh={reload} back><Notice>{error}</Notice></Screen>;
+  if (!data) return <Screen onRefresh={reload} back><Skeleton /></Screen>;
   const { p, teams, tasks, needs, decisions } = data;
   const lead = s.isLead || teams.some((tm) => (tm.participant ?? []).some((x: any) => x.person.reference === `Person/${s.person?.id}` && x.role === "lead" && x.status === "active"));
   const people = new Set(teams.flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)));
@@ -36,7 +36,7 @@ export default function Project() {
   const addFile = async (pick: () => Promise<any>) => { setAddingFile(false); const a = await pick().catch((e: any) => { setMsg(String(e?.message ?? e)); return null; }); if (a) run(bix.next(p, { attachment: [...(p.attachment ?? []), a] })); };
   const openVotes = decisions.filter((d) => d.status === "open");
   return (
-    <Screen back>
+    <Screen onRefresh={reload} back>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name="flag" size={56} tone="white" />
         <View style={{ flex: 1 }}><Text style={[t.title, { fontSize: 24 }]}>{p.title}</Text>
           <Meta>{[p.period?.start ? short(p.period.start) : null, `${teams.length} teams · ${people.size} ${people.size === 1 ? "person" : "people"}`, p.status === "completed" ? "Done" : null].filter(Boolean).join(" · ")}</Meta></View></View>
@@ -44,7 +44,7 @@ export default function Project() {
         : <View style={{ marginTop: 10 }}>{p.description ? <Body>{p.description}</Body> : lead ? <Text style={t.meta} onPress={() => { setAbout(""); setEditing(true); }}>＋ Add what this project is about</Text> : null}
           {p.description && lead ? <Text style={[t.meta, { marginTop: 4 }]} onPress={() => { setAbout(p.description ?? ""); setEditing(true); }}>Edit</Text> : null}</View>}
       {msg ? <Notice>{msg}</Notice> : null}
-      <Tip id="project-page" title="One place for the whole project">Gates are what many tasks wait on. Teams show their progress. Needs and votes live here too.</Tip>
+      <Tip id="project-page" title="The whole project">Gates, teams, needs and votes, in one place.</Tip>
 
       {gates.map((g) => <View key={g.id} style={{ marginTop: 14 }}><Sand><IconCircle name="building" tone="white" />
         <View style={{ flex: 1 }}><Text style={[t.eyebrow, { marginBottom: 2 }]}>Gate</Text><Text style={t.row}>{g.title}</Text><Meta>{`${blocked(g)} task${blocked(g) === 1 ? "" : "s"} wait on this`}</Meta></View>

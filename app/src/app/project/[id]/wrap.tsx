@@ -4,7 +4,7 @@ import { Text, View } from "react-native";
 import { bix, ref } from "@/lib/bix";
 import { DAY } from "@/lib/dates";
 import { useLoad } from "@/lib/use";
-import { Buttons, Eyebrow, IconCircle, Meta, Notice, Panel, Primary, Row, Screen, Title, Outline } from "@/ui/kit";
+import { Buttons, Eyebrow, IconCircle, Meta, Notice, Panel, Primary, Row, Screen, Title, Outline , Skeleton} from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 
 /** Wrapping up: finish the project, and save its teams and usual work for next time (BIX InitiativeTemplate, never shown by that name). */
@@ -16,7 +16,7 @@ export default function Wrap() {
     const [p, teams, tasks] = await Promise.all([bix.get("Initiative", id), bix.search("Team", { initiative: `Initiative/${id}` }), bix.search("Task", { partOf: `Initiative/${id}` })]);
     return { p, teams, tasks: tasks.filter((x) => x.status !== "draft") };
   }, [id]);
-  if (!data) return <Screen back><Meta>Loading…</Meta></Screen>;
+  if (!data) return <Screen back><Skeleton /></Screen>;
   const { p, teams, tasks } = data;
   const done = tasks.filter((x) => x.status === "completed").length;
   const people = new Set(tasks.flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)));

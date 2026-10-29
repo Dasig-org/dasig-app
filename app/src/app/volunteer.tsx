@@ -13,7 +13,7 @@ export default function Volunteer() {
         <Row left={<IconCircle name="link" />} title="Someone sent you a link" meta="Open it on this phone, or paste it here" onPress={() => router.push("/scan?paste=1" as never)} />
         <Row left={<IconCircle name="pin" />} title="Find groups near you" meta="Needs internet and the Dasig Ecosystem" onPress={() => router.push("/nearby")} last />
       </Panel>
-      <Tip id="volunteer-what-happens" title="What happens when you join">You'll see the team's open work. Tap “I'm in” to take something, or “I'll help” to join someone. Everything you finish goes into your story.</Tip>
+      <Tip id="volunteer-what-happens" title="When you join">Take open work with “I'm in”. What you finish goes into your story.</Tip>
       <Eyebrow>Already know a group?</Eyebrow>
       <Body>Ask their coordinator for their code. In Dasig, coordinators open their team and tap “Invite your team”.</Body>
       <View style={{ height: 10 }} />

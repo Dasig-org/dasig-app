@@ -6,7 +6,7 @@ import { fileUri, pickPhoto } from "@/lib/files";
 import { CAUSES } from "@/lib/org";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { Body, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen } from "@/ui/kit";
+import { Body, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen , Skeleton} from "@/ui/kit";
 import { Logo } from "@/ui/Context";
 import { Icon } from "@/ui/Icon";
 import { c, type as t } from "@/ui/theme";
@@ -26,7 +26,7 @@ export default function Org() {
   useEffect(() => { if (data?.org.image) fileUri(data.org.image).then(setLogoUri).catch(() => {}); }, [data?.org.image?.hash]);
   const [name, setName] = useState(""); const [about, setAbout] = useState("");
   useEffect(() => { if (data) { setName(data.org.name); setAbout(data.org.description ?? ""); } }, [data?.org.meta.version]);
-  if (!data) return <Screen back><Meta>Loading…</Meta></Screen>;
+  if (!data) return <Screen back><Skeleton /></Screen>;
   const { org, roles, requests, projects } = data;
   const officer = s.groups.some((g) => g.org.id === id && g.role.code?.code === "officer");
   const save = async (fields: Record<string, unknown>) => { try { await bix.commit(bix.next(org, fields)); setMsg("Saved."); setEditing(false); reload(); s.refresh(); } catch (e) { setMsg(String(e instanceof Error ? e.message : e)); } };

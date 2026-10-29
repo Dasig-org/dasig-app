@@ -4,7 +4,7 @@ import { bix } from "@/lib/bix";
 import { short, weekLabel } from "@/lib/dates";
 import { useLoad } from "@/lib/use";
 import { shortRef, teamIcon } from "@/lib/work";
-import { Eyebrow, IconCircle, Meta, Panel, Pill, Row, Sand, Screen, Title } from "@/ui/kit";
+import { Eyebrow, IconCircle, Meta, Panel, Pill, Row, Sand, Screen, Title , Skeleton} from "@/ui/kit";
 import { type as t } from "@/ui/theme";
 
 /** Timeline: work by week, gates where they fall (sketch: P2 #10). Phone-first, vertical. */
@@ -14,7 +14,7 @@ export default function Timeline() {
     const [p, tasks, teams] = await Promise.all([bix.get("Initiative", id), bix.search("Task", { partOf: `Initiative/${id}` }), bix.search("Team", { initiative: `Initiative/${id}` })]);
     return { p, tasks: tasks.filter((x) => x.status !== "draft"), teams };
   }, [id]);
-  if (!data) return <Screen back><Meta>Loading…</Meta></Screen>;
+  if (!data) return <Screen back><Skeleton /></Screen>;
   const order = (x: any) => x.due ?? x.restriction?.period?.end ?? "9999";
   const sorted = [...data.tasks].sort((a, b) => String(order(a)).localeCompare(String(order(b))));
   const groups: { label: string; items: any[] }[] = [];

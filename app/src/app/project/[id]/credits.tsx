@@ -3,7 +3,7 @@ import { Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
 import { useLoad } from "@/lib/use";
 import { teamIcon } from "@/lib/work";
-import { Faces, IconCircle, Meta, Panel, Row, Screen, Title } from "@/ui/kit";
+import { Faces, IconCircle, Meta, Panel, Row, Screen, Title , Skeleton} from "@/ui/kit";
 import { type as t } from "@/ui/theme";
 
 /** Credits, like a WordPress release's: everyone who did confirmed work, by team; leads and volunteers together; named as each chose. */
@@ -17,7 +17,7 @@ export default function Credits() {
     for (const r of refs) { try { people[r] = await bix.get("Person", r.split("/")[1]!); } catch {} }
     return { p, done, teams, people };
   }, [id]);
-  if (!data) return <Screen back><Meta>Loading…</Meta></Screen>;
+  if (!data) return <Screen back><Skeleton /></Screen>;
   const { p, done, teams, people } = data;
   const shown = (r: string) => { const x = people[r]; if (!x || x.credit === "anonymous") return null; return x.credit === "full" ? ((x.extension ?? []).find((e: any) => e.url === "bayanihan:full-name")?.value ?? x.name?.text) : x.name?.text; };
   const all = new Set<string>(); let anon = 0;

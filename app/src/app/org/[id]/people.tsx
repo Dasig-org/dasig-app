@@ -63,9 +63,9 @@ export default function People() {
   </Panel></> : null;
 
   return (
-    <Screen bottom={<Nav active="people" />}>
+    <Screen onRefresh={reload} bottom={<Nav active="people" />}>
       <Title sub={s.current?.name}>People</Title>
-      <Tip id="people" title="Everyone counts">Volunteers are part of your group, not a list beside it. Add them, give them roles, and put them on teams. They can always see and take their own story.</Tip>
+      <Tip id="people" title="Everyone counts">Volunteers are part of your group. Give them roles and teams.</Tip>
       {manage ? <Buttons><Primary label="Invite people" onPress={invite} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}
       {msg ? <Notice>{msg}</Notice> : null}
       {requests.length && manage ? <><Eyebrow right={`${requests.length}`}>Asking to join</Eyebrow><Panel>

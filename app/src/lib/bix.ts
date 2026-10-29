@@ -8,6 +8,13 @@ export const refId = (x?: Ref | null) => x?.reference.split("/")[1] ?? "";
 export const newId = () => randomUUID();
 export const now = () => new Date().toISOString();
 
+/** Plain words for errors people can act on; technical ones become a calm retry message. */
+export function friendly(m: string): string {
+  if (/^invalid \/|must NOT have|must be equal|must match/.test(m)) return "Something didn't save. Please try again; if it keeps happening, tell your coordinator.";
+  if (/stale change|someone else got there first/.test(m)) return "Someone changed this just now. We've reloaded it.";
+  if (/HTTP 5\d\d/.test(m)) return "Something went wrong on the hub. Please try again.";
+  return m;
+}
 export class BixError extends Error {
   constructor(public reasons: string[], public current: R | null = null) { super(reasons.join("; ")); }
 }
@@ -16,7 +23,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   const res = await send(method, path, body === undefined ? undefined : JSON.stringify(body));
   const text = await res.text();
   const json = text ? JSON.parse(text) : null;
-  if (!res.ok && !(res.status === 409 && json?.entry)) throw new BixError([json?.error ? String(json.error) : `HTTP ${res.status}`]);
+  if (!res.ok && !(res.status === 409 && json?.entry)) throw new BixError([friendly(json?.error ? String(json.error) : `HTTP ${res.status}`)]);
   return json as T;
 }
 const entries = (b: { entry?: { resource: R }[] }) => (b.entry ?? []).map((e) => e.resource);
@@ -40,7 +47,7 @@ export const bix = {
   async commitNow(...records: R[]): Promise<R[]> {
     const b = await call<{ entry: ({ ok: true; record: R } | { ok: false; reasons: string[]; current: R | null })[] }>("POST", "/", { type: "transaction", entry: records.map((resource) => ({ resource })) });
     const bad = b.entry.find((e) => !e.ok) as { reasons: string[]; current: R | null } | undefined;
-    if (bad) throw new BixError(bad.reasons, bad.current);
+    if (bad) throw new BixError(bad.reasons.map(friendly), bad.current);
     return b.entry.map((e) => (e as { record: R }).record);
   },
   /** A new record at version 1. */

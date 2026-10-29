@@ -12,7 +12,7 @@ export default function Links() {
   return (
     <Screen back>
       <Title sub="Turning a link off stops anyone new joining through it. People already in stay.">Links and safety</Title>
-      <Tip id="links" title="Keep links where they belong">Share invites in your group's own chat. If a link spreads too far, turn it off and make a new one.</Tip>
+      <Tip id="links" title="Keep links close">Share in your group's chat. Turn off any that spread too far.</Tip>
       {msg ? <Notice>{msg}</Notice> : null}
       <Panel>
         {active.map(({ link, target }, i) => <Row key={link.id} left={<IconCircle name="link" />} title={target?.title ?? "A link"} meta={`${(link.grants ?? []).includes("join-team") ? "Joins the team" : (link.grants ?? []).includes("join-org") ? "Joins the group" : "View"} · ${link.audience === "anyone-with-link" ? "anyone with the link" : link.audience}`}

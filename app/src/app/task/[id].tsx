@@ -10,7 +10,7 @@ import { bix, BixError, type R } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, shortRef, stateLabel } from "@/lib/work";
-import { Body, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar } from "@/ui/kit";
+import { Body, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton} from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { c, type as t } from "@/ui/theme";
 
@@ -39,7 +39,7 @@ export default function Task() {
     return { task, team, people, signed, siblings };
   }, [id]);
   if (error) return <Screen back><Notice>{error}</Notice></Screen>;
-  if (!data) return <Screen back><Meta>Loading…</Meta></Screen>;
+  if (!data) return <Screen back><Skeleton /></Screen>;
   const { task, team, people, signed, siblings } = data;
   const deps = (task.dependsOn ?? []).map((d: any) => siblings.find((x) => `Task/${x.id}` === d.reference)).filter(Boolean) as R[];
   const waitingOn = deps.filter((x) => x.status !== "completed");

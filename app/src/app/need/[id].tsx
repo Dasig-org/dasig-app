@@ -6,7 +6,7 @@ import { short } from "@/lib/dates";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { shortRef } from "@/lib/work";
-import { Avatar, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet } from "@/ui/kit";
+import { Avatar, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet , Skeleton} from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 
 /** A need and its offers (sketch: P1 #3). Accepting an offer counts it toward "covered". */
@@ -25,7 +25,7 @@ export default function Need() {
     const ini = need.initiative ? await bix.get("Initiative", need.initiative.reference.split("/")[1]).catch(() => null) : null;
     return { need, offers, people, ini };
   }, [id]);
-  if (!data) return <Screen back><Meta>Loading…</Meta></Screen>;
+  if (!data) return <Screen back><Skeleton /></Screen>;
   const { need, offers, people, ini } = data;
   const lead = s.isLead;
   const unit = need.quantity?.unit ?? "";

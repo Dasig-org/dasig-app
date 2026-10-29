@@ -41,18 +41,19 @@ export default function Home() {
     const ideas = tasks.filter((x) => x.status === "draft" && (leadRefs.has(x.team?.reference) || s.isLead));
     const waiting = tasks.filter((x) => x.status === "requested");
     const noLead = (data?.teams ?? []).filter((tm) => !(tm.participant ?? []).some((p: any) => p.role === "lead" && p.status === "active"));
-    const needs = ideas.length + waiting.length + noLead.length;
+    const needs = (ideas.length ? 1 : 0) + waiting.length + (noLead.length ? 1 : 0);
     return (
-      <Screen bottom={<Nav active="home" />}>
+      <Screen onRefresh={reload} bottom={<Nav active="home" />}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill /><Pressable accessibilityRole="button" accessibilityLabel="Your story and settings" onPress={() => router.push("/story")}><Avatar name={personName(s.person)} size={40} /></Pressable></View>
         <Text style={[t.title, { marginTop: 14 }]}>{`Your week, ${personName(s.person)}`}</Text>
         <Text style={t.body}>{needs ? `${needs === 1 ? "One thing needs" : `${needs} things need`} you.` : "Everything is on track."}</Text>
         {error ? <Notice>{error}</Notice> : null}
-        <Tip id="coordinator-home" title="Your week, at a glance">What needs you comes first. Tap a team to see its work, or People to bring more hands in.</Tip>
+        <Tip id="coordinator-home" title="Your week">What needs you comes first.</Tip>
         {needs ? <><Eyebrow>Needs you</Eyebrow><Hero>
           {ideas.length ? <Row left={<IconCircle name="pen" />} title={`${ideas.length} idea${ideas.length === 1 ? "" : "s"} from the team`} meta="Accept or keep for later" onPress={() => router.push("/ideas" as never)} /> : null}
           {waiting.slice(0, 2).map((x) => <Row key={x.id} left={<IconCircle name="pending" tone="grey" />} title={`${x.title}`} meta="Asked, no answer yet" onPress={() => router.push(`/task/${x.id}`)} />)}
-          {noLead.slice(0, 2).map((x) => <Row key={x.id} left={<IconCircle name={teamIcon(x.name)} />} title={`${x.name} needs a lead`} meta="Ask someone from People" onPress={() => router.push(`/team/${x.id}`)} />)}
+          {noLead.length === 1 ? <Row left={<IconCircle name={teamIcon(noLead[0]!.name)} />} title={`${noLead[0]!.name} needs a lead`} meta="Tap Lead on the team to choose" onPress={() => router.push(`/team/${noLead[0]!.id}`)} />
+            : noLead.length ? <Row left={<IconCircle name="users" />} title={`${noLead.length} teams need a lead`} meta={noLead.slice(0, 3).map((x) => x.name).join(", ") + (noLead.length > 3 ? "…" : "")} onPress={() => router.push(`/project/${(data?.projects ?? [])[0]?.id ?? ""}`)} /> : null}
         </Hero></> : null}
         <Eyebrow right={data?.projects.length ? "See all" : undefined}>Projects</Eyebrow>
         <Panel>
@@ -74,11 +75,11 @@ export default function Home() {
   }
 
   return (
-    <Screen bottom={<Nav active="home" />}>
+    <Screen onRefresh={reload} bottom={<Nav active="home" />}>
       <ContextPill />
       <Text style={[t.title, { marginTop: 14, marginBottom: 6 }]}>{`${hello()}, ${personName(s.person)}`}</Text>
       {error ? <Notice>{error}</Notice> : null}
-      <Tip id="volunteer-home" title="Find something worthwhile">Open work from your groups shows up here. Tap “I'm in” to take it. Nothing here? Ask your coordinator for their code.</Tip>
+      <Tip id="volunteer-home" title="Find something to do">Tap “I'm in” to take it.</Tip>
       {asked.map((x) => <View key={x.id}><Eyebrow>Asked of you</Eyebrow>
         <Hero><View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><IconCircle name="pen" size={48} /><View style={{ flex: 1 }}><Text style={t.row}>{x.title}</Text><Meta>{shortRef(x) ?? ""}</Meta></View></View>
           <Buttons><Primary label="I'm in" onPress={() => answer(x, true)} /><Outline label="Can't make it" onPress={() => answer(x, false)} /></Buttons></Hero></View>)}

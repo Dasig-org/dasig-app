@@ -1,5 +1,6 @@
-import { type ReactNode } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View, type TextInputProps, type ViewStyle } from "react-native";
+import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
+import * as Haptics from "expo-haptics";
+import { ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View, type TextInputProps, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Icon, type IconName } from "./Icon";
@@ -7,11 +8,15 @@ import { SyncBar } from "./SyncBar";
 import { avatarColors, c, radius, type } from "./theme";
 
 /** A screen on the wash, phone-first, with an optional fixed bottom bar. */
-export function Screen({ children, bottom, back }: { children: ReactNode; bottom?: ReactNode; back?: boolean }) {
+export function Screen({ children, bottom, back, onRefresh }: { children: ReactNode; bottom?: ReactNode; back?: boolean; onRefresh?: () => Promise<unknown> | void }) {
   const inset = useSafeAreaInsets();
+  const { useState } = require("react") as typeof import("react");
+  const [refreshing, setRefreshing] = useState(false);
   return (
     <View style={{ flex: 1, backgroundColor: c.wash }}>
-      <ScrollView contentContainerStyle={{ paddingTop: inset.top + 12, paddingHorizontal: 18, paddingBottom: 120, maxWidth: 520, width: "100%", alignSelf: "center" }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ paddingTop: inset.top + 12, paddingHorizontal: 18, paddingBottom: (bottom ? 96 : 40) + inset.bottom, maxWidth: 520, width: "100%", alignSelf: "center" }}
+        keyboardShouldPersistTaps="handled" refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} colors={[c.accent]} tintColor={c.accent}
+          onRefresh={async () => { setRefreshing(true); try { await onRefresh(); } finally { setRefreshing(false); } }} /> : undefined}>
         <SyncBar />
         {back && <RoundButton icon="back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} style={{ marginBottom: 14 }} label="Back" />}
         {children}
@@ -61,7 +66,7 @@ export function Row({ left, title, meta, right, onPress, last }: { left?: ReactN
   </>;
   // A row without its own action must not be a (disabled) button: that would mark buttons inside it as disabled for screen readers.
   if (!onPress) return <View style={style}>{body}</View>;
-  return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={meta ? `${title}, ${meta}` : title} style={({ pressed }) => ({ ...style, opacity: pressed ? 0.7 : 1 })}>{body}</Pressable>;
+  return <Pressable onPress={onPress} android_ripple={{ color: c.s200 }} accessibilityRole="button" accessibilityLabel={meta ? `${title}, ${meta}` : title} style={({ pressed }) => ({ ...style, opacity: Platform.OS === "android" ? 1 : pressed ? 0.7 : 1 })}>{body}</Pressable>;
 }
 export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "ok" | "state" }) {
   const s = { neutral: { bg: c.wash, fg: c.ink, b: c.wash }, ok: { bg: c.white, fg: c.slate, b: c.s200 }, state: { bg: c.accent, fg: c.white, b: c.accent } }[tone];
@@ -69,12 +74,12 @@ export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone
     <Text style={{ fontSize: 12, fontWeight: "600", color: s.fg }}>{children}</Text></View>;
 }
 export function Primary({ label, onPress, busy, disabled }: { label: string; onPress: () => void; busy?: boolean; disabled?: boolean }) {
-  return <Pressable onPress={onPress} disabled={busy || disabled} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!(busy || disabled), busy: !!busy }} style={({ pressed }) => ({ flex: 1, minHeight: 48, borderRadius: radius.pill, backgroundColor: pressed ? c.accent : c.primary, opacity: disabled ? 0.5 : 1, alignItems: "center", justifyContent: "center" })}>
+  return <Pressable android_ripple={{ color: "rgba(255,255,255,.25)", borderless: false }} onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); onPress(); }} disabled={busy || disabled} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!(busy || disabled), busy: !!busy }} style={({ pressed }) => ({ flex: 1, minHeight: 48, borderRadius: radius.pill, backgroundColor: pressed ? c.accent : c.primary, opacity: disabled ? 0.5 : 1, alignItems: "center", justifyContent: "center" })}>
     {busy ? <ActivityIndicator color={c.white} /> : <Text style={{ color: c.white, fontWeight: "700", fontSize: 15 }}>{label}</Text>}
   </Pressable>;
 }
 export function Outline({ label, onPress, flex }: { label: string; onPress: () => void; flex?: boolean }) {
-  return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ flex: flex ? 1 : undefined, minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: c.white, borderWidth: 1.5, borderColor: pressed ? c.ink : c.s300, alignItems: "center", justifyContent: "center" })}>
+  return <Pressable onPress={onPress} android_ripple={{ color: c.s200 }} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ overflow: "hidden", flex: flex ? 1 : undefined, minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: c.white, borderWidth: 1.5, borderColor: pressed ? c.ink : c.s300, alignItems: "center", justifyContent: "center" })}>
     <Text style={{ color: c.ink, fontWeight: "600", fontSize: 15 }}>{label}</Text></Pressable>;
 }
 export const Buttons = ({ children }: { children: ReactNode }) => <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>{children}</View>;
@@ -85,15 +90,17 @@ export function RoundButton({ icon, onPress, style, label }: { icon: IconName; o
   return <Pressable accessibilityLabel={label} onPress={onPress} style={[{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.white, alignItems: "center", justifyContent: "center" }, style]}>
     <Icon name={icon} size={18} color={c.ink} /></Pressable>;
 }
-export const Field = (p: TextInputProps & { label?: string }) => (
+const OnSheet = createContext(false);
+export const Field = (p: TextInputProps & { label?: string }) => { const onSheet = useContext(OnSheet); return (
   <View style={{ marginTop: 10 }}>
     {p.label ? <Text style={{ fontSize: 12.5, fontWeight: "600", color: c.s500, marginBottom: 6, marginLeft: 4 }}>{p.label}</Text> : null}
-    <TextInput placeholderTextColor={c.s400} {...p} style={[{ backgroundColor: c.white, borderRadius: radius.field, paddingHorizontal: 19, paddingVertical: 15, fontSize: 16, color: c.ink }, p.style]} />
+    <TextInput placeholderTextColor={c.s400} {...p} style={[{ backgroundColor: onSheet ? c.wash : c.white, borderRadius: radius.field, paddingHorizontal: 19, paddingVertical: 15, fontSize: 16, color: c.ink, minHeight: p.multiline ? 84 : undefined, textAlignVertical: p.multiline ? "top" : "center", ...(Platform.OS === "web" ? { outlineColor: c.accent } as object : {}) }, p.style]} />
   </View>
-);
+); };
 export function Chips<T extends string>({ options, value, onChange }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  const onSheet = useContext(OnSheet);
   return <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-    {options.map((o) => <Pressable key={o.value} onPress={() => onChange(o.value)} accessibilityRole="radio" accessibilityState={{ selected: o.value === value }} accessibilityLabel={o.label} style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: o.value === value ? c.accent : c.white, justifyContent: "center" }}>
+    {options.map((o) => <Pressable key={o.value} onPress={() => onChange(o.value)} accessibilityRole="radio" accessibilityState={{ selected: o.value === value }} accessibilityLabel={o.label} style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: o.value === value ? c.accent : onSheet ? c.wash : c.white, justifyContent: "center" }}>
       <Text style={{ fontSize: 13.5, fontWeight: "600", color: o.value === value ? c.white : c.ink }}>{o.label}</Text></Pressable>)}
   </View>;
 }
@@ -105,12 +112,47 @@ export function Sand({ children }: { children: ReactNode }) {
   return <View style={{ backgroundColor: c.sand, borderRadius: radius.tile, padding: 14, flexDirection: "row", gap: 12, alignItems: "center" }}>{children}</View>;
 }
 export function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
-  return <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
-    <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: "rgba(15,23,42,.35)" }} />
-    <View style={{ backgroundColor: c.white, borderTopLeftRadius: radius.sheet, borderTopRightRadius: radius.sheet, padding: 20, paddingBottom: 34, maxWidth: 520, width: "100%", alignSelf: "center" }}>
-      <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: c.s300, alignSelf: "center", marginBottom: 16 }} />{children}
-    </View>
+  const inset = useSafeAreaInsets();
+  const y = useRef(new Animated.Value(600)).current;
+  const fade = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (open) {
+      y.setValue(600);
+      Animated.parallel([
+        Animated.timing(fade, { toValue: 1, duration: 180, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(y, { toValue: 0, damping: 22, stiffness: 220, mass: 0.9, useNativeDriver: true }),
+      ]).start();
+    } else { fade.setValue(0); }
+  }, [open]);
+  const close = () => Animated.parallel([
+    Animated.timing(fade, { toValue: 0, duration: 160, useNativeDriver: true }),
+    Animated.timing(y, { toValue: 600, duration: 200, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+  ]).start(() => onClose());
+  return <Modal visible={open} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={close}>
+    <Animated.View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(15,23,42,.38)", opacity: fade }}>
+      <Pressable accessibilityLabel="Close" onPress={close} style={{ flex: 1 }} />
+    </Animated.View>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, justifyContent: "flex-end" }} pointerEvents="box-none">
+      <Animated.View style={{ transform: [{ translateY: y }], backgroundColor: c.white, borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingHorizontal: 22, paddingTop: 12,
+        paddingBottom: inset.bottom + 22, maxWidth: 560, width: "100%", alignSelf: "center", maxHeight: "92%",
+        shadowColor: "#0F172A", shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: -6 }, elevation: 24 }}>
+        <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: c.s300, alignSelf: "center", marginBottom: 16 }} />
+        <OnSheet.Provider value={true}><ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>{children}</ScrollView></OnSheet.Provider>
+      </Animated.View>
+    </KeyboardAvoidingView>
   </Modal>;
+}
+/** Calm placeholder while a screen loads. */
+export function Skeleton({ rows = 4 }: { rows?: number }) {
+  const pulse = useRef(new Animated.Value(0.5)).current;
+  useEffect(() => { Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }), Animated.timing(pulse, { toValue: 0.5, duration: 700, useNativeDriver: true })])).start(); }, []);
+  return <Animated.View accessibilityLabel="Loading" style={{ opacity: pulse }}>
+    <View style={{ width: "60%", height: 26, borderRadius: 13, backgroundColor: c.s200, marginBottom: 16 }} />
+    <View style={{ backgroundColor: c.white, borderRadius: radius.field, padding: 16, gap: 18 }}>
+      {Array.from({ length: rows }, (_, i) => <View key={i} style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.wash }} />
+        <View style={{ flex: 1, gap: 6 }}><View style={{ width: "70%", height: 12, borderRadius: 6, backgroundColor: c.wash }} /><View style={{ width: "40%", height: 10, borderRadius: 5, backgroundColor: c.wash }} /></View></View>)}
+    </View>
+  </Animated.View>;
 }
 export const Loading = () => <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.wash }}><ActivityIndicator color={c.accent} /></View>;
 export const Notice = ({ children }: { children: ReactNode }) => <Text role="alert" style={{ fontSize: 13, fontWeight: "600", color: c.ink, marginTop: 8, marginHorizontal: 4 }}>{children}</Text>;
@@ -131,17 +173,18 @@ export function Nav({ active }: { active: string }) {
   </View>;
 }
 
-/** A first-time tip (guides). Dismissed once, remembered. */
+/** A first-time tip (guides). One line or two, dismissed with ×, remembered. */
 export function Tip({ id, title, children }: { id: string; title: string; children: ReactNode }) {
-  const { useEffect, useState } = require("react") as typeof import("react");
+  const { useState } = require("react") as typeof import("react");
   const AsyncStorage = (require("@react-native-async-storage/async-storage") as { default: { getItem(k: string): Promise<string | null>; setItem(k: string, v: string): Promise<void> } }).default;
   const [show, setShow] = useState(false);
   useEffect(() => { AsyncStorage.getItem(`dasig.tip.${id}`).then((v) => setShow(!v)); }, [id]);
   if (!show) return null;
-  return <View accessibilityRole="summary" style={{ backgroundColor: c.sand, borderRadius: radius.tile, padding: 14, marginTop: 12, flexDirection: "row", gap: 12 }}>
-    <IconCircle name="spark" size={34} tone="white" />
-    <View style={{ flex: 1 }}><Text style={type.row}>{title}</Text><Text style={[type.body, { marginTop: 2 }]}>{children}</Text>
-      <Text onPress={() => { AsyncStorage.setItem(`dasig.tip.${id}`, "1"); setShow(false); }} accessibilityRole="button" style={{ marginTop: 8, fontWeight: "600", color: c.ink, textDecorationLine: "underline" }}>Got it</Text></View>
+  return <View accessibilityRole="summary" style={{ backgroundColor: c.sand, borderRadius: radius.tile, paddingVertical: 10, paddingLeft: 12, paddingRight: 6, marginTop: 10, flexDirection: "row", gap: 10, alignItems: "center" }}>
+    <Icon name="spark" size={18} />
+    <Text style={{ flex: 1, fontSize: 13.5, lineHeight: 19, color: c.slate }}><Text style={{ fontWeight: "700", color: c.ink }}>{title}. </Text>{children}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel="Dismiss tip" hitSlop={10} onPress={() => { AsyncStorage.setItem(`dasig.tip.${id}`, "1"); setShow(false); }} style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center" }}>
+      <Text style={{ fontSize: 18, color: c.s500 }}>×</Text></Pressable>
   </View>;
 }
 /** The Dasig mark (the hands emblem, as on dasig.org), used on boot, welcome and the app bar. */

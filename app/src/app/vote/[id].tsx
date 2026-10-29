@@ -6,7 +6,7 @@ import { short } from "@/lib/dates";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { Files } from "@/ui/Files";
-import { Body, Buttons, Check, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen } from "@/ui/kit";
+import { Body, Buttons, Check, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen , Skeleton} from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 
 /** A vote: options with their files, one vote each (changeable until it closes), result counted by Core, statement by a person. */
@@ -18,7 +18,7 @@ export default function Vote() {
   const [stmt, setStmt] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const { data, reload } = useLoad(async () => { const d = await bix.get("Decision", id); const tally = await bix.tally(id).catch(() => null); return { d, tally }; }, [id]);
-  if (!data) return <Screen back><Meta>Loading…</Meta></Screen>;
+  if (!data) return <Screen back><Skeleton /></Screen>;
   const { d, tally } = data;
   const canVote = d.status === "open" && (d.eligible ?? []).some((e: any) => e.reference === me);
   const mine = pick ?? tally?.mine?.[0] ?? null;
