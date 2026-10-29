@@ -142,7 +142,7 @@ export function Tip({ id, title, children }: { id: string; title: string; childr
       <Text onPress={() => { AsyncStorage.setItem(`dasig.tip.${id}`, "1"); setShow(false); }} accessibilityRole="button" style={{ marginTop: 8, fontWeight: "600", color: c.ink, textDecorationLine: "underline" }}>Got it</Text></View>
   </View>;
 }
-/** The Dasig mark (carabao emblem), used on boot, welcome and the app bar. */
+/** The Dasig mark (the hands emblem, as on dasig.org), used on boot, welcome and the app bar. */
 export function Mark({ size = 72 }: { size?: number }) {
   const { Image } = require("react-native") as typeof import("react-native");
   return <Image source={require("../../assets/brand/emblem.png")} accessibilityLabel="Dasig" style={{ width: size, height: size }} />;
