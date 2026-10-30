@@ -28,7 +28,7 @@ await tap(don, "Create the group");
 await don.getByText("Bring your people in").waitFor(); await shot(don, "06-ready"); log("group ready");
 await tap(don, "Start a project");
 await don.getByPlaceholder("e.g. Lahug Uplands Fun Run 2027").fill("Lahug Uplands Fun Run 2027");
-await don.getByPlaceholder("e.g. LU 2027").fill("LU 2027");
+await don.getByPlaceholder("e.g. LU").fill("LU");
 await don.getByPlaceholder("e.g. 2027-03-06").fill("2027-03-06");
 await don.getByText(/Keep these \d+ teams/).click();
 await don.getByText("Needs a lead").first().waitFor(); await shot(don, "07-project"); log("project page");
@@ -38,7 +38,7 @@ await don.getByText("Two days of talks and workshops in Cebu").waitFor(); log("p
 await don.getByText("Communications", { exact: true }).click();
 await don.getByText("You lead it").waitFor();
 await don.getByPlaceholder("Add something to do").fill("Draft call for speakers"); await don.getByPlaceholder("Add something to do").press("Enter");
-await don.getByText(/^LU 2027-\d+$/).waitFor(); log("task with a LU 2027 reference");
+await don.getByText(/^LU-\d+$/).waitFor(); log("task with a LU reference");
 await shot(don, "07b-team-work"); await don.getByLabel("Invite people").first().click(); await tap(don, "Make the invite");
 const invite = await don.getByText(/\/join\//).textContent(); log("invite:", invite);
 

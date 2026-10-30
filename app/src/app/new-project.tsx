@@ -68,7 +68,7 @@ export default function NewProject() {
     <Screen back>
       <Title sub="What's coming up?">New project</Title>
       <Field label="Project" value={title} onChangeText={setTitle} placeholder="e.g. Lahug Uplands Fun Run 2027" />
-      <Field label="Short code for references (optional)" value={prefix} onChangeText={setPrefix} placeholder="e.g. LU 2027" autoCapitalize="characters" />
+      <Field label="Short code for references (optional)" value={prefix} onChangeText={setPrefix} placeholder="e.g. LU" autoCapitalize="characters" />
       <Field label="Where (optional)" value={place} onChangeText={setPlace} placeholder="e.g. Mactan Expo" />
       <Field label="When (optional)" value={when} onChangeText={setWhen} placeholder="e.g. 2027-03-06" />
       {(saved ?? []).length ? <><Eyebrow>Start from</Eyebrow><Panel>
