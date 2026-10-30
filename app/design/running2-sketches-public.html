@@ -1,0 +1,200 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dasig · running a project, part 2</title>
+<style>
+  :root{--wash:#f1f5f9;--ink:#0F172A;--slate:#475569;--s500:#64748b;--s400:#94a3b8;--s300:#cbd5e1;--s200:#e2e8f0;
+        --primary:#F47C26;--accent:#E85C21;--gold:#FBB931;--sand:#FFF6E9}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#fff}
+  header.doc{max-width:1680px;margin:0 auto;padding:28px 28px 8px}
+  header.doc h1{font-size:24px;margin:0 0 6px}
+  header.doc p{margin:0;color:var(--slate);font-size:14.5px;max-width:880px;line-height:1.5}
+  .row{max-width:1680px;margin:0 auto;padding:20px 28px 40px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:390px}
+  .label{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:0 0 8px}
+  .phone{width:390px;height:844px;background:var(--wash);border-radius:44px;overflow:hidden;position:relative;
+         box-shadow:0 0 0 10px #0f172a0d, 0 18px 50px rgb(15 23 42/.12);display:flex;flex-direction:column}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:13px;font-weight:600}
+  .scroll{flex:1;overflow-y:auto;scrollbar-width:none;padding:4px 18px 0}
+  .top{display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px}
+  .ctx{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px 0 5px;background:#fff;border-radius:999px;font-size:14px;font-weight:600}
+  .av{width:30px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+  .av.sm{width:24px;height:24px;font-size:10px;border:2px solid #fff;margin-left:-7px}
+  .av.sm:first-child{margin-left:0}
+  .a1{background:#E85C21}.a2{background:#475569}.a3{background:#FBB931;color:var(--ink)}.a4{background:#F47C26}.a5{background:#0F172A}.a6{background:#94a3b8}
+  .chev{color:var(--s400);font-size:11px}
+  .icon{width:40px;height:40px;border-radius:999px;background:#fff;display:inline-flex;align-items:center;justify-content:center}
+  h2{font-size:26px;line-height:1.2;margin:0 0 4px;font-weight:700}
+  .sub{font-size:14.5px;color:var(--slate);margin:0 0 20px;line-height:1.45}
+  .eyebrow{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:20px 4px 8px}
+  .eyebrow span{letter-spacing:0;text-transform:none;font-size:12.5px;color:var(--s500);font-weight:600}
+  .panel{background:#fff;border-radius:22px;padding:4px 16px}
+  .hero{background:#fff;border-radius:26px;padding:18px}
+  .item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--s200);align-items:flex-start}
+  .item:last-child{border-bottom:0}
+  .tile{width:44px;height:44px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;line-height:1.05;text-align:center}
+  .t-orange{background:var(--sand);color:var(--accent)}
+  .t-slate{background:var(--wash);color:var(--slate)}
+  .t-done{background:#E85C21;color:#fff}
+  .grow{flex:1;min-width:0}
+  .ttl{font-size:15px;font-weight:600;margin:0 0 3px}
+  .meta{font-size:13px;color:var(--s500);margin:0}
+  .why{font-size:14px;color:var(--slate);margin:6px 0 0;line-height:1.4}
+  .people{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--s500);font-weight:600}
+  .stack{display:flex}
+  .pill{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--wash);color:var(--ink);white-space:nowrap}
+  .pill.ok{background:#fff;border:1.5px solid var(--s200);color:var(--slate)}
+  .pill.state{background:var(--accent);color:#fff}
+  .btns{display:flex;gap:10px;margin-top:14px}
+  .btn{height:48px;border-radius:999px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;padding:0 20px;border:0}
+  .primary{background:var(--primary);color:#fff;flex:1}
+  .outline{background:#fff;border:1.5px solid var(--s300);color:var(--ink);font-weight:600}
+  .link{font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .sandnote{background:var(--sand);border-radius:20px;padding:14px 16px;display:flex;gap:12px;align-items:center}
+  .sandnote b{font-size:15px}
+  .sandnote p{margin:2px 0 0;font-size:13px;color:var(--slate)}
+  .bar{height:8px;border-radius:999px;background:var(--wash);overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:999px}
+  .stat{padding:13px 0;border-bottom:1px solid var(--s200)}
+  .stat:last-child{border-bottom:0}
+  .stat .l{display:flex;justify-content:space-between;font-size:14.5px}
+  .stat .l b{font-weight:600}
+  .nav{height:78px;background:#fff;display:flex;justify-content:space-around;align-items:flex-start;padding-top:10px;font-size:11.5px;font-weight:600;color:var(--s400)}
+  .nav div{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .nav .on{color:var(--accent)}
+  .dot{width:22px;height:22px;border-radius:8px;background:currentColor;opacity:.9}
+  .nav .on .dot{opacity:1}
+  .browserbar{height:46px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 16px;font-size:13px;color:var(--s500);border-bottom:1px solid var(--s200)}
+  .browserbar b{color:var(--ink);font-weight:600}
+  .cover{height:150px;border-radius:26px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:flex-end;padding:16px;color:#fff;font-weight:700;font-size:13px}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 20px 30px;box-shadow:0 -10px 40px rgb(15 23 42/.18)}
+  .grab{width:40px;height:5px;border-radius:999px;background:var(--s300);margin:0 auto 16px}
+  .field{background:var(--wash);border-radius:22px;padding:17px 19px;font-size:16px;color:var(--ink);margin-top:8px}
+  .field.ph{color:var(--s400)}
+  .sublabel{font-size:12.5px;font-weight:600;color:var(--s500);margin:14px 4px 0}
+  .scrim{position:absolute;inset:0;background:rgb(15 23 42/.35)}
+  .notes{margin-top:14px;font-size:13.5px;color:var(--slate);line-height:1.5}
+  .notes li{margin-bottom:6px}
+  .notes b{color:var(--ink)}
+  .center{text-align:center}
+  .bigcheck{width:76px;height:76px;border-radius:999px;background:var(--sand);color:var(--accent);display:flex;align-items:center;justify-content:center;margin:40px auto 18px}
+
+  .one{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--s200)}
+  .one:last-child{border-bottom:0}
+  .go{color:var(--s300);font-size:18px;font-weight:600}
+  .info{display:inline-flex;width:18px;height:18px;border-radius:999px;border:1.5px solid var(--s300);color:var(--s500);font-size:11px;font-weight:700;align-items:center;justify-content:center;margin-left:6px;vertical-align:1px}
+  .tip{position:relative;background:#fff;color:var(--slate);box-shadow:0 4px 18px rgb(15 23 42/.12);font-size:12.5px;line-height:1.4;border-radius:20px;padding:10px 13px;margin:8px 0 2px}
+  .tip:before{content:"";position:absolute;top:-6px;right:34px;border:6px solid transparent;border-top:0;border-bottom-color:#fff}
+  .addlink{display:inline-block;margin-top:14px;font-size:14px;font-weight:600;color:var(--slate)}
+  .more{font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .kv{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--s200);font-size:14.5px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{width:78px;color:var(--s500);font-size:13px;font-weight:600;flex:none;padding-top:1px}
+  .img{background:#e2e8f0 center/cover no-repeat;border-radius:20px;position:relative;flex:none}
+  .chipov{position:absolute;left:10px;top:10px;height:26px;padding:0 10px;border-radius:999px;background:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center}
+  .carousel{display:flex;gap:12px;overflow:hidden;margin:0 -18px;padding:0 18px}
+  .ctile{width:236px;flex:none}
+  .ctile .img{width:236px;height:150px}
+  .ctile .ttl{margin:9px 2px 2px}
+  .strip{display:flex;gap:6px;margin-top:12px}
+  .strip .img{width:72px;height:72px;border-radius:16px}
+  .thumb{width:56px;height:56px}
+  .avimg{width:30px;height:30px;border-radius:999px;background:center/cover;flex:none}
+  .sheetcover{height:150px;border-radius:20px;margin:0 0 14px}
+  .confimg{width:110px;height:110px;border-radius:999px;background:center/cover;margin:36px auto 18px;position:relative}
+  .confimg span{position:absolute;right:-2px;bottom:-2px;width:38px;height:38px;border-radius:999px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid var(--wash)}
+
+  section.d{max-width:1680px;margin:0 auto;padding:34px 28px 6px;border-top:1px solid var(--s200)}
+  section.d h3{font-size:20px;margin:0 0 4px}
+  section.d .feel{font-size:15px;color:var(--slate);margin:0 0 4px;max-width:900px;line-height:1.5}
+  section.d .feel b{color:var(--accent)}
+  .rowd{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-top:16px}
+  .ic{width:40px;height:40px;border-radius:999px;background:var(--sand);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .ic.w{background:#fff}.ic.g{background:var(--wash);color:var(--slate)}
+  .ic.lg{width:56px;height:56px}
+  .ic svg{width:20px;height:20px}.ic.lg svg{width:26px;height:26px}
+  .bay{background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff}
+  .msg{background:#fff;border-radius:22px 22px 22px 6px;padding:12px 14px;font-size:14.5px;line-height:1.45}
+  .badge{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:#fff;font-size:12px;font-weight:600;color:var(--slate)}
+  .badge svg{width:14px;height:14px;color:var(--accent)}
+  .prop{background:#fff;border-radius:22px;padding:14px 16px;margin-top:10px}
+  .k{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:0}
+  .check{width:24px;height:24px;border-radius:999px;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none}
+  .check.off{background:#fff;border:1.5px solid var(--s300);color:transparent}
+  .tl{position:relative}
+  .tl:before{content:"";position:absolute;left:19px;top:22px;bottom:22px;width:2px;background:var(--s200)}
+  .ev{position:relative;display:flex;gap:12px;align-items:flex-start;padding:9px 0}
+  .ev p{margin:0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px}
+  .gtile{background:#fff;border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .gtile .ttl{margin:0;font-size:14px}
+  .fig{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--s200)}
+  .fig:last-child{border-bottom:0}
+  .fig b{font-size:22px}
+  .fig small{display:block;font-size:12.5px;color:var(--s500);font-weight:600;margin-top:2px}
+  .bixlogo{width:44px;height:44px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff;font-weight:800;font-size:12.5px;display:flex;align-items:center;justify-content:center;flex:none}
+  .bixlogo.lg{width:64px;height:64px;border-radius:22px;font-size:16px}
+  .clubs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .clubs span{width:34px;height:34px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+  .clubs .miss{background:#fff;border:1.5px dashed var(--s300);color:var(--s400)}
+  .inph{width:44px;height:44px;border-radius:14px;background:center/cover;flex:none}
+  .duo{display:flex;justify-content:center;margin:34px 0 16px}
+  .duo .avimg,.duo .av{width:76px;height:76px;font-size:24px;border:4px solid var(--wash)}
+  .duo>*+*{margin-left:-16px}
+  .door{background:#fff;border-radius:22px;padding:16px;display:flex;gap:14px;align-items:center;margin-top:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{height:36px;padding:0 14px;border-radius:999px;background:#fff;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+  .chip.on{background:var(--accent);color:#fff}
+  .tog{width:51px;height:31px;border-radius:999px;background:var(--accent);position:relative;flex:none}
+  .tog:after{content:"";position:absolute;right:2px;top:2px;width:27px;height:27px;border-radius:999px;background:#fff}
+  .tog.off{background:var(--s300)}.tog.off:after{right:auto;left:2px}
+  .logo{width:72px;height:72px;border-radius:24px;background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center}
+  .step{font-size:12px;font-weight:700;color:var(--s400);letter-spacing:.12em;text-transform:uppercase;margin:6px 0 6px}
+</style></head><body><header class="doc"><h1>Running a project, part 2 · sketches v0.1 · 28 October 2026</h1>
+<p>A fictional club and event, for sharing publicly. Names are samples. Follows <code>DESIGN_STANDARD.md</code> and <code>EXPERIENCE.md</code>.</p></header>
+<section class="d"><h3>Breaking work down, together</h3><p class="feel">A lead should feel: <b>“Big work is easy to share.”</b></p><div class="rowd"><div class="col"><p class="label">5 · Breaking a task down</p><div class="phone"><div class="status"><span>9:20</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<div style="display:flex;gap:14px;align-items:center"><span class="ic lg w"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><div><p class="meta">LUFR-17 · Communications</p><h2 style="margin:0;font-size:24px">Call for runners</h2></div></div>
+<div class="eyebrow">Working on it</div>
+<div class="panel"><div class="one"><span class="stack"><span class="av sm a4">D</span><span class="av sm a3">M</span></span><div class="grow"><p class="ttl">Don and Mia</p><p class="meta">Don is accountable</p></div><span class="link">Add helper</span></div></div>
+<div class="eyebrow">Smaller pieces <span>1 of 3</span></div>
+<div class="panel">
+<div class="one"><span class="check">✓</span><div class="grow"><p class="ttl">Write the call</p></div><span class="av sm a4">D</span></div>
+<div class="one"><span class="check off">·</span><div class="grow"><p class="ttl">Speaker form</p></div><span class="av sm a3">M</span></div>
+<div class="one"><span class="check off">·</span><div class="grow"><p class="ttl">Add a kids' 1K run</p></div><span class="pill">Open</span></div>
+</div>
+<div class="btns"><span class="btn primary">Add a smaller piece</span></div>
+</div><div class="nav"><div class=""><span class="dot"></span>My work</div><div class="on"><span class="dot"></span>Teams</div><div class=""><span class="dot"></span>Inbox</div><div class=""><span class="dot"></span>Project</div></div></div><ul class="notes"><li><b>Subtasks</b> (Task.partOf) each have their own owner or are open; <b>helpers</b> (Task.participant) work on the parent with the owner.</li><li>Mia's suggestion from the inbox became the third piece once Don accepted it.</li></ul></div><div class="col"><p class="label">6 · Adding helpers</p><div class="phone"><div class="status"><span>9:21</span><span>▴ ◔ ▮</span></div><div class="scroll" style="opacity:.3"><h2 style="margin-top:80px">Call for runners</h2></div>
+<div class="scrim"></div><div class="sheet" style="top:150px">
+<div class="grab"></div>
+<p class="ttl" style="font-size:18px;margin-bottom:6px">Who can help?</p>
+<p class="meta" style="margin-bottom:10px">Suggested from who's helped before</p>
+<div class="panel" style="background:var(--wash)">
+<div class="one"><span class="av a5">R</span><div class="grow"><p class="ttl">Rhea</p><p class="meta">Helped with last year's run</p></div><span class="check">✓</span></div>
+<div class="one"><span class="av a1">J</span><div class="grow"><p class="ttl">Jun</p><p class="meta">Volunteer · Communications</p></div><span class="check">✓</span></div>
+<div class="one"><span class="av a2">A</span><div class="grow"><p class="ttl">Aya</p><p class="meta">Member · Design</p></div><span class="check off">·</span></div>
+</div>
+<div class="btns"><span class="btn primary">Ask Rhea and Jun</span></div>
+<p class="meta center" style="margin-top:10px">They'll get an ask they can say yes or no to.</p>
+</div></div><ul class="notes"><li>Suggestions come from rules (past helpers first, then team members). Bayani may rank them later; it never asks anyone itself.</li><li>Asking puts each person as a <i>requested</i> helper until they answer.</li></ul></div></div></section>
+<section class="d"><h3>Deciding together</h3><p class="feel">Leads should feel: <b>“We decided fairly, and it’s on record.”</b></p><div class="rowd"><div class="col"><p class="label">7 · Voting</p><div class="phone"><div class="status"><span>10:00</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<div style="display:flex;gap:14px;align-items:center"><span class="ic lg w"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4s2-1 5-1 5 2 8 2 3-1 3-1v11s-1 1-3 1-5-2-8-2-5 1-5 1"/></svg></span><div><p class="meta">About LUFR-7 · Shirt design</p><h2 style="margin:0;font-size:24px">Which shirt design?</h2></div></div>
+<div style="display:flex;gap:8px;margin:12px 0 4px"><span class="pill">Team leads vote</span><span class="pill ok">Closes Friday</span></div><p class="why" style="font-size:14px;margin:10px 2px 0">Pick the concept Design takes into the full package. Each has a PDF with mockups. <span class="more">More</span></p>
+<div class="panel"><div class="one"><span class="img" style="width:64px;height:64px;border-radius:16px;background-image:url(media/cleanup.jpg)"></span><div class="grow"><p class="ttl">Concept A · Shoreline</p><p class="meta">3 files · tap to view</p></div><span class="check off">·</span></div><div class="one"><span class="img" style="width:64px;height:64px;border-radius:16px;background-image:url(media/youth-group.jpg)"></span><div class="grow"><p class="ttl">Concept B · Community</p><p class="meta">3 files · tap to view</p></div><span class="check">✓</span></div><div class="one"><span class="img" style="width:64px;height:64px;border-radius:16px;background-image:url(media/books.jpg)"></span><div class="grow"><p class="ttl">Concept C · Open book</p><p class="meta">3 files · tap to view</p></div><span class="check off">·</span></div></div>
+<p class="meta" style="margin:10px 6px">5 of 9 leads have voted. Results show when voting closes.</p>
+<div class="btns"><span class="btn primary">Vote for B</span></div>
+</div></div><ul class="notes"><li>A Decision about the Task, method <i>choose one</i>; voters fixed when it opened.</li><li>Results stay hidden until close so later voters aren't swayed. You can change your vote until then.</li></ul></div><div class="col"><p class="label">8 · The result</p><div class="phone"><div class="status"><span>Fri 6:00</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<div class="img" style="height:150px;border-radius:26px;background-image:url(media/youth-group.jpg)"><span class="chipov">Chosen</span></div>
+<h2 style="margin-top:14px">Concept B · Community</h2><p class="meta">8 of 9 leads voted · majority</p>
+<div class="panel" style="margin-top:10px"><div class="stat"><div class="l"><b>B · Community</b><span>5</span></div><div class="bar"><i style="width:62%"></i></div></div><div class="stat"><div class="l"><b>A · Shoreline</b><span>2</span></div><div class="bar"><i style="width:25%"></i></div></div><div class="stat"><div class="l"><b>C · Open book</b><span>1</span></div><div class="bar"><i style="width:13%"></i></div></div></div>
+<div class="sandnote" style="margin-top:12px"><span class="av a2">A</span><div><b>"Concept B, with the colours from A."</b><p>Aya, Design lead</p></div></div>
+<p class="meta" style="margin:12px 6px">This approved the shirt design (LUFR-7).</p>
+</div></div><ul class="notes"><li>The tally is counted by Core; a person writes the statement.</li><li>A decided vote can be the approval for a Task, so the review step is done.</li></ul></div></div></section>
+<section class="d"><h3>When it’s full</h3><p class="feel">A volunteer should feel: <b>“There’s still a way to help.”</b></p><div class="rowd"><div class="col"><p class="label">9 · Someone took the last slot</p><div class="phone"><div class="status"><span>7:42</span><span>▴ ◔ ▮</span></div><div class="scroll">
+<div class="top"><span class="ctx"><span class="av a1">L</span>Liza <span class="chev">▼</span></span><span></span></div>
+<div class="img" style="height:150px;border-radius:26px;background-image:url(media/cleanup.jpg)"><span class="chipov">Sat 1 Nov</span></div>
+<h2 style="margin-top:14px">Rhea just took the last spot</h2>
+<div class="people" style="margin-top:4px"><span class="av sm a5">R</span><span class="av sm a2">M</span><span class="av sm a3">J</span><span class="av sm a6">K</span> 17 going to the cleanup</div>
+<div class="door" style="margin-top:14px"><span class="ic lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m5.6 5.6 3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/></svg></span><div class="grow"><p class="ttl">Be a backup</p><p class="meta">If a spot opens, it's yours first</p></div></div>
+<div class="eyebrow">Still open this week</div>
+<div class="panel"><div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg></span><div class="grow"><p class="ttl">Sort donated books</p><p class="meta">Any time</p></div><span class="pill ">Open</span></div></div>
+<div class="btns"><span class="btn primary">Be a backup</span></div>
+</div></div><ul class="notes"><li>No “sorry, full”: who got it, a backup spot, and something else to do.</li><li>The refusal came from the home server (first come, first served); the backup is an Offer of time.</li></ul></div></div></section><div style="height:60px"></div></body></html>

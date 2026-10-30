@@ -1,0 +1,197 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dasig · P1 flows</title>
+<style>
+  :root{--wash:#f1f5f9;--ink:#0F172A;--slate:#475569;--s500:#64748b;--s400:#94a3b8;--s300:#cbd5e1;--s200:#e2e8f0;
+        --primary:#F47C26;--accent:#E85C21;--gold:#FBB931;--sand:#FFF6E9}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#fff}
+  header.doc{max-width:1680px;margin:0 auto;padding:28px 28px 8px}
+  header.doc h1{font-size:24px;margin:0 0 6px}
+  header.doc p{margin:0;color:var(--slate);font-size:14.5px;max-width:880px;line-height:1.5}
+  .row{max-width:1680px;margin:0 auto;padding:20px 28px 40px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+  .col{width:390px}
+  .label{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:0 0 8px}
+  .phone{width:390px;height:844px;background:var(--wash);border-radius:44px;overflow:hidden;position:relative;
+         box-shadow:0 0 0 10px #0f172a0d, 0 18px 50px rgb(15 23 42/.12);display:flex;flex-direction:column}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:13px;font-weight:600}
+  .scroll{flex:1;overflow-y:auto;scrollbar-width:none;padding:4px 18px 0}
+  .top{display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px}
+  .ctx{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px 0 5px;background:#fff;border-radius:999px;font-size:14px;font-weight:600}
+  .av{width:30px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+  .av.sm{width:24px;height:24px;font-size:10px;border:2px solid #fff;margin-left:-7px}
+  .av.sm:first-child{margin-left:0}
+  .a1{background:#E85C21}.a2{background:#475569}.a3{background:#FBB931;color:var(--ink)}.a4{background:#F47C26}.a5{background:#0F172A}.a6{background:#94a3b8}
+  .chev{color:var(--s400);font-size:11px}
+  .icon{width:40px;height:40px;border-radius:999px;background:#fff;display:inline-flex;align-items:center;justify-content:center}
+  h2{font-size:26px;line-height:1.2;margin:0 0 4px;font-weight:700}
+  .sub{font-size:14.5px;color:var(--slate);margin:0 0 20px;line-height:1.45}
+  .eyebrow{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:20px 4px 8px}
+  .eyebrow span{letter-spacing:0;text-transform:none;font-size:12.5px;color:var(--s500);font-weight:600}
+  .panel{background:#fff;border-radius:22px;padding:4px 16px}
+  .hero{background:#fff;border-radius:26px;padding:18px}
+  .item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--s200);align-items:flex-start}
+  .item:last-child{border-bottom:0}
+  .tile{width:44px;height:44px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;line-height:1.05;text-align:center}
+  .t-orange{background:var(--sand);color:var(--accent)}
+  .t-slate{background:var(--wash);color:var(--slate)}
+  .t-done{background:#E85C21;color:#fff}
+  .grow{flex:1;min-width:0}
+  .ttl{font-size:15px;font-weight:600;margin:0 0 3px}
+  .meta{font-size:13px;color:var(--s500);margin:0}
+  .why{font-size:14px;color:var(--slate);margin:6px 0 0;line-height:1.4}
+  .people{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--s500);font-weight:600}
+  .stack{display:flex}
+  .pill{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--wash);color:var(--ink);white-space:nowrap}
+  .pill.ok{background:#fff;border:1.5px solid var(--s200);color:var(--slate)}
+  .pill.state{background:var(--accent);color:#fff}
+  .btns{display:flex;gap:10px;margin-top:14px}
+  .btn{height:48px;border-radius:999px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;padding:0 20px;border:0}
+  .primary{background:var(--primary);color:#fff;flex:1}
+  .outline{background:#fff;border:1.5px solid var(--s300);color:var(--ink);font-weight:600}
+  .link{font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .sandnote{background:var(--sand);border-radius:20px;padding:14px 16px;display:flex;gap:12px;align-items:center}
+  .sandnote b{font-size:15px}
+  .sandnote p{margin:2px 0 0;font-size:13px;color:var(--slate)}
+  .bar{height:8px;border-radius:999px;background:var(--wash);overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:999px}
+  .stat{padding:13px 0;border-bottom:1px solid var(--s200)}
+  .stat:last-child{border-bottom:0}
+  .stat .l{display:flex;justify-content:space-between;font-size:14.5px}
+  .stat .l b{font-weight:600}
+  .nav{height:78px;background:#fff;display:flex;justify-content:space-around;align-items:flex-start;padding-top:10px;font-size:11.5px;font-weight:600;color:var(--s400)}
+  .nav div{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .nav .on{color:var(--accent)}
+  .dot{width:22px;height:22px;border-radius:8px;background:currentColor;opacity:.9}
+  .nav .on .dot{opacity:1}
+  .browserbar{height:46px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 16px;font-size:13px;color:var(--s500);border-bottom:1px solid var(--s200)}
+  .browserbar b{color:var(--ink);font-weight:600}
+  .cover{height:150px;border-radius:26px;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:flex-end;padding:16px;color:#fff;font-weight:700;font-size:13px}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 20px 30px;box-shadow:0 -10px 40px rgb(15 23 42/.18)}
+  .grab{width:40px;height:5px;border-radius:999px;background:var(--s300);margin:0 auto 16px}
+  .field{background:var(--wash);border-radius:22px;padding:17px 19px;font-size:16px;color:var(--ink);margin-top:8px}
+  .field.ph{color:var(--s400)}
+  .sublabel{font-size:12.5px;font-weight:600;color:var(--s500);margin:14px 4px 0}
+  .scrim{position:absolute;inset:0;background:rgb(15 23 42/.35)}
+  .notes{margin-top:14px;font-size:13.5px;color:var(--slate);line-height:1.5}
+  .notes li{margin-bottom:6px}
+  .notes b{color:var(--ink)}
+  .center{text-align:center}
+  .bigcheck{width:76px;height:76px;border-radius:999px;background:var(--sand);color:var(--accent);display:flex;align-items:center;justify-content:center;margin:40px auto 18px}
+
+  .one{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--s200)}
+  .one:last-child{border-bottom:0}
+  .go{color:var(--s300);font-size:18px;font-weight:600}
+  .info{display:inline-flex;width:18px;height:18px;border-radius:999px;border:1.5px solid var(--s300);color:var(--s500);font-size:11px;font-weight:700;align-items:center;justify-content:center;margin-left:6px;vertical-align:1px}
+  .tip{position:relative;background:#fff;color:var(--slate);box-shadow:0 4px 18px rgb(15 23 42/.12);font-size:12.5px;line-height:1.4;border-radius:20px;padding:10px 13px;margin:8px 0 2px}
+  .tip:before{content:"";position:absolute;top:-6px;right:34px;border:6px solid transparent;border-top:0;border-bottom-color:#fff}
+  .addlink{display:inline-block;margin-top:14px;font-size:14px;font-weight:600;color:var(--slate)}
+  .more{font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+  .kv{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--s200);font-size:14.5px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{width:78px;color:var(--s500);font-size:13px;font-weight:600;flex:none;padding-top:1px}
+  .img{background:#e2e8f0 center/cover no-repeat;border-radius:20px;position:relative;flex:none}
+  .chipov{position:absolute;left:10px;top:10px;height:26px;padding:0 10px;border-radius:999px;background:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center}
+  .carousel{display:flex;gap:12px;overflow:hidden;margin:0 -18px;padding:0 18px}
+  .ctile{width:236px;flex:none}
+  .ctile .img{width:236px;height:150px}
+  .ctile .ttl{margin:9px 2px 2px}
+  .strip{display:flex;gap:6px;margin-top:12px}
+  .strip .img{width:72px;height:72px;border-radius:16px}
+  .thumb{width:56px;height:56px}
+  .avimg{width:30px;height:30px;border-radius:999px;background:center/cover;flex:none}
+  .sheetcover{height:150px;border-radius:20px;margin:0 0 14px}
+  .confimg{width:110px;height:110px;border-radius:999px;background:center/cover;margin:36px auto 18px;position:relative}
+  .confimg span{position:absolute;right:-2px;bottom:-2px;width:38px;height:38px;border-radius:999px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid var(--wash)}
+
+  section.d{max-width:1680px;margin:0 auto;padding:34px 28px 6px;border-top:1px solid var(--s200)}
+  section.d h3{font-size:20px;margin:0 0 4px}
+  section.d .feel{font-size:15px;color:var(--slate);margin:0 0 4px;max-width:900px;line-height:1.5}
+  section.d .feel b{color:var(--accent)}
+  .rowd{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-top:16px}
+  .ic{width:40px;height:40px;border-radius:999px;background:var(--sand);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .ic.w{background:#fff}.ic.g{background:var(--wash);color:var(--slate)}
+  .ic.lg{width:56px;height:56px}
+  .ic svg{width:20px;height:20px}.ic.lg svg{width:26px;height:26px}
+  .bay{background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff}
+  .msg{background:#fff;border-radius:22px 22px 22px 6px;padding:12px 14px;font-size:14.5px;line-height:1.45}
+  .badge{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:#fff;font-size:12px;font-weight:600;color:var(--slate)}
+  .badge svg{width:14px;height:14px;color:var(--accent)}
+  .prop{background:#fff;border-radius:22px;padding:14px 16px;margin-top:10px}
+  .k{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--s400);margin:0}
+  .check{width:24px;height:24px;border-radius:999px;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none}
+  .check.off{background:#fff;border:1.5px solid var(--s300);color:transparent}
+  .tl{position:relative}
+  .tl:before{content:"";position:absolute;left:19px;top:22px;bottom:22px;width:2px;background:var(--s200)}
+  .ev{position:relative;display:flex;gap:12px;align-items:flex-start;padding:9px 0}
+  .ev p{margin:0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px}
+  .gtile{background:#fff;border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .gtile .ttl{margin:0;font-size:14px}
+  .fig{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--s200)}
+  .fig:last-child{border-bottom:0}
+  .fig b{font-size:22px}
+  .fig small{display:block;font-size:12.5px;color:var(--s500);font-weight:600;margin-top:2px}
+  .bixlogo{width:44px;height:44px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff;font-weight:800;font-size:12.5px;display:flex;align-items:center;justify-content:center;flex:none}
+  .bixlogo.lg{width:64px;height:64px;border-radius:22px;font-size:16px}
+  .clubs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .clubs span{width:34px;height:34px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+  .clubs .miss{background:#fff;border:1.5px dashed var(--s300);color:var(--s400)}
+  .inph{width:44px;height:44px;border-radius:14px;background:center/cover;flex:none}
+  .duo{display:flex;justify-content:center;margin:34px 0 16px}
+  .duo .avimg,.duo .av{width:76px;height:76px;font-size:24px;border:4px solid var(--wash)}
+  .duo>*+*{margin-left:-16px}
+  .door{background:#fff;border-radius:22px;padding:16px;display:flex;gap:14px;align-items:center;margin-top:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{height:36px;padding:0 14px;border-radius:999px;background:#fff;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+  .chip.on{background:var(--accent);color:#fff}
+  .tog{width:51px;height:31px;border-radius:999px;background:var(--accent);position:relative;flex:none}
+  .tog:after{content:"";position:absolute;right:2px;top:2px;width:27px;height:27px;border-radius:999px;background:#fff}
+  .tog.off{background:var(--s300)}.tog.off:after{right:auto;left:2px}
+  .logo{width:72px;height:72px;border-radius:24px;background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center}
+  .step{font-size:12px;font-weight:700;color:var(--s400);letter-spacing:.12em;text-transform:uppercase;margin:6px 0 6px}
+</style></head><body><header class="doc"><h1>P1 flows · sketches v0.1 · 28 October 2026</h1>
+<p>Fictional groups, for sharing publicly. Names are samples. Follows <code>DESIGN_STANDARD.md</code> and <code>EXPERIENCE.md</code>.</p></header>
+<section class="d"><h3>Finding a group, and offering help</h3><p class="feel">Anyone should feel: <b>“I know how to help them.”</b></p><div class="rowd"><div class="col"><p class="label">1 · A group's public page</p><div class="phone"><div class="status"><span>10:05</span><span>▴ ◔ ▮</span></div><div class="browserbar">✕ <b>dasig.org/orgs/kabataan-tutors</b></div><div class="scroll">
+<div style="display:flex;gap:14px;align-items:center;margin-top:14px"><span style="width:64px;height:64px;border-radius:12px;background:#475569;color:#fff;font-weight:800;font-size:11px;display:inline-flex;align-items:center;justify-content:center;flex:none">KT</span><div><h2 style="margin:0;font-size:24px">Kabataan Tutors</h2><p class="meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Verified group · Barangay Pajo</p></div></div>
+<p class="why" style="font-size:14px;margin:10px 2px 0">Free reading and math tutoring for Grade 3 to 6, every Tuesday and Thursday. <span class="more">More</span></p>
+<div class="chips"><span class="chip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg> Education</span><span class="chip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Children</span></div>
+<div class="eyebrow">Projects</div>
+<div class="panel"><div class="one"><span style="width:36px;height:36px;border-radius:12px;background:#475569;color:#fff;font-weight:800;font-size:11px;display:inline-flex;align-items:center;justify-content:center;flex:none">KT</span><div class="grow"><p class="ttl">Saturday reading club</p><p class="meta">Every Saturday · 3 open steps</p></div><span class="go">›</span></div><div class="one"><span style="width:36px;height:36px;border-radius:12px;background:#475569;color:#fff;font-weight:800;font-size:11px;display:inline-flex;align-items:center;justify-content:center;flex:none">KT</span><div class="grow"><p class="ttl">Book drive</p><p class="meta">Until 30 Nov · needs books</p></div><span class="go">›</span></div></div>
+<div class="btns"><span class="btn primary">Offer help</span><span class="btn outline">Follow</span><span class="btn outline"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></span></div>
+</div></div><ul class="notes"><li>The group's <b>public summary</b> (on by default): who they are, where, causes, published projects.</li><li>Offer help, Follow and Message: the ways in, none of which give access beyond the summary.</li></ul></div></div></section>
+<section class="d"><h3>Needs and offers</h3><p class="feel">A team should feel: <b>“We asked once, and help came.”</b></p><div class="rowd"><div class="col"><p class="label">2 · Posting a need</p><div class="phone"><div class="status"><span>9:00</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<p class="meta">Fun run 2027 · Volunteers team</p><h2>What do you need?</h2>
+<div class="grid2" style="margin-top:12px"><div class="gtile"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg></span><p class="ttl">Water</p><p class="meta">300 bottles</p></div><div class="gtile"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><p class="ttl">By 1 Mar</p><p class="meta">Race day</p></div></div>
+<p class="why" style="font-size:14px;margin:10px 2px 0">For runners and marshals at the 2.5K and 5K water stations. <span class="more">More</span></p>
+<div class="panel" style="margin-top:12px"><div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></span><div class="grow"><p class="ttl">Anyone can offer</p><p class="meta">Shown on your public page</p></div><span class="tog"></span></div></div>
+<div class="btns"><span class="btn primary">Post the need</span></div>
+</div></div><ul class="notes"><li>A Need {category, quantity, neededBy}, owned by a team.</li><li>Public, so sponsors and neighbours who find the project can offer.</li></ul></div><div class="col"><p class="label">3 · Offers come in</p><div class="phone"><div class="status"><span>2:00</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<div style="display:flex;gap:14px;align-items:center"><span class="ic lg w"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg></span><div><p class="meta">Need · Volunteers</p><h2 style="margin:0">300 bottles of water</h2></div></div>
+<div class="panel" style="margin-top:12px"><div class="stat"><div class="l"><b>Covered</b><span>200 of 300</span></div><div class="bar"><i style="width:67%"></i></div></div></div>
+<div class="eyebrow">Offers</div>
+<div class="panel"><div class="one"><span style="width:36px;height:36px;border-radius:12px;background:#0F172A;color:#fff;font-weight:800;font-size:11px;display:inline-flex;align-items:center;justify-content:center;flex:none">AQ</span><div class="grow"><p class="ttl">Aqua Lahug</p><p class="meta">200 bottles · drops off Feb 28</p></div><span class="pill ok">Accepted</span></div><div class="one"><span style="width:36px;height:36px;border-radius:12px;background:#FBB931;color:#fff;font-weight:800;font-size:11px;display:inline-flex;align-items:center;justify-content:center;flex:none">SR</span><div class="grow"><p class="ttl">Sari-sari ni Aling Rosa</p><p class="meta">50 bottles · pick up</p></div><span class=pill>Accept</span></div><div class="one"><span class='av a3'>M</span><div class="grow"><p class="ttl">Mia</p><p class="meta">2 cases · Friday</p></div><span class=pill>Accept</span></div></div>
+<div class="btns"><span class="btn primary">Accept Rosa's offer</span></div>
+</div></div><ul class="notes"><li>Offers matched to the Need; accepting one opens the receive step for someone on the team.</li><li>Covered counts only accepted offers, calculated.</li></ul></div></div></section>
+<section class="d"><h3>Moments in a project</h3><p class="feel">A lead should feel: <b>“We can move now,”</b> and <b>“Good ideas don’t get lost.”</b></p><div class="rowd"><div class="col"><p class="label">4 · A gate opens</p><div class="phone"><div class="status"><span>4:30</span><span>▴ ◔ ▮</span></div><div class="scroll center">
+<div class="duo" style="margin-top:34px"><span class="ic lg" style="width:88px;height:88px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6M9 10h.01M15 10h.01"/></svg></span></div>
+<h2>The city approved the route</h2>
+<p class="sub">Lahug Uplands is confirmed. 14 tasks can go ahead.</p>
+<div class="panel" style="text-align:left"><div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><div class="grow"><p class="ttl">Publish call for speakers</p><p class="meta">Communications</p></div><span class="pill ok">Ready</span></div><div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l-2 2a2 2 0 0 1-3-3l4-4 3 3a2 2 0 0 0 3-3l-3-3"/><path d="M14 7l2-2a2 2 0 0 1 3 3l-5 5"/><path d="M2 12l3-3M22 12l-3-3"/></svg></span><div class="grow"><p class="ttl">Publish call for sponsors</p><p class="meta">Exhibitors</p></div><span class="pill ok">Ready</span></div><div class="one"><span class="ic "><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h1l5 4V5L6 9H5a2 2 0 0 0-2 2z"/><path d="M15 8a5 5 0 0 1 0 8M18 5a9 9 0 0 1 0 14"/></svg></span><div class="grow"><p class="ttl">Announce Fun Run 2027</p><p class="meta">Communications</p></div><span class="pill ok">Ready</span></div></div>
+<p class="meta" style="margin:10px 4px;text-align:left">All 6 team leads have been told.</p>
+<div class="btns"><span class="btn primary">Tell the group chat</span></div>
+</div></div><ul class="notes"><li><b>A milestone completing</b> unblocks everything that dependsOn it, at once.</li><li>Leads see it in their inbox; the one action is sharing the news.</li></ul></div><div class="col"><p class="label">5 · Reviewing proposals</p><div class="phone"><div class="status"><span>9:06</span><span>▴ ◔ ▮</span></div><div class="scroll"><div class="top"><span class="icon">‹</span><span></span></div>
+<p class="meta">Communications</p><h2>Ideas from the team</h2>
+<div class="prop"><div style="display:flex;gap:12px;align-items:center"><span class="av a3">M</span><div class="grow"><p class="k">Mia suggested</p><p class="ttl" style="margin:3px 0">Add a kids' 1K run</p><p class="meta">Under Call for runners</p></div></div><div class="btns" style="margin-top:10px"><span class="btn outline" style="flex:1;height:42px">Accept</span><span class="btn outline" style="height:42px">Not now</span></div></div>
+<div class="prop"><div style="display:flex;gap:12px;align-items:center"><span class="av a1">J</span><div class="grow"><p class="k">Jun suggested</p><p class="ttl" style="margin:3px 0">Post runner spotlights weekly</p><p class="meta">New task · open to volunteers</p></div></div><div class="btns" style="margin-top:10px"><span class="btn outline" style="flex:1;height:42px">Accept</span><span class="btn outline" style="height:42px">Not now</span></div></div>
+<p class="meta center" style="margin-top:14px">Accepted ideas credit the person who suggested them.</p>
+</div></div><ul class="notes"><li><b>Propose, then commit, for people.</b> Each idea shows who suggested it and where it would go.</li><li>“Not now” keeps it as a draft with a reply; nothing is deleted.</li></ul></div></div></section>
+<section class="d"><h3>Trust you can check</h3><p class="feel">Anyone should feel: <b>“I can believe this.”</b></p><div class="rowd"><div class="col"><p class="label">6 · Checking a signed record</p><div class="phone"><div class="status"><span>7:05</span><span>▴ ◔ ▮</span></div><div class="browserbar">✕ <b>dasig.org/u/mia</b></div><div class="scroll" style="opacity:.3"><h2 style="margin-top:80px">Mia</h2></div>
+<div class="scrim"></div><div class="sheet" style="top:170px">
+<div class="grab"></div>
+<div style="display:flex;gap:12px;align-items:center"><span class="ic lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><div><p class="ttl" style="font-size:18px;margin:0">Signed and unchanged</p><p class="meta">Checked just now</p></div></div>
+<div class="panel" style="background:var(--wash);margin-top:12px">
+<div class="one"><span style="width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--gold));color:#fff;font-weight:800;font-size:11px;display:inline-flex;align-items:center;justify-content:center;flex:none">RL</span><div class="grow"><p class="ttl">Rotaract Club of Lahug Uplands</p><p class="meta">Verified group · signed 4 Nov 2026</p></div></div>
+<div class="one"><span class="ic w"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><div class="grow"><p class="ttl">Call for runners</p><p class="meta">Fun Run 2027 · Mia helped</p></div></div>
+</div>
+<p style="margin:12px 4px"><span class="link">Technical details</span></p>
+</div></div><ul class="notes"><li>What anyone sees when they tap a lock: who signed it, that the group is verified, that it hasn't changed.</li><li>Checked against the group's public key (Endpoint), not against Dasig's word.</li></ul></div></div></section><div style="height:60px"></div></body></html>
