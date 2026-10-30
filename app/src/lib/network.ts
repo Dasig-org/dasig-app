@@ -5,7 +5,7 @@ import { networkUrl } from "./env";
 export const networkOpen = !!networkUrl;
 const KEY = "dasig.network.interest.v1";
 
-/** "Tell me when it opens": remembered on this phone, with when and from which group, until the network can receive it. */
+/** "Tell me when it opens": remembered on this phone, with when and from which group, until the Ecosystem can receive it. */
 export async function interested(): Promise<{ at: string; group?: string } | null> {
   const v = await AsyncStorage.getItem(KEY); return v ? JSON.parse(v) : null;
 }

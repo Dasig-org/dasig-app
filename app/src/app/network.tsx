@@ -26,14 +26,14 @@ export default function NetworkScreen() {
         <Row left={<IconCircle name="building" />} title="The Dasig Ecosystem" meta={networkUrl ? "Dasig's hosted Bayanihan Server" : "Not open yet. Coming in 2027. Needs internet."} right={<Pill>{networkUrl ? "Available" : "Coming"}</Pill>} last />
       </Panel>
       {!networkUrl ? <>
-        <Eyebrow>When the network opens</Eyebrow>
+        <Eyebrow>When the Ecosystem opens</Eyebrow>
         <Panel>
           <Row left={<IconCircle name="lock" />} title="Keep a copy online" meta="If a phone is lost, your records are safe" />
           <Row left={<IconCircle name="wifi" />} title="Work from anywhere" meta="People join without being near the hub" />
           <Row left={<IconCircle name="pin" />} title="Be found" meta="Other groups and volunteers see your public summary" last />
         </Panel>
         <View style={{ marginTop: 10, marginHorizontal: 4 }}><Meta>{"Never online: photos marked as showing children. The people you serve are only ever counts."}</Meta></View>
-        {asked ? <Notice>{`Noted on ${new Date(asked.at).toLocaleDateString()}. Dasig will show it here when the network opens.`}</Notice>
+        {asked ? <Notice>{`Noted on ${new Date(asked.at).toLocaleDateString()}. Dasig will show it here when the Ecosystem opens.`}</Notice>
           : <Buttons><Primary label="Tell me when it opens" onPress={async () => setAsked(await markInterested(s.current?.id))} /></Buttons>}
       </> : null}
       <Eyebrow>Right now</Eyebrow>
