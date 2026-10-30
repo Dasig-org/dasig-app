@@ -46,7 +46,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (!signedIn) { setPerson(null); setGroups([]); return; }
     let me = await bix.me();
     // Make sure this phone's own key is on the person's record (once per phone; quietly retried next time if offline).
-    try { const { withMyKey } = await import("./keys"); const add = await withMyKey(me); if (add) me = (await bix.commitNow(bix.next(me, add)))[0] ?? me; } catch {}
+    try {
+      const { withMyKey, keyRotation } = await import("./keys");
+      const add = await withMyKey(me);
+      if (add) me = (await bix.commitNow(bix.next(me, add)))[0] ?? me;
+      // Rotate an old key on the Ecosystem: publish the new key first, and use it only once the server has it.
+      else if (c.kind === "ecosystem") {
+        const rot = await keyRotation(me);
+        if (rot) { me = (await bix.commitNow(bix.next(me, { publicKey: rot.publicKey })))[0] ?? me; await rot.adopt();
+          const AS = (await import("@react-native-async-storage/async-storage")).default;
+          const saved = await AS.getItem("dasig.ecosystem.person"); if (saved) await AS.setItem("dasig.ecosystem.person", JSON.stringify({ ...JSON.parse(saved), publicKey: rot.publicKey.filter((x: any) => x.status === "active") })); }
+      }
+    } catch {}
     setPerson(me);
     const roles = (await bix.search("Role", { person: `Person/${me.id}` })).filter((r) => r.status === "active");
     const gs: Group[] = [];
@@ -77,7 +88,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const pairWithHub = async (hub: string, code: string, nickname?: string) => {
     const url = hub.replace(/\/$/, "");
     const res = await fetch(`${url}/$pair`, { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code, nickname: nickname ?? person?.name?.text, ...(person ? { person, proof: await (await import("./keys")).pairingProof(person.id, code) } : {}) }) });
+      body: JSON.stringify({ code, nickname: nickname ?? person?.name?.text, ...(person ? { person, proof: await (await import("./keys")).pairingProof(person.id, code, person.publicKey) } : {}) }) });
     const out = await res.json().catch(() => ({ error: `the hub didn't answer (${res.status})` }));
     if (!res.ok) throw new Error(String(out.error));
     await setConnection({ kind: "hub", url, token: out.token });
@@ -88,22 +99,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const { networkUrl } = await import("./env");
     const url = (target ?? networkUrl).replace(/\/$/, "");
     if (!url) throw new Error("The Dasig Ecosystem isn't set up in this version of the app.");
-    const post = (path: string, body: unknown) => fetch(`${url}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    let body: Record<string, unknown> = { nickname: person?.name?.text ?? "Friend" };
+    let out: { token: string };
     if (person) {
-      const ch = await fetch(`${url}/$challenge`).then((r) => r.json()).catch(() => null) as { challenge?: string; audience?: string } | null;
-      if (!ch?.challenge || !ch.audience) throw new Error("Couldn't reach the Dasig Ecosystem. Check your internet and try again.");
-      const { personKey } = await import("./keys");
-      const { signChallenge } = await import("@bayanihan/core");
-      const k = await personKey(person.id);
+      const { joinWithKey } = await import("./ecosystem");
       // Bring this phone's Person (with its key) so the account online is the same person, not a stranger with the same nickname.
-      body = { person: { resourceType: "Person", id: person.id, meta: { version: 1 }, name: person.name, credit: person.credit ?? "nickname", ...(person.description ? { description: person.description } : {}),
-        publicKey: (person.publicKey ?? []).filter((x: any) => x.status === "active") }, challenge: ch.challenge, proof: signChallenge(ch.challenge, `Person/${person.id}`, ch.audience, k.privateKey) };
+      out = await joinWithKey(url, { id: person.id, name: person.name, credit: person.credit, description: person.description, publicKey: (person.publicKey ?? []).filter((x: any) => x.status === "active") });
+    } else {
+      const res = await fetch(`${url}/$join`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nickname: "Friend" }) }).catch(() => null);
+      if (!res || !res.ok) throw new Error("Couldn't join the Dasig Ecosystem. Check your internet and try again.");
+      out = await res.json();
     }
-    const res = await post("/$join", body).catch(() => null);
-    if (!res) throw new Error("Couldn't reach the Dasig Ecosystem. Check your internet and try again.");
-    const out = await res.json().catch(() => ({ error: `the Ecosystem didn't answer (${res.status})` }));
-    if (!res.ok) throw new Error(String(out.error ?? "Couldn't join the Dasig Ecosystem."));
     const before = await getConnection();
     if (before.kind !== "ecosystem") await AsyncStorage.setItem(BEFORE_KEY, JSON.stringify(before));
     await setConnection({ kind: "ecosystem", url, token: out.token });

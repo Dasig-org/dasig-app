@@ -1,18 +1,12 @@
-import { generatePersonKey, keyIdFor, signChallenge } from "@bayanihan/core";
+import { ring } from "./keyring";
 
-/** On the web the key lives in the browser's storage. Weaker than a phone's Keystore; the web uses the online server. */
-const slot = (personId: string) => `dasig.person-key.${personId}`;
-export async function personKey(personId: string) {
-  const saved = typeof localStorage !== "undefined" ? localStorage.getItem(slot(personId)) : null;
-  const k = saved ? (JSON.parse(saved) as { privateKey: string; publicKey: string }) : await generatePersonKey();
-  if (!saved && typeof localStorage !== "undefined") localStorage.setItem(slot(personId), JSON.stringify(k));
-  return { ...k, kid: keyIdFor(k.publicKey) };
-}
-export async function withMyKey(person: { id: string; publicKey?: { key: string; status: string }[] } & Record<string, any>) {
-  const k = await personKey(person.id);
-  if ((person.publicKey ?? []).some((x) => x.key === k.publicKey && x.status === "active")) return null;
-  return { publicKey: [...(person.publicKey ?? []), { kid: k.kid, alg: "Ed25519", key: k.publicKey, created: new Date().toISOString(), status: "active" }] };
-}
-export async function pairingProof(personId: string, code: string) {
-  return signChallenge(code, `Person/${personId}`, "bix-pair", (await personKey(personId)).privateKey);
-}
+/** On the web the keys live in the browser's storage. Weaker than a phone's Keystore; the web uses the online server. */
+const keys = ring({
+  get: async (s) => (typeof localStorage !== "undefined" ? localStorage.getItem(s) : null),
+  set: async (s, v) => { if (typeof localStorage !== "undefined") localStorage.setItem(s, v); },
+});
+export const personKey = (personId: string) => keys.current(personId);
+export const withMyKey = keys.withMyKey;
+export const keyRotation = keys.rotation;
+export const signAs = keys.sign;
+export const pairingProof = (personId: string, code: string, listed?: { key: string; status: string }[]) => keys.sign(personId, code, "bix-pair", listed);

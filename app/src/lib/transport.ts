@@ -19,7 +19,14 @@ export async function send(method: string, path: string, body?: BodyInit | null,
   };
   if (c.kind === "hub" || c.kind === "ecosystem") {
     headers.authorization = `Bearer ${c.token}`;
-    return remote(c.url + path);
+    const r = await remote(c.url + path);
+    // An expired Ecosystem token: renew it with this phone's key, then try once more. (Bodies here are strings, so a retry can resend them.)
+    if (r.status === 401 && c.kind === "ecosystem") {
+      const { renewToken } = await import("./ecosystem");
+      const fresh = await renewToken();
+      if (fresh) { headers.authorization = `Bearer ${fresh}`; return remote(c.url + path); }
+    }
+    return r;
   }
   const { data } = await supabase.auth.getSession();
   if (data.session) headers.authorization = `Bearer ${data.session.access_token}`;
