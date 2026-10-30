@@ -60,6 +60,10 @@ export const bix = {
   joinByLink: (token: string) => call<R>("POST", `/$link/${token}/join`, {}),
   /** What you may do with a record, from the server that keeps it. */
   can: (type: string, id: string) => call<{ edit: boolean; who: string }>("GET", `/${type}/${id}/$can`).catch(() => ({ edit: false, who: "" })),
+  /** Public groups that may be the one you're about to create. */
+  similar: (name: string, place = "") => call<{ entry: { resource: R; score: number }[] }>("GET", `/$similar?${new URLSearchParams({ name, place })}`).then((b) => b.entry).catch(() => [] as { resource: R; score: number }[]),
+  /** Ask to join a public group you found. */
+  ask: (orgId: string) => call<R>("POST", `/Organization/${orgId}/$ask`, {}),
   tally: (decisionId: string) => call<{ voted: number; eligible: number; mine: string[] | null; tally: Record<string, number> | null }>("GET", `/Decision/${decisionId}/$tally`),
   links: () => call<{ link: R; target: { resourceType: string; id: string; title?: string } | null }[]>("GET", "/$links"),
   revokeLink: (id: string) => call<R>("POST", `/$links/${id}/revoke`, {}),

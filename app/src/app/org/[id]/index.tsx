@@ -67,7 +67,7 @@ export default function Org() {
         <Row left={<IconCircle name="plus" tone="grey" />} title="Start a project" onPress={() => router.push({ pathname: "/new-project", params: { org: id } })} last />
       </Panel>
       {officer ? <><Eyebrow>Settings</Eyebrow><Panel>
-        <Row left={<IconCircle name={VISIBILITY.find((x) => x.value === visibilityOf(org))!.icon} />} title="Who can see this group" meta={label(visibilityOf(org)) + (visibilityOf(org) === "public" && !directoryOpen ? " · listed once the directory opens" : "")} onPress={() => setPrivacy(true)} />
+        <Row left={<IconCircle name={VISIBILITY.find((x) => x.value === visibilityOf(org))!.icon} />} title="Who can see this group" meta={label(visibilityOf(org)) + (visibilityOf(org) === "public" && s.connection?.kind !== "ecosystem" ? " · listed once the group is on the Dasig Ecosystem" : "")} onPress={() => setPrivacy(true)} />
         <Row left={<IconCircle name="lock" />} title="Links and safety" meta="See and turn off invite links" onPress={() => router.push("/links" as never)} />
         <Row left={<IconCircle name="download" />} title="Download your group's records" meta="Everything, in BIX" onPress={() => router.push(`/org/${id}/export` as never)} last />
       </Panel></> : null}
