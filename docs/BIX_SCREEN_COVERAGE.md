@@ -20,7 +20,7 @@
 | Communication | Task history, inbox | **Messaging a group** from its public page |
 | ShareLink | Share sheet, invite, safety controls | — |
 | Decision, Vote | Voting, result, elections prompt | **Election flow** in full (candidates, closing) |
-| Report | Club report, district roll-up | **LU 2027 report** after the event |
+| Report | Club report, district roll-up | **Event report** after the event |
 | Group (served) | Who it's for | — |
 | Goal | Goal page, plan | **Setting a goal** (city or foundation side) and **accepting enrollments** |
 | SharingPolicy | (none) | **Group sharing defaults** in settings |

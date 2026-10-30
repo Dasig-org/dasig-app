@@ -115,5 +115,5 @@ Dasig's app-parity system, unchanged (Dasig's design styleguide, §6):
 | 2026-10-27 | One line per item, detail on tap | "Text density is too dense" (home v0.1) |
 | 2026-10-27 | Use the media fields; photos carry meaning | "Utilize those media columns to enrich our sketches" (home v0.2) |
 | 2026-10-28 | Every page has the same anatomy, including About and Files | "The voting items and the pages should be able to have attachments… so people know what to view" |
-| 2026-10-27 | Screens are templates over BIX; only show what BIX can hold; previews are text-first and generated | "The screens you created are unrealistic… is our data model capable of this?" (LU 2027 v0.1) |
+| 2026-10-27 | Screens are templates over BIX; only show what BIX can hold; previews are text-first and generated | "The screens you created are unrealistic… is our data model capable of this?" (design review v0.1) |
 | 2026-10-27 | Every item has a visual anchor; every screen has a large visual | "The screens need visuals or icons, the visual balance same with the homescreens" (differentiators v0.1) |
