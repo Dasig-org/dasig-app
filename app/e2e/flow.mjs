@@ -39,7 +39,7 @@ await don.getByText("Communications", { exact: true }).click();
 await don.getByText("You lead it").waitFor();
 await don.getByPlaceholder("Add something to do").fill("Draft call for speakers"); await don.getByPlaceholder("Add something to do").press("Enter");
 await don.getByText(/^LU 2027-\d+$/).waitFor(); log("task with a LU 2027 reference");
-await shot(don, "07b-team-work"); await don.getByLabel("Invite people").first().click();
+await shot(don, "07b-team-work"); await don.getByLabel("Invite people").first().click(); await tap(don, "Make the invite");
 const invite = await don.getByText(/\/join\//).textContent(); log("invite:", invite);
 
 // Mia: volunteer joins by link

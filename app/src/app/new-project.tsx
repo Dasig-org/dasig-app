@@ -7,6 +7,7 @@ import { bix, ref } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { SUGGESTED_TEAMS } from "@/lib/work";
 import { Buttons, Check, Eyebrow, Field, IconCircle, Notice, Panel, Pill, Primary, Row, Screen, Title } from "@/ui/kit";
+import { atMost, VisibilityChoice, visibilityFields, visibilityOf, type Visibility } from "@/ui/Privacy";
 import { type as t } from "@/ui/theme";
 
 /** Onboarding 5–6: what's coming up, and who's on it. Teams are suggested; keep, remove, add, pick yours. */
@@ -24,6 +25,9 @@ export default function NewProject() {
   const [teams, setTeams] = useState(SUGGESTED_TEAMS.map((x) => ({ ...x, keep: true })));
   const [mine, setMine] = useState(0);
   const [extra, setExtra] = useState("");
+  const groupVis = visibilityOf(s.groups.find((g) => g.org.id === orgId)?.org);
+  const [vis, setVis] = useState<Visibility | null>(null);
+  const chosen = vis ?? groupVis;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const create = async () => {
@@ -33,7 +37,7 @@ export default function NewProject() {
       const me = ref(s.person);
       const start = parseDate(when);
       const ini = bix.create("Initiative", {
-        title: title.trim(), kind: "project", status: "active", organization: { reference: `Organization/${orgId}` }, publicSummary: true,
+        title: title.trim(), kind: "project", status: "active", organization: { reference: `Organization/${orgId}` }, ...visibilityFields(null, atMost(chosen, groupVis)),
         ...(start ? { period: { start } } : {}),
         ...(place.trim() ? { description: `At ${place.trim()}` } : {}),
         ...(prefix.trim() ? { identifier: [{ system: "bayanihan:ref-prefix", value: prefix.trim().toUpperCase() }] } : {}),
@@ -86,6 +90,8 @@ export default function NewProject() {
       <Field value={extra} onChangeText={setExtra} placeholder="Add a team" onSubmitEditing={() => { if (extra.trim()) { setTeams([...teams, { name: extra.trim(), icon: "users", keep: true }]); setExtra(""); } }} returnKeyType="done" />
       </>}
       {err ? <Notice>{err}</Notice> : null}
+      <Text style={[t.eyebrow, { marginTop: 18, marginBottom: 8, marginHorizontal: 4 }]}>Who can see this project</Text>
+      <VisibilityChoice value={atMost(chosen, groupVis)} onChange={setVis} cap={groupVis} />
       <Buttons><Primary label={tmpl ? `Use these ${(tmpl.team ?? []).length} teams` : `Keep these ${teams.filter((x) => x.keep).length} teams`} onPress={create} busy={busy} disabled={!title.trim() || !orgId} /></Buttons>
     </Screen>
   );

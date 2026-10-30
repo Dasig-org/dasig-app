@@ -11,6 +11,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { teamIcon } from "@/lib/work";
 import { Avatar, Buttons, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, Title } from "@/ui/kit";
+import { InviteOptions, linkOpts, type InviteOpts } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
 
 const ROLES = [{ value: "officer", label: "Officer" }, { value: "core-member", label: "Core member" }, { value: "member", label: "Member" }, { value: "volunteer-regular", label: "Regular volunteer" }, { value: "volunteer-episodic", label: "Volunteer" }] as const;
@@ -37,8 +38,9 @@ export default function People() {
   const name = (r: R) => data?.people[r.person.reference]?.name?.text ?? "Someone";
   const act = async (fn: () => Promise<unknown>, ok?: string) => { setMsg(null); try { await fn(); if (ok) setMsg(ok); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } reload(); };
 
-  const invite = async () => act(async () => {
-    const l = await bix.link({ reference: `Organization/${id}` }, ["view", "join-org"]);
+  const [asking, setAsking] = useState(false);
+  const invite = async (o?: InviteOpts) => { if (!o) { setAsking(true); return; } setAsking(false); return act(async () => {
+    const l = await bix.link({ reference: `Organization/${id}` }, ["view", "join-org"], o.preview, linkOpts(o));
     const conn = await getConnection();
     if (Platform.OS !== "web" && conn.kind !== "cloud" && l.pairingCode !== undefined) {
       const { localEngine } = await import("@/local/engine");
@@ -46,7 +48,7 @@ export default function People() {
       const u = pairUrl({ hub, code: l.pairingCode, link: l.token });
       setInviting({ text: u, qr: u });
     } else setInviting({ text: `${appUrl()}/join/${l.token}` });
-  });
+  }); };
   const addByNickname = () => act(async () => {
     const person = bix.create("Person", { name: { text: nick.trim(), use: "nickname" }, credit: "nickname", managedBy: { reference: `Organization/${id}` }, sharing: "organization" });
     const r = bix.create("Role", { person: { reference: `Person/${person.id}` }, organization: { reference: `Organization/${id}` }, code: { system: "bayanihan:role", code: role }, status: "active", period: { start: now() } });
@@ -66,7 +68,7 @@ export default function People() {
     <Screen onRefresh={reload} back>
       <Title sub={s.current?.name}>People</Title>
       <Tip id="people" title="Everyone counts">Volunteers are part of your group. Give them roles and teams.</Tip>
-      {manage ? <Buttons><Primary label="Invite people" onPress={invite} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}
+      {manage ? <Buttons><Primary label="Invite people" onPress={() => invite()} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}
       {msg ? <Notice>{msg}</Notice> : null}
       {requests.length && manage ? <><Eyebrow right={`${requests.length}`}>Asking to join</Eyebrow><Panel>
         {requests.map((r, i) => <Row key={r.id} left={<Avatar name={name(r)} photo={data?.people[r.person.reference]?.photo} />} title={name(r)} meta="Wants to join as a volunteer" last={i === requests.length - 1}
@@ -77,6 +79,7 @@ export default function People() {
       {list("Members", byRole(["member"]))}
       {list("Volunteers", byRole(["volunteer-regular", "volunteer-episodic"]))}
 
+      <Sheet open={asking} onClose={() => setAsking(false)}><InviteOptions what="your group" onCreate={(o) => invite(o)} /></Sheet>
       <Sheet open={!!inviting} onClose={() => setInviting(null)}>
         <Text style={[t.row, { fontSize: 18 }]}>{`Invite people to ${s.current?.name ?? "your group"}`}</Text>
         <Meta>{inviting?.qr ? "They join this phone's hotspot, then scan this in Dasig (I have an invite). They join as volunteers; you can change their role." : "Anyone with this link can join as a volunteer. Turn it off any time in Links and safety."}</Meta>

@@ -12,6 +12,7 @@ import { useLoad } from "@/lib/use";
 import { act, shortRef, stateLabel } from "@/lib/work";
 import { Body, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton} from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
+import { atMost, visibilityOf } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
 
 /** One template for every Task: the state decides the action (DESIGN_STANDARD §1a, §1b). */
@@ -39,11 +40,13 @@ export default function Task() {
     const signed = task.status === "completed" ? await bix.verify("Task", id).catch(() => null) : null;
     const siblings = task.partOf ? (await bix.search("Task", { partOf: task.partOf.reference })).filter((x) => x.id !== task.id && x.status !== "draft") : [];
     const can = await bix.can("Task", id);
-    return { task, team, people, signed, siblings, can };
+    const project = task.partOf ? await bix.get("Initiative", task.partOf.reference.split("/")[1]).catch(() => null) : null;
+    return { task, team, people, signed, siblings, can, project };
   }, [id]);
   if (error) return <Screen back><Notice>{error}</Notice></Screen>;
   if (!data) return <Screen back><Skeleton /></Screen>;
-  const { task, team, people, signed, siblings, can } = data;
+  const { task, team, people, signed, siblings, can, project } = data;
+  const openAllowed = atMost(visibilityOf(project), visibilityOf(s.groups.find((g) => `Organization/${g.org.id}` === (project?.organization?.reference ?? team?.organization?.reference))?.org)) === "public";
   const deps = (task.dependsOn ?? []).map((d: any) => siblings.find((x) => `Task/${x.id}` === d.reference)).filter(Boolean) as R[];
   const waitingOn = deps.filter((x) => x.status !== "completed");
   const unblocks = siblings.filter((x) => (x.dependsOn ?? []).some((d: any) => d.reference === `Task/${task.id}`));
@@ -129,7 +132,7 @@ export default function Task() {
         <Row left={<IconCircle name="cal" />} title="Due date" meta={task.due ? short(task.due) : "None yet"} onPress={() => { setTuning(false); setTimeout(() => setPlanning(true), 260); }} />
         <Row left={<IconCircle name="building" />} title="Others wait on this" meta="Make it a gate on the project page" right={<Check on={!!task.milestone} onPress={() => run(bix.next(task, { milestone: !task.milestone }))} />} />
         <Row left={<IconCircle name="pending" />} title="Waits on" meta={deps.length ? deps.map((x) => x.title).join(", ") : "Nothing"} onPress={() => { setTuning(false); setTimeout(() => setPlanning(true), 260); }} />
-        <Row left={<IconCircle name="heart" />} title="Anyone can help" meta="Show to outside volunteers" right={<Check on={task.audience === "open"} onPress={() => run(bix.next(task, { audience: task.audience === "open" ? "team" : "open" }))} />} />
+        <Row left={<IconCircle name="heart" />} title="Anyone can help" meta={openAllowed ? "Show to outside volunteers" : "Your group or project isn't public. Invite volunteers with a link instead"} right={<Check on={task.audience === "open"} onPress={!openAllowed && task.audience !== "open" ? undefined : () => run(bix.next(task, { audience: task.audience === "open" ? "team" : "open" }))} />} />
         <Row left={<IconCircle name="smile" />} title="Good first step" meta="Suggested to newcomers" right={<Check on={!!task.goodFirstStep} onPress={() => run(bix.next(task, { goodFirstStep: !task.goodFirstStep }))} />} />
         <Row left={<IconCircle name="pen" />} title="Rename" meta={task.title} onPress={() => { setTuning(false); setNaming(task.title ?? ""); }} />
         <Row left={<IconCircle name="pen" />} title="About this task" onPress={() => { setTuning(false); setDesc(task.description ?? ""); }} />

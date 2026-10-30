@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Image, Pressable, Text, View } from "react-native";
+import { Alert, Image, Platform, Pressable, Text, View } from "react-native";
 import { bix } from "@/lib/bix";
 import { fileUri, pickPhoto } from "@/lib/files";
 import { CAUSES } from "@/lib/org";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { Body, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen , Skeleton} from "@/ui/kit";
+import { Body, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { Logo } from "@/ui/Context";
 import { Icon } from "@/ui/Icon";
 import { directoryOpen, networkOpen } from "@/lib/network";
 import { useWhere } from "@/ui/Where";
+import { label, VISIBILITY, VisibilityChoice, visibilityFields, visibilityOf } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
 
 /** A group's page: its profile (editable by officers), people, how it's run, projects, links and safety. */
@@ -18,6 +19,7 @@ export default function Org() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useSession();
   const where = useWhere();
+  const [privacy, setPrivacy] = useState(false);
   const [editing, setEditing] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const { data, reload } = useLoad(async () => {
@@ -65,10 +67,19 @@ export default function Org() {
         <Row left={<IconCircle name="plus" tone="grey" />} title="Start a project" onPress={() => router.push({ pathname: "/new-project", params: { org: id } })} last />
       </Panel>
       {officer ? <><Eyebrow>Settings</Eyebrow><Panel>
-        <Row left={<IconCircle name="eye" />} title="Public summary" meta={org.publicSummary !== false ? (directoryOpen ? "On: name, kind, place and causes can be found" : "On: listed once you join the Dasig Ecosystem") : "Off: only members see your group"} onPress={() => save({ publicSummary: org.publicSummary === false })} right={<Pill tone={org.publicSummary !== false ? "state" : "neutral"}>{org.publicSummary !== false ? "On" : "Off"}</Pill>} />
+        <Row left={<IconCircle name={VISIBILITY.find((x) => x.value === visibilityOf(org))!.icon} />} title="Who can see this group" meta={label(visibilityOf(org)) + (visibilityOf(org) === "public" && !directoryOpen ? " · listed once the directory opens" : "")} onPress={() => setPrivacy(true)} />
         <Row left={<IconCircle name="lock" />} title="Links and safety" meta="See and turn off invite links" onPress={() => router.push("/links" as never)} />
         <Row left={<IconCircle name="download" />} title="Download your group's records" meta="Everything, in BIX" onPress={() => router.push(`/org/${id}/export` as never)} last />
       </Panel></> : null}
+      <Sheet open={privacy} onClose={() => setPrivacy(false)}>
+        <Text style={[t.row, { fontSize: 18, marginBottom: 8 }]}>Who can see this group</Text>
+        <VisibilityChoice value={visibilityOf(org)} onChange={(v) => {
+          const go = () => { setPrivacy(false); save(visibilityFields(org, v)); };
+          if (v !== "public" || Platform.OS === "web") return go();
+          Alert.alert("List your group publicly?", "Its name, kind, place and causes can be found by anyone. Never people or tasks. You can change this any time.", [{ text: "Not now", style: "cancel" }, { text: "List it", onPress: go }]);
+        }} />
+        <Meta>{"\nProjects are never more open than their group. Making the group private also hides its open work from outsiders."}</Meta>
+      </Sheet>
       <View style={{ height: 8 }}><Icon name="chevron" size={1} /></View>
     </Screen>
   );

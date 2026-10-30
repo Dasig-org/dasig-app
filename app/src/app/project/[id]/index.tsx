@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Alert, Image, Platform, Pressable, Text, View } from "react-native";
+import { Alert, Image, Platform, Pressable, Share, Text, View } from "react-native";
 import { bix } from "@/lib/bix";
 import { parseDate, short } from "@/lib/dates";
 import { pickDocument, pickPhoto } from "@/lib/files";
@@ -9,6 +9,8 @@ import { useLoad } from "@/lib/use";
 import { shortRef, teamIcon } from "@/lib/work";
 import { Files } from "@/ui/Files";
 import { Body, Buttons, Eyebrow, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Sheet, Tip, Skeleton, usePhoto } from "@/ui/kit";
+import { atMost, InviteOptions, linkOpts, VisibilityChoice, visibilityFields, visibilityOf, type Visibility } from "@/ui/Privacy";
+import { appUrl } from "@/lib/env";
 import { c, type as t } from "@/ui/theme";
 
 /** The project page (sketch: running-sketches #1, page anatomy §1b). */
@@ -17,8 +19,10 @@ export default function Project() {
   const s = useSession();
   const [msg, setMsg] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<{ title: string; about: string; start: string; image: any }>({ title: "", about: "", start: "", image: null });
+  const [form, setForm] = useState<{ title: string; about: string; start: string; image: any; vis: Visibility }>({ title: "", about: "", start: "", image: null, vis: "invited" });
   const [addingFile, setAddingFile] = useState(false);
+  const [inviteAsk, setInviteAsk] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const { data, error, reload } = useLoad(async () => {
     const p = await bix.get("Initiative", id);
     const ref = `Initiative/${id}`;
@@ -38,13 +42,14 @@ export default function Project() {
   const run = async (next: any, ok?: string) => { try { await bix.commit(next); if (ok) setMsg(ok); reload(); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };
   const addFile = async (pick: () => Promise<any>) => { setAddingFile(false); const a = await pick().catch((e: any) => { setMsg(String(e?.message ?? e)); return null; }); if (a) run(bix.next(p, { attachment: [...(p.attachment ?? []), a] })); };
   const openVotes = decisions.filter((d) => d.status === "open");
-  const edit = () => { setForm({ title: p.title ?? "", about: p.description ?? "", start: p.period?.start?.slice(0, 10) ?? "", image: p.image ?? null }); setEditing(true); };
+  const groupVis = visibilityOf(s.groups.find((g) => `Organization/${g.org.id}` === p.organization?.reference)?.org);
+  const edit = () => { setForm({ title: p.title ?? "", about: p.description ?? "", start: p.period?.start?.slice(0, 10) ?? "", image: p.image ?? null, vis: atMost(visibilityOf(p), groupVis) }); setEditing(true); };
   const save = () => {
     if (!form.title.trim()) return;
     const start = form.start.trim() ? parseDate(form.start) : null;
     if (form.start.trim() && !start) { setMsg("That date didn't read right. Try 2027-02-15."); return; }
     setEditing(false);
-    run(bix.next(p, { title: form.title.trim(), description: form.about.trim() || undefined, image: form.image ?? undefined, period: start ? { ...(p.period ?? {}), start } : p.period?.end ? { end: p.period.end } : undefined }), "Saved.");
+    run(bix.next(p, { ...visibilityFields(p, atMost(form.vis, groupVis)), title: form.title.trim(), description: form.about.trim() || undefined, image: form.image ?? undefined, period: start ? { ...(p.period ?? {}), start } : p.period?.end ? { end: p.period.end } : undefined }), "Saved.");
   };
   const cancelProject = () => {
     const go = () => { setEditing(false); run(bix.next(p, { status: "cancelled" }), "The project is cancelled. Its history is kept."); };
@@ -93,10 +98,22 @@ export default function Project() {
       <Panel>
         <Row left={<IconCircle name="cal" />} title="Timeline" meta="Work by week, with gates" onPress={() => router.push(`/project/${id}/timeline` as never)} />
         <Row left={<IconCircle name="heart" />} title="Credits" meta="Everyone who made it happen" onPress={() => router.push(`/project/${id}/credits` as never)} />
+        {lead && groupVis !== "group" ? <Row left={<IconCircle name="userplus" />} title="Invite volunteers" meta={visibilityOf(p) === "public" ? "A link to this project; they choose a team" : "A private link; the project stays hidden"} onPress={() => setInviteAsk(true)} /> : null}
         {lead ? <Row left={<IconCircle name="flag" />} title="Start a vote" meta="Decide something together" onPress={() => router.push({ pathname: "/vote/new" as never, params: { project: id } })} /> : null}
         {lead ? <Row left={<IconCircle name="repeat" />} title={p.status === "completed" ? "Wrapped up" : "Wrap up the project"} meta="Report, credits, save these teams" onPress={() => router.push(`/project/${id}/wrap` as never)} last /> : null}
       </Panel>
 
+      <Sheet open={inviteAsk} onClose={() => setInviteAsk(false)}>
+        <InviteOptions what={p.title} onCreate={async (o) => { setInviteAsk(false); try {
+          const l = await bix.link({ reference: `Initiative/${id}` }, ["view", "join-org"], o.preview, linkOpts(o)); setInviteUrl(`${appUrl()}/join/${l.token}`);
+        } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } }} />
+      </Sheet>
+      <Sheet open={!!inviteUrl} onClose={() => setInviteUrl(null)}>
+        <Text style={[t.row, { fontSize: 18 }]}>{`Invite volunteers to ${p.title}`}</Text>
+        <Meta>Send this link. It works until it expires or you turn it off in Links and safety.</Meta>
+        <View style={{ backgroundColor: c.wash, borderRadius: 16, padding: 12, marginTop: 12 }}><Text selectable style={{ fontSize: 13, color: c.ink }}>{inviteUrl}</Text></View>
+        <Buttons><Primary label="Share" onPress={() => { Share.share({ message: `Help with ${p.title} on Dasig: ${inviteUrl}` }).catch(() => {}); }} /></Buttons>
+      </Sheet>
       <Sheet open={editing} onClose={() => setEditing(false)}>
         <Text style={[t.row, { fontSize: 18 }]}>Edit project</Text>
         <Pressable onPress={async () => { const a = await pickPhoto(false).catch((e: any) => { setMsg(String(e?.message ?? e)); return null; }); if (a) setForm((f) => ({ ...f, image: a })); }}
@@ -107,6 +124,8 @@ export default function Project() {
         <Field label="Name" value={form.title} onChangeText={(v) => setForm((f) => ({ ...f, title: v }))} />
         <Field label="What it's about" value={form.about} onChangeText={(v) => setForm((f) => ({ ...f, about: v }))} multiline />
         <Field label="Starts" value={form.start} onChangeText={(v) => setForm((f) => ({ ...f, start: v }))} placeholder="e.g. 2027-02-15" />
+        <Text style={[t.eyebrow, { marginTop: 16, marginBottom: 8, marginHorizontal: 4 }]}>Who can see this project</Text>
+        <VisibilityChoice value={form.vis} onChange={(v) => setForm((f) => ({ ...f, vis: v }))} cap={groupVis} />
         <Buttons><Primary label="Save" onPress={save} disabled={!form.title.trim()} /></Buttons>
         <Meta>{can.who}</Meta>
         {p.status !== "cancelled" && p.status !== "completed" ? <View style={{ marginTop: 14 }}><LinkText onPress={cancelProject}>Cancel this project</LinkText></View> : null}

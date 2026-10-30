@@ -5,12 +5,14 @@ import { bix } from "@/lib/bix";
 import { saveJson } from "@/lib/save";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { Buttons, Eyebrow, IconCircle, Meta, Notice, Outline, Panel, Row, Screen, Sheet, Title } from "@/ui/kit";
+import { Buttons, Check, Eyebrow, IconCircle, Meta, Notice, Outline, Panel, Row, Screen, Sheet, Title } from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 
 /** Your data (sketch: trust #3, #4): what's kept, download it, choose what shows, delete your account. Not legal advice. */
+const isMinimal = (p: any) => (p?.extension ?? []).some((x: any) => x.url === "bayanihan:profile-visibility" && x.value === "nickname-only");
 export default function YourData() {
   const s = useSession();
+  const minimal = isMinimal(s.person);
   const [msg, setMsg] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const { data, reload } = useLoad(async () => (s.person ? bix.exportMe(s.person.id) : null), [s.person?.id]);
@@ -28,6 +30,9 @@ export default function YourData() {
       <Panel>
         <Row left={<IconCircle name="download" />} title="Download everything" meta="In BIX, an open format any app can read" onPress={async () => { if (data) await saveJson("my-dasig-story.bix.json", data); }} />
         <Row left={<IconCircle name="pen" />} title="Change your profile and credit name" onPress={() => router.push("/profile" as never)} />
+        <Row left={<IconCircle name="eye" />} title="Only show my nickname" meta={minimal ? "Your groups see your nickname, never your photo or skills" : "Your groups see your nickname, photo and skills"}
+          right={<Check on={minimal} onPress={async () => { if (!s.person) return; const rest = (s.person.extension ?? []).filter((x: any) => x.url !== "bayanihan:profile-visibility");
+            try { await bix.commit(bix.next(s.person, { extension: minimal ? rest : [...rest, { url: "bayanihan:profile-visibility", value: "nickname-only" }] })); await s.refresh(); } catch {} }} />} />
         <Row left={<IconCircle name="lock" />} title="What you've agreed to" meta="Sharing messages, photos" onPress={() => router.push("/consent" as never)} />
         <Row left={<IconCircle name="pending" tone="grey" />} title={dueDelete ? "Deletion scheduled" : "Delete my account"} meta={dueDelete ? `On ${new Date(dueDelete).toLocaleDateString()}. Tap to cancel.` : undefined}
           onPress={dueDelete ? async () => { await bix.deleteMe(true); await s.refresh(); reload(); setMsg("Cancelled. Your account stays."); } : () => setConfirm(true)} last />

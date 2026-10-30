@@ -7,6 +7,7 @@ import { useSession } from "@/lib/session";
 import { CAUSES, STRUCTURES, type StructureKey } from "@/lib/org";
 import { Buttons, Chips, Eyebrow, Field, Notice, Primary, Screen, Title, Panel, Row, IconCircle, Check, Meta } from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
+import { VisibilityChoice, visibilityFields, type Visibility } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
 
 const KINDS = [
@@ -28,7 +29,7 @@ export default function StartGroup() {
   const [logo, setLogo] = useState<Attachment | null>(null);
   const [logoUri, setLogoUri] = useState<string | null>(null);
   const [structure, setStructure] = useState<StructureKey>("community");
-  const [isPublic, setPublic] = useState(true);
+  const [vis, setVis] = useState<Visibility>("public");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => { if (logo) fileUri(logo).then(setLogoUri).catch(() => {}); }, [logo?.hash]);
@@ -39,7 +40,7 @@ export default function StartGroup() {
     setBusy(true); setErr(null);
     try {
       const org = bix.create("Organization", {
-        name: name.trim(), kind, publicSummary: isPublic, ...(about.trim() ? { description: about.trim() } : {}), ...(logo ? { image: logo } : {}),
+        name: name.trim(), kind, ...visibilityFields(null, vis), ...(about.trim() ? { description: about.trim() } : {}), ...(logo ? { image: logo } : {}),
         cause: causes.map((code) => ({ system: "bayanihan:cause", code, display: CAUSES.find((x) => x.code === code)?.label })),
         ...(place.trim() ? { extension: [{ url: "bayanihan:place-text", value: place.trim() }] } : {}),
       });
@@ -68,8 +69,8 @@ export default function StartGroup() {
         ))}
       </Panel>
       <Meta>{"Starting points, not legal advice. Check your bylaws."}</Meta>
-      <Eyebrow>Public summary</Eyebrow>
-      <Panel><Row left={<IconCircle name="eye" />} title="Let others find your group" meta="Name, kind, place and causes only. Never people or tasks." right={<Check on={isPublic} onPress={() => setPublic(!isPublic)} />} last /></Panel>
+      <Text style={[t.eyebrow, { marginTop: 18, marginBottom: 8, marginHorizontal: 4 }]}>Who can see your group</Text>
+      <VisibilityChoice value={vis} onChange={setVis} />
       {err ? <Notice>{err}</Notice> : null}
       <Buttons><Primary label="Create the group" onPress={create} busy={busy} /></Buttons>
       <Text style={[t.meta, { marginTop: 12, textAlign: "center" }]} onPress={() => setStep(1)}>Back</Text>
