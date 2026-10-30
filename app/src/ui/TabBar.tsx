@@ -17,7 +17,7 @@ function Glyph({ name, color, strokeWidth }: { name: TabKey; color: string; stro
   const p = { stroke: color, strokeWidth, fill: "none", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   switch (name) {
     case "home": return <Svg width={24} height={24} viewBox="0 0 24 24"><Path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z" {...p} /><Path d="M9.5 20.5v-6h5v6" {...p} /></Svg>;
-    case "nearby": return <Svg width={24} height={24} viewBox="0 0 24 24"><Circle cx={11} cy={11} r={6.5} {...p} /><Path d="M19.5 19.5 16 16" {...p} /></Svg>;
+    case "nearby": return <Svg width={24} height={24} viewBox="0 0 24 24"><Path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" {...p} /><Circle cx={12} cy={10} r={2.4} {...p} /></Svg>;
     case "add": return <Svg width={26} height={26} viewBox="0 0 24 24"><Path d="M12 5v14M5 12h14" {...p} /></Svg>;
     case "groups": return <Svg width={24} height={24} viewBox="0 0 24 24"><Circle cx={9} cy={8} r={3.4} {...p} /><Path d="M3 19.5c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" {...p} /><Path d="M15.5 4.8a3.2 3.2 0 0 1 0 6.3M17.5 14.2c2 .6 3.5 2.4 3.5 5.3" {...p} /></Svg>;
     default: return <Svg width={24} height={24} viewBox="0 0 24 24"><Circle cx={12} cy={8} r={3.6} {...p} /><Path d="M4.5 20.5c0-3.8 3.4-6.5 7.5-6.5s7.5 2.7 7.5 6.5" {...p} /></Svg>;
@@ -25,7 +25,7 @@ function Glyph({ name, color, strokeWidth }: { name: TabKey; color: string; stro
 }
 
 const ITEMS: { key: TabKey; label: string }[] = [
-  { key: "home", label: "Home" }, { key: "nearby", label: "Discover" }, { key: "add", label: "Add" },
+  { key: "home", label: "Home" }, { key: "nearby", label: "Nearby" }, { key: "add", label: "Add" },
   { key: "groups", label: "Groups" }, { key: "story", label: "Me" },
 ];
 
