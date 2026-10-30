@@ -5,7 +5,7 @@ import { networkUrl } from "@/lib/env";
 import { pending } from "@/lib/outbox";
 import { interested, markInterested } from "@/lib/network";
 import { useSession } from "@/lib/session";
-import { Body, Buttons, Eyebrow, IconCircle, Meta, Notice, Panel, Pill, Primary, Row, Screen, Title } from "@/ui/kit";
+import { Body, Buttons, Eyebrow, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Title } from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 
 /** Where records live, and what needs the internet. Truthful by design. */
@@ -14,6 +14,8 @@ export default function NetworkScreen() {
   const [online, setOnline] = useState<boolean | null>(null);
   const [waiting, setWaiting] = useState(0);
   const [asked, setAsked] = useState<{ at: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   useEffect(() => { interested().then(setAsked); }, []);
   useEffect(() => { Network.getNetworkStateAsync().then((n) => setOnline(!!n.isInternetReachable)).catch(() => setOnline(null)); pending().then((p) => setWaiting(p.length)); }, []);
   const k = s.connection?.kind;
@@ -23,8 +25,20 @@ export default function NetworkScreen() {
       <Panel>
         <Row left={<IconCircle name="lock" />} title="This phone" meta="Bayanihan Server runs inside Dasig. Works with no internet." right={k === "phone" ? <Pill tone="state">In use</Pill> : undefined} />
         <Row left={<IconCircle name="users" />} title="Your group's hub" meta={k === "hub" ? s.connection!.kind === "hub" ? (s.connection as any).url : "" : "One phone your group shares, over its hotspot. No internet."} right={k === "hub" ? <Pill tone="state">In use</Pill> : undefined} />
-        <Row left={<IconCircle name="building" />} title="The Dasig Ecosystem" meta={networkUrl ? "Dasig's hosted Bayanihan Server" : "Not open yet. Coming in 2027. Needs internet."} right={<Pill>{networkUrl ? "Available" : "Coming"}</Pill>} last />
+        <Row left={<IconCircle name="building" />} title="The Dasig Ecosystem" meta={k === "ecosystem" ? (s.connection as { url: string }).url.replace(/^https?:\/\//, "") : networkUrl ? "Dasig's online Bayanihan Server. Needs internet." : "Not open yet. Coming in 2027. Needs internet."}
+          right={k === "ecosystem" ? <Pill tone="state">In use</Pill> : <Pill>{networkUrl ? "Pilot" : "Coming"}</Pill>} last />
       </Panel>
+      {networkUrl && k !== "ecosystem" ? <>
+        <Eyebrow>Try the Dasig Ecosystem</Eyebrow>
+        <Panel>
+          <Row left={<IconCircle name="wifi" />} title="Work from anywhere" meta="Your groups online, reachable without a hub" />
+          <Row left={<IconCircle name="lock" />} title="Kept as you" meta="Joins with this phone's own key; no password" last />
+        </Panel>
+        <View style={{ marginTop: 10, marginHorizontal: 4 }}><Meta>{"In the pilot you start fresh online. Your groups on this phone stay here, and you can switch back any time."}</Meta></View>
+        {err ? <Notice>{err}</Notice> : null}
+        <Buttons><Primary label="Connect to the Dasig Ecosystem" busy={busy} onPress={async () => { setBusy(true); setErr(null); try { await s.joinEcosystem(); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); } }} /></Buttons>
+      </> : null}
+      {k === "ecosystem" ? <View style={{ marginTop: 6 }}><Buttons><Outline flex label="Go back to this phone's records" onPress={() => s.useThisPhone()} /></Buttons></View> : null}
       {!networkUrl ? <>
         <Eyebrow>When the Ecosystem opens</Eyebrow>
         <Panel>
@@ -45,7 +59,7 @@ export default function NetworkScreen() {
       <Panel>
         <Row left={<IconCircle name="pin" />} title="Finding groups near you" meta="Needs the Dasig Ecosystem" />
         <Row left={<IconCircle name="heart" />} title="A public Dasig profile" meta="Showing your story on dasig.org, if you choose" />
-        <Row left={<IconCircle name="download" />} title="Cloud backup of your group" meta="Optional, when the Dasig Ecosystem opens" last />
+        <Row left={<IconCircle name="download" />} title="Cloud backup of your group" meta={networkUrl ? "Comes after the pilot: copying a hub's records online" : "Optional, when the Dasig Ecosystem opens"} last />
       </Panel>
       <View style={{ marginTop: 14 }}><Body>Everything else (groups, teams, tasks, photos, votes and your story) works on your phones and hub.</Body></View>
     </Screen>

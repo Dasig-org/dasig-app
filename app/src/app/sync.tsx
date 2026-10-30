@@ -16,7 +16,7 @@ export default function Sync() {
   const [busy, setBusy] = useState(false);
   const load = () => pending().then(setItems);
   useEffect(() => { load(); }, []);
-  const where = s.connection?.kind === "hub" ? "Your group's hub" : s.connection?.kind === "cloud" ? "The online server" : "This phone";
+  const where = s.connection?.kind === "hub" ? "Your group's hub" : s.connection?.kind === "ecosystem" ? "The Dasig Ecosystem" : s.connection?.kind === "cloud" ? "The online server" : "This phone";
   const w = useWhere();
   const [r, setR] = useState(reach());
   useEffect(() => onReach(setR), []);

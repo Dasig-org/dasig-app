@@ -81,6 +81,6 @@ await don.goBack(); await tap(don, "Timeline"); await don.getByText("Draft call 
 await don.goBack(); await tap(don, "Credits"); await don.getByText(/made it happen/).waitFor(); await shot(don, "16-credits"); log("credits");
 await don.goBack(); await tap(don, "Wrap up the project"); await tap(don, "Save these teams for next time"); await don.getByText(/Saved\. Next time/).waitFor(); await shot(don, "17-wrap"); log("teams saved for next time");
 await don.goto(APP + "/nearby"); await don.getByText("Who's working here").waitFor(); await shot(don, "18-nearby"); log("nearby, honest about the network");
-await don.goto(APP + "/network"); await don.getByText("Tell me when it opens").click(); await don.getByText(/Dasig will show it here/).waitFor(); await shot(don, "network-open"); log("network: honest, and remembers interest");
+await don.goto(APP + "/network"); await don.getByText("Try the Dasig Ecosystem").waitFor(); await don.getByText("Connect to the Dasig Ecosystem").waitFor(); await shot(don, "network-open"); log("network: offers the Dasig Ecosystem (joining is tested in ecosystem.mjs)");
 console.log("page errors:", errs.length ? errs : "none");
 await browser.close();

@@ -17,7 +17,7 @@ export async function send(method: string, path: string, body?: BodyInit | null,
     try { const r = await fetch(url, { method, headers, ...(body !== undefined && body !== null ? { body } : {}) }); reached(); return r; }
     catch (e) { missed(); throw e; }
   };
-  if (c.kind === "hub") {
+  if (c.kind === "hub" || c.kind === "ecosystem") {
     headers.authorization = `Bearer ${c.token}`;
     return remote(c.url + path);
   }

@@ -21,10 +21,16 @@ type Session = {
   pairWithHub(hub: string, code: string, nickname?: string): Promise<void>;
   /** Go back to using this phone's own server. */
   useThisPhone(): Promise<void>;
+  /**
+   * Join the Dasig Ecosystem with this phone's own Person and key: the server sends a one-time challenge, the phone
+   * signs it, and the server issues this phone a token. Records already on the phone stay on the phone.
+   */
+  joinEcosystem(url?: string): Promise<void>;
   refresh(): Promise<void>;
   signOut(): Promise<void>;
 };
 const Ctx = createContext<Session | null>(null);
+const BEFORE_KEY = "dasig.connection.before-ecosystem";
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -78,17 +84,50 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await refresh();
   };
 
-  const useThisPhone = async () => { const prev = await AsyncStorageGet(); await setConnection({ kind: "phone", token: prev }); await refresh(); };
+  const joinEcosystem = async (target?: string) => {
+    const { networkUrl } = await import("./env");
+    const url = (target ?? networkUrl).replace(/\/$/, "");
+    if (!url) throw new Error("The Dasig Ecosystem isn't set up in this version of the app.");
+    const post = (path: string, body: unknown) => fetch(`${url}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    let body: Record<string, unknown> = { nickname: person?.name?.text ?? "Friend" };
+    if (person) {
+      const ch = await fetch(`${url}/$challenge`).then((r) => r.json()).catch(() => null) as { challenge?: string; audience?: string } | null;
+      if (!ch?.challenge || !ch.audience) throw new Error("Couldn't reach the Dasig Ecosystem. Check your internet and try again.");
+      const { personKey } = await import("./keys");
+      const { signChallenge } = await import("@bayanihan/core");
+      const k = await personKey(person.id);
+      // Bring this phone's Person (with its key) so the account online is the same person, not a stranger with the same nickname.
+      body = { person: { resourceType: "Person", id: person.id, meta: { version: 1 }, name: person.name, credit: person.credit ?? "nickname", ...(person.description ? { description: person.description } : {}),
+        publicKey: (person.publicKey ?? []).filter((x: any) => x.status === "active") }, challenge: ch.challenge, proof: signChallenge(ch.challenge, `Person/${person.id}`, ch.audience, k.privateKey) };
+    }
+    const res = await post("/$join", body).catch(() => null);
+    if (!res) throw new Error("Couldn't reach the Dasig Ecosystem. Check your internet and try again.");
+    const out = await res.json().catch(() => ({ error: `the Ecosystem didn't answer (${res.status})` }));
+    if (!res.ok) throw new Error(String(out.error ?? "Couldn't join the Dasig Ecosystem."));
+    const before = await getConnection();
+    if (before.kind !== "ecosystem") await AsyncStorage.setItem(BEFORE_KEY, JSON.stringify(before));
+    await setConnection({ kind: "ecosystem", url, token: out.token });
+    await refresh();
+  };
+
+  const useThisPhone = async () => {
+    // Leaving the Ecosystem returns to whatever this device used before (its own server, its hub, or the web's server).
+    const c = await getConnection();
+    const saved = c.kind === "ecosystem" ? await AsyncStorage.getItem(BEFORE_KEY) : null;
+    if (saved) { await setConnection(JSON.parse(saved) as Connection); await AsyncStorage.removeItem(BEFORE_KEY); }
+    else await setConnection({ kind: "phone", token: await AsyncStorageGet() });
+    await refresh();
+  };
   const signOut = async () => {
     const c = await getConnection();
     if (c.kind === "cloud") await supabase.auth.signOut();
-    else await setConnection(c.kind === "hub" ? { kind: "phone", token: await AsyncStorageGet() } : { kind: "phone" });
+    else await setConnection(c.kind === "hub" || c.kind === "ecosystem" ? { kind: "phone", token: await AsyncStorageGet() } : { kind: "phone" });
     setPerson(null); setGroups([]); setCurrent(null); await refresh();
   };
 
   const profileDone = !!(person?.extension ?? []).find((x: any) => x.url === "bayanihan:profile-done");
   const isLead = !!current && groups.some((g) => g.org.id === current.id && ["officer", "core-member"].includes(g.role.code?.code));
-  return <Ctx.Provider value={{ ready, person, profileDone, isLead, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, refresh, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ ready, person, profileDone, isLead, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, joinEcosystem, refresh, signOut }}>{children}</Ctx.Provider>;
 }
 
 /** The phone's own token, remembered when switching to a hub, so going back keeps your local records. */

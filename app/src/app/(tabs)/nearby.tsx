@@ -4,6 +4,7 @@ import { Text, View } from "react-native";
 import Svg, { Circle, G, Path, Text as SvgText } from "react-native-svg";
 import * as Network from "expo-network";
 import { networkUrl } from "@/lib/env";
+import { directoryOpen } from "@/lib/network";
 import { CAUSES } from "@/lib/org";
 import { useSession } from "@/lib/session";
 import { Body, Buttons, Chips, Eyebrow, IconCircle, Meta, Outline, Panel, Pill, Primary, Row, Sand, Screen, Title } from "@/ui/kit";
@@ -33,7 +34,7 @@ export default function Nearby() {
     const net = await Network.getNetworkStateAsync().catch(() => null);
     if (!net?.isInternetReachable) return setStatus("offline");
     if (!networkUrl) return setStatus("not-open");
-    try { const r = await fetch(`${networkUrl}/metadata`); setStatus(r.ok ? "online" : "not-open"); } catch { setStatus("not-open"); }
+    try { const r = await fetch(`${networkUrl}/metadata`); setStatus(r.ok && directoryOpen ? "online" : "not-open"); } catch { setStatus("not-open"); }
   };
   useEffect(() => { check(); }, []);
   return (
@@ -46,7 +47,7 @@ export default function Nearby() {
       {status !== "online" ? <View style={{ marginTop: 12 }}><Sand>
         <IconCircle name={status === "offline" ? "wifioff" : "building"} tone="white" />
         <View style={{ flex: 1 }}>
-          <Text style={t.row}>{status === "checking" ? "Checking…" : status === "offline" ? "You're offline" : "The Dasig Ecosystem isn't open yet"}</Text>
+          <Text style={t.row}>{status === "checking" ? "Checking…" : status === "offline" ? "You're offline" : "The directory isn't open yet"}</Text>
           <Meta>{status === "offline" ? "Finding groups near you needs internet. Your own groups keep working on your phones and hub." : "This view needs internet and the Dasig Ecosystem, Dasig's hosted Bayanihan Server. It opens after the first pilots. Until then, the map above is a preview with sample pins."}</Meta>
         </View>
       </Sand></View> : null}

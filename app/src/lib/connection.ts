@@ -5,9 +5,10 @@ import { Platform } from "react-native";
  * Where this phone's records live:
  * - "phone": Bayanihan Server inside this app (standalone, and the hub when hub mode is on)
  * - "hub": another phone's hub, paired by QR
- * - "cloud": an online Bayanihan Server (web, and later phones)
+ * - "cloud": an online Bayanihan Server reached through Supabase sign-in (local web development)
+ * - "ecosystem": the Dasig Ecosystem (or any hosted Bayanihan Server), joined with this phone's own key
  */
-export type Connection = { kind: "phone"; token?: string } | { kind: "hub"; url: string; token: string; name?: string } | { kind: "cloud" };
+export type Connection = { kind: "phone"; token?: string } | { kind: "hub"; url: string; token: string; name?: string } | { kind: "cloud" } | { kind: "ecosystem"; url: string; token: string };
 const KEY = "dasig.connection.v1";
 let current: Connection | null = null;
 const listeners = new Set<(c: Connection) => void>();

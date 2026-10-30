@@ -9,7 +9,7 @@ import { useLoad } from "@/lib/use";
 import { Body, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen , Skeleton} from "@/ui/kit";
 import { Logo } from "@/ui/Context";
 import { Icon } from "@/ui/Icon";
-import { networkOpen } from "@/lib/network";
+import { directoryOpen, networkOpen } from "@/lib/network";
 import { useWhere } from "@/ui/Where";
 import { c, type as t } from "@/ui/theme";
 
@@ -53,7 +53,7 @@ export default function Org() {
       </>}
       {msg ? <Notice>{msg}</Notice> : null}
       <Eyebrow>Your group's home</Eyebrow>
-      <Panel><Row left={<IconCircle name={where.icon} />} title={where.text} meta={networkOpen ? "Connect to the Dasig Ecosystem to work from anywhere" : "Dasig Ecosystem: coming in 2027"} onPress={() => router.push("/network" as never)} last /></Panel>
+      <Panel><Row left={<IconCircle name={where.icon} />} title={where.text} meta={s.connection?.kind === "ecosystem" ? "On the Dasig Ecosystem" : networkOpen ? "Connect to the Dasig Ecosystem to work from anywhere" : "Dasig Ecosystem: coming in 2027"} onPress={() => router.push("/network" as never)} last /></Panel>
       <Eyebrow right={`${roles.length}`}>People</Eyebrow>
       <Panel>
         <Row left={<IconCircle name="users" />} title="Members and volunteers" meta={requests.length ? `${requests.length} asking to join` : "Roles, positions, invites"} onPress={() => router.push(`/org/${id}/people` as never)} />
@@ -65,7 +65,7 @@ export default function Org() {
         <Row left={<IconCircle name="plus" tone="grey" />} title="Start a project" onPress={() => router.push({ pathname: "/new-project", params: { org: id } })} last />
       </Panel>
       {officer ? <><Eyebrow>Settings</Eyebrow><Panel>
-        <Row left={<IconCircle name="eye" />} title="Public summary" meta={org.publicSummary !== false ? (networkOpen ? "On: name, kind, place and causes can be found" : "On: listed once you join the Dasig Ecosystem") : "Off: only members see your group"} onPress={() => save({ publicSummary: org.publicSummary === false })} right={<Pill tone={org.publicSummary !== false ? "state" : "neutral"}>{org.publicSummary !== false ? "On" : "Off"}</Pill>} />
+        <Row left={<IconCircle name="eye" />} title="Public summary" meta={org.publicSummary !== false ? (directoryOpen ? "On: name, kind, place and causes can be found" : "On: listed once you join the Dasig Ecosystem") : "Off: only members see your group"} onPress={() => save({ publicSummary: org.publicSummary === false })} right={<Pill tone={org.publicSummary !== false ? "state" : "neutral"}>{org.publicSummary !== false ? "On" : "Off"}</Pill>} />
         <Row left={<IconCircle name="lock" />} title="Links and safety" meta="See and turn off invite links" onPress={() => router.push("/links" as never)} />
         <Row left={<IconCircle name="download" />} title="Download your group's records" meta="Everything, in BIX" onPress={() => router.push(`/org/${id}/export` as never)} last />
       </Panel></> : null}
