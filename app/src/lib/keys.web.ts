@@ -10,3 +10,4 @@ export const withMyKey = keys.withMyKey;
 export const keyRotation = keys.rotation;
 export const signAs = keys.sign;
 export const pairingProof = (personId: string, code: string, listed?: { key: string; status: string }[]) => keys.sign(personId, code, "bix-pair", listed);
+export const copyKeys = keys.copy;

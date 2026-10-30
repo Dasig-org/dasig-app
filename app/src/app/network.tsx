@@ -4,6 +4,7 @@ import * as Network from "expo-network";
 import { networkUrl } from "@/lib/env";
 import { pending } from "@/lib/outbox";
 import { interested, markInterested } from "@/lib/network";
+import { googleAvailable } from "@/lib/google";
 import { useSession } from "@/lib/session";
 import { Body, Buttons, Eyebrow, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Title } from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
@@ -15,6 +16,9 @@ export default function NetworkScreen() {
   const [waiting, setWaiting] = useState(0);
   const [asked, setAsked] = useState<{ at: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [linked, setLinked] = useState<string | null>(null);
+  useEffect(() => { import("@/lib/ecosystem").then(async (m) => setLinked((await m.googleLinked()) ? (await (await import("@react-native-async-storage/async-storage")).default.getItem("dasig.ecosystem.google")) : null)); }, [s.connection]);
+  const google = async () => { setBusy(true); setErr(null); try { await s.googleEcosystem(); setLinked(await (await import("@react-native-async-storage/async-storage")).default.getItem("dasig.ecosystem.google")); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); } };
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => { interested().then(setAsked); }, []);
   useEffect(() => { Network.getNetworkStateAsync().then((n) => setOnline(!!n.isInternetReachable)).catch(() => setOnline(null)); pending().then((p) => setWaiting(p.length)); }, []);
@@ -37,7 +41,14 @@ export default function NetworkScreen() {
         <View style={{ marginTop: 10, marginHorizontal: 4 }}><Meta>{"In the pilot you start fresh online. Your groups on this phone stay here, and you can switch back any time."}</Meta></View>
         {err ? <Notice>{err}</Notice> : null}
         <Buttons><Primary label="Connect to the Dasig Ecosystem" busy={busy} onPress={async () => { setBusy(true); setErr(null); try { await s.joinEcosystem(); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); } }} /></Buttons>
+        {googleAvailable ? <Buttons><Outline flex label="I've used Dasig before: sign in with Google" onPress={google} /></Buttons> : null}
       </> : null}
+      {k === "ecosystem" ? <View style={{ marginTop: 12 }}><Panel>
+        {linked ? <Row left={<IconCircle name="check" />} title="Google is linked" meta={`${linked === "linked" ? "" : linked + " · "}Sign in with it to get back in on a new phone`} last />
+          : <Row left={<IconCircle name="lock" />} title="Keep a way back in" meta="If this phone is lost or Dasig is deleted, Google brings your account back" last />}
+      </Panel>
+      {!linked && googleAvailable ? <Buttons><Primary label="Link your Google account" busy={busy} onPress={google} /></Buttons> : null}
+      {err && k === "ecosystem" ? <Notice>{err}</Notice> : null}</View> : null}
       {k === "ecosystem" ? <View style={{ marginTop: 6 }}><Buttons><Outline flex label="Go back to this phone's records" onPress={() => s.useThisPhone()} /></Buttons></View> : null}
       {!networkUrl ? <>
         <Eyebrow>When the Ecosystem opens</Eyebrow>

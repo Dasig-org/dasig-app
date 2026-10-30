@@ -47,6 +47,8 @@ export function ring(store: Store) {
       const publicKey = [...(person.publicKey ?? []).map((x) => (x.key === cur.publicKey ? { ...x, status: "revoked" } : x)), { kid: keyIdFor(k.publicKey), alg: "Ed25519", key: k.publicKey, created: next.created, status: "active" }];
       return { publicKey, adopt: async () => { const keys = await load(person.id); await save(person.id, [...keys, next].slice(-5)); } };
     },
+    /** After Google brings back an older person, this phone's keys serve that person too. */
+    async copy(fromId: string, toId: string) { const from = await load(fromId); if (!from.length) return; const to = await load(toId); await save(toId, [...to, ...from.filter((k) => !to.some((x) => x.publicKey === k.publicKey))].slice(-5)); },
     async sign(personId: string, challenge: string, audience: string, listed?: { key: string; status: string }[]) {
       const k = listed ? await forRecord(personId, listed) : await current(personId);
       return signChallenge(challenge, `Person/${personId}`, audience, k.privateKey);

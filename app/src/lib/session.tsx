@@ -26,6 +26,8 @@ type Session = {
    * signs it, and the server issues this phone a token. Records already on the phone stay on the phone.
    */
   joinEcosystem(url?: string): Promise<void>;
+  /** Sign in with Google on the Ecosystem: links Google to you, or brings back the person you were on a new phone. */
+  googleEcosystem(): Promise<void>;
   refresh(): Promise<void>;
   signOut(): Promise<void>;
 };
@@ -115,6 +117,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await refresh();
   };
 
+  const googleEcosystem = async () => {
+    const { networkUrl } = await import("./env");
+    const { googleSignIn } = await import("./ecosystem");
+    const me = person ? { id: person.id, name: person.name, credit: person.credit, publicKey: (person.publicKey ?? []).filter((x: any) => x.status === "active") } : null;
+    const out = await googleSignIn(networkUrl, me);
+    const before = await getConnection();
+    if (before.kind !== "ecosystem") await AsyncStorage.setItem(BEFORE_KEY, JSON.stringify(before));
+    await setConnection({ kind: "ecosystem", url: networkUrl, token: out.token });
+    await refresh();
+  };
+
   const useThisPhone = async () => {
     // Leaving the Ecosystem returns to whatever this device used before (its own server, its hub, or the web's server).
     const c = await getConnection();
@@ -132,7 +145,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const profileDone = !!(person?.extension ?? []).find((x: any) => x.url === "bayanihan:profile-done");
   const isLead = !!current && groups.some((g) => g.org.id === current.id && ["officer", "core-member"].includes(g.role.code?.code));
-  return <Ctx.Provider value={{ ready, person, profileDone, isLead, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, joinEcosystem, refresh, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ ready, person, profileDone, isLead, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, joinEcosystem, googleEcosystem, refresh, signOut }}>{children}</Ctx.Provider>;
 }
 
 /** The phone's own token, remembered when switching to a hub, so going back keeps your local records. */

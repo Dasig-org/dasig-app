@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getConnection, setConnection } from "./connection";
-import { signAs } from "./keys";
+import { copyKeys, signAs } from "./keys";
 
 /**
  * Joining the Dasig Ecosystem, and staying joined. A phone token stops working after a while (the server sets the age);
@@ -61,5 +61,33 @@ export function filesIn(x: unknown, out = new Map<string, any>()): Map<string, a
     if (typeof o.hash === "string" && typeof o.url === "string" && typeof o.contentType === "string") out.set(o.hash, o);
     else Object.values(o).forEach((y) => filesIn(y, out));
   }
+  return out;
+}
+
+const GOOGLE = "dasig.ecosystem.google";
+export const googleLinked = async () => !!(await AsyncStorage.getItem(GOOGLE));
+/**
+ * Sign in with Google on the Ecosystem. Signed in already: links Google to you, so you can get back in later.
+ * A new or wiped phone: Google vouches for the person you were, and this phone's key is added to them.
+ */
+export async function googleSignIn(url: string, me: Me | null): Promise<{ token: string; person: any }> {
+  const { googleIdToken } = await import("./google");
+  const g = await googleIdToken();
+  if (!g) throw new Error("Google sign-in was cancelled.");
+  const c = await getConnection();
+  const headers: Record<string, string> = { "content-type": "application/json", ...(c.kind === "ecosystem" && c.url === url ? { authorization: `Bearer ${c.token}` } : {}) };
+  let body: Record<string, unknown> = { idToken: g.idToken };
+  if (me) {
+    const ch = (await fetch(`${url}/$challenge`).then((r) => r.json()).catch(() => null)) as { challenge?: string; audience?: string } | null;
+    if (ch?.challenge && ch.audience) body = { ...body, person: { resourceType: "Person", id: me.id, meta: { version: 1 }, name: me.name, credit: me.credit ?? "nickname", publicKey: me.publicKey },
+      challenge: ch.challenge, proof: await signAs(me.id, ch.challenge, ch.audience, me.publicKey as never) };
+  }
+  const res = await fetch(`${url}/$google`, { method: "POST", headers, body: JSON.stringify(body) }).catch(() => null);
+  if (!res) throw new Error("Couldn't reach the Dasig Ecosystem. Check your internet and try again.");
+  const out = await res.json().catch(() => ({ error: `the Ecosystem didn't answer (${res.status})` }));
+  if (!res.ok) throw new Error(String(out.error ?? "Google sign-in didn't work."));
+  if (me && out.person.id !== me.id) await copyKeys(me.id, out.person.id);
+  await AsyncStorage.setItem(ME, JSON.stringify({ id: out.person.id, name: out.person.name, credit: out.person.credit, publicKey: (out.person.publicKey ?? []).filter((x: any) => x.status === "active") }));
+  await AsyncStorage.setItem(GOOGLE, g.email ?? "linked");
   return out;
 }

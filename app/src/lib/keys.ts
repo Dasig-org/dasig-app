@@ -12,3 +12,4 @@ export const keyRotation = keys.rotation;
 export const signAs = keys.sign;
 /** Proof for pairing with a hub: signed with the key that hub's record of you lists. */
 export const pairingProof = (personId: string, code: string, listed?: { key: string; status: string }[]) => keys.sign(personId, code, "bix-pair", listed);
+export const copyKeys = keys.copy;
