@@ -14,8 +14,18 @@ export function Header({ current }: { current?: string }) {
     <header className="top"><div className="wrap">
       <Link href="/" className="brand" aria-label="Dasig Ecosystem, home"><img src="/emblem.png" alt="" width={34} height={34} /><span>Dasig<small>ECOSYSTEM</small></span></Link>
       <nav className="nav" aria-label="Main">
-        {NAV.map((n) => <Link key={n.href} href={n.href} className={n.sm ? "hide-sm" : undefined} aria-current={current === n.href ? "page" : undefined}>{n.label}</Link>)}
+        {NAV.map((n) => <Link key={n.href} href={n.href} className="nav-wide" aria-current={current === n.href ? "page" : undefined}>{n.label}</Link>)}
         <a className="btn btn-primary btn-sm" href={site.pilotMail}>Join the pilot</a>
+        {/* Phones: one menu button instead of a row of links. A <details> needs no JavaScript. */}
+        <details className="menu">
+          <summary aria-label="Menu"><span /><span /><span /></summary>
+          <div className="menu-panel">
+            <Link href="/">Home</Link>
+            {NAV.map((n) => <Link key={n.href} href={n.href} aria-current={current === n.href ? "page" : undefined}>{n.label}</Link>)}
+            <Link href="/get">Get the app</Link>
+            <Link href="/status">Status</Link>
+          </div>
+        </details>
       </nav>
     </div></header>
   </>;
