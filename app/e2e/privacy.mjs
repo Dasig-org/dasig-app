@@ -11,7 +11,7 @@ const don = await ctx(); don.on("pageerror", (e) => errs.push(e.message));
 await don.goto(APP + "/"); await tap(don, "Skip"); await don.getByLabel("Your nickname").fill("Don"); await tap(don, "Continue");
 await don.getByText("Tell us about you").waitFor(); await tap(don, "Continue"); await tap(don, "I run a group");
 await don.getByPlaceholder("e.g. Lahug Uplands Runners Club").fill("Cebu Meetup (test)");
-await tap(don, "Next: how it's run"); await tap(don, "Our group and people we invite"); await shot(don, "p-start");
+await tap(don, "Next: how it's run"); await don.waitForTimeout(1200); if (await don.getByText("Is this your group?").isVisible().catch(() => false)) await tap(don, "No, ours is a different group"); await tap(don, "Our group and people we invite"); await shot(don, "p-start");
 await tap(don, "Create the group"); await tap(don, "Start a project");
 await don.getByPlaceholder(/e\.g\./).first().fill("Meetup 12");
 await don.getByText("Your group's setting doesn't allow this").waitFor(); log("project can't be more open than its group");

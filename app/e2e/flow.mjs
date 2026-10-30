@@ -22,7 +22,7 @@ await tap(don, "I run a group");
 await don.getByPlaceholder("e.g. Lahug Uplands Runners Club").fill("Lahug Uplands Runners Club");
 await tap(don, "Community or meetup"); await tap(don, "Tech").catch(() => {});
 await don.getByPlaceholder("e.g. Lapu-Lapu City, Cebu").fill("Cebu");
-await shot(don, "04-group"); await tap(don, "Next: how it's run");
+await shot(don, "04-group"); await tap(don, "Next: how it's run"); await don.waitForTimeout(1200); if (await don.getByText("Is this your group?").isVisible().catch(() => false)) await tap(don, "No, ours is a different group");
 await don.getByText("Organizers and co-organizers").waitFor(); await shot(don, "05-structure"); log("how it's run");
 await tap(don, "Create the group");
 await don.getByText("Bring your people in").waitFor(); await shot(don, "06-ready"); log("group ready");

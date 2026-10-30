@@ -12,6 +12,7 @@ import { Icon } from "@/ui/Icon";
 import { directoryOpen, networkOpen } from "@/lib/network";
 import { useWhere } from "@/ui/Where";
 import { label, VISIBILITY, VisibilityChoice, visibilityFields, visibilityOf } from "@/ui/Privacy";
+import { CopyToEcosystem } from "@/ui/CopyToEcosystem";
 import { c, type as t } from "@/ui/theme";
 
 /** A group's page: its profile (editable by officers), people, how it's run, projects, links and safety. */
@@ -20,6 +21,7 @@ export default function Org() {
   const s = useSession();
   const where = useWhere();
   const [privacy, setPrivacy] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [editing, setEditing] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const { data, reload } = useLoad(async () => {
@@ -55,7 +57,9 @@ export default function Org() {
       </>}
       {msg ? <Notice>{msg}</Notice> : null}
       <Eyebrow>Your group's home</Eyebrow>
-      <Panel><Row left={<IconCircle name={where.icon} />} title={where.text} meta={s.connection?.kind === "ecosystem" ? "On the Dasig Ecosystem" : networkOpen ? "Connect to the Dasig Ecosystem to work from anywhere" : "Dasig Ecosystem: coming in 2027"} onPress={() => router.push("/network" as never)} last /></Panel>
+      <Panel><Row left={<IconCircle name={where.icon} />} last={!(officer && networkOpen && s.connection?.kind !== "ecosystem")} title={where.text} meta={s.connection?.kind === "ecosystem" ? "On the Dasig Ecosystem" : networkOpen ? "Connect to the Dasig Ecosystem to work from anywhere" : "Dasig Ecosystem: coming in 2027"} onPress={() => router.push("/network" as never)} />
+        {officer && networkOpen && s.connection?.kind !== "ecosystem" ? <Row left={<IconCircle name="cloud" />} title="Copy this group to the Dasig Ecosystem" meta="Work from anywhere; this phone keeps its copy" onPress={() => setCopying(true)} last /> : null}</Panel>
+      <CopyToEcosystem org={org} open={copying} onClose={() => { setCopying(false); reload(); }} />
       <Eyebrow right={`${roles.length}`}>People</Eyebrow>
       <Panel>
         <Row left={<IconCircle name="users" />} title="Members and volunteers" meta={requests.length ? `${requests.length} asking to join` : "Roles, positions, invites"} onPress={() => router.push(`/org/${id}/people` as never)} />

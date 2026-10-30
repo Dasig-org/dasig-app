@@ -36,3 +36,30 @@ export function renewToken(): Promise<string | null> {
     } catch { return null; } finally { renewing = null; }
   })());
 }
+
+const TOKEN = "dasig.ecosystem.token";
+/** A working Ecosystem token for this person without switching the phone to the Ecosystem. */
+export async function ecosystemToken(url: string, me: Me): Promise<string> {
+  const c = await getConnection();
+  if (c.kind === "ecosystem" && c.url === url) return c.token;
+  const saved = await AsyncStorage.getItem(TOKEN);
+  if (saved) {
+    const ok = await fetch(`${url}/$me`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${saved}` }, body: "{}" }).then((r) => r.ok).catch(() => false);
+    if (ok) return saved;
+  }
+  const out = await joinWithKey(url, me);
+  await AsyncStorage.setItem(TOKEN, out.token);
+  return out.token;
+}
+export const rememberToken = (t: string) => AsyncStorage.setItem(TOKEN, t);
+
+/** Every file a bundle points to (logo, photos, attachments), once each. */
+export function filesIn(x: unknown, out = new Map<string, any>()): Map<string, any> {
+  if (Array.isArray(x)) x.forEach((y) => filesIn(y, out));
+  else if (x && typeof x === "object") {
+    const o = x as Record<string, unknown>;
+    if (typeof o.hash === "string" && typeof o.url === "string" && typeof o.contentType === "string") out.set(o.hash, o);
+    else Object.values(o).forEach((y) => filesIn(y, out));
+  }
+  return out;
+}
