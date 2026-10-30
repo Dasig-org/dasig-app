@@ -19,6 +19,6 @@ export const env = {
 };
 
 /** Where the Dasig web app is served, for invite links. */
-export const appUrl = () => (Platform.OS === "web" && typeof window !== "undefined" ? window.location.origin : process.env.EXPO_PUBLIC_APP_URL ?? "http://localhost:8081");
+export const appUrl = () => (Platform.OS === "web" && typeof window !== "undefined" ? window.location.origin : process.env.EXPO_PUBLIC_APP_URL ?? "https://bayanihan.dasig.org");
 /** The Dasig Ecosystem: Dasig's hosted Bayanihan Server, for the public directory and syncing beyond your hub. Unset until it is online. */
 export const networkUrl = process.env.EXPO_PUBLIC_DASIG_NETWORK_URL ?? "https://ecosystem.dasig.org";

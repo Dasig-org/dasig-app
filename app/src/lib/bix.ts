@@ -54,7 +54,8 @@ export const bix = {
   create: (resourceType: string, fields: Record<string, any>): R => ({ resourceType, id: newId(), meta: { version: 1 }, ...fields }),
   /** The next version of a record. */
   next: (r: R, fields: Record<string, any>): R => ({ ...r, ...fields, meta: { ...r.meta, version: r.meta.version + 1 } }),
-  link: (target: Ref, grants: string[], preview = "title-only") => call<{ token: string; link: R; pairingCode?: string }>("POST", "/$links", { target, grants, preview }),
+  link: (target: Ref, grants: string[], preview = "title-only", opts: { approval?: boolean; expires?: string; role?: string } = {}) =>
+    call<{ token: string; link: R; pairingCode?: string }>("POST", "/$links", { target, grants, preview, ...opts }),
   openLink: (token: string) => call<any>("GET", `/$link/${token}`),
   joinByLink: (token: string) => call<R>("POST", `/$link/${token}/join`, {}),
   /** What you may do with a record, from the server that keeps it. */
