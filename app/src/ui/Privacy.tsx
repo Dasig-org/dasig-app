@@ -19,7 +19,7 @@ const RANK: Record<Visibility, number> = { group: 0, invited: 1, public: 2 };
 export function visibilityOf(r?: R | null): Visibility {
   const v = (r?.extension ?? []).find((x: any) => x.url === "bayanihan:visibility")?.value;
   if (v === "group" || v === "invited" || v === "public") return v;
-  return r?.publicSummary === false ? "invited" : "public";
+  return "invited"; // made before this setting existed: invite-only until the coordinator chooses (as the server treats it)
 }
 /** The fields to save for a choice, keeping other extensions. */
 export function visibilityFields(r: R | null | undefined, v: Visibility) {
