@@ -8,8 +8,11 @@ import { site } from "@/lib/site";
  */
 export const PAGES = {
   "/": { title: "Bayanihan: a free, open-source app for volunteer groups", absolute: true,
-    description: "Dasig turns your group's projects, needs and requests into small steps volunteers can say yes to. Free and open source, works offline, built on BIX.",
+    description: "Dasig turns your group's work into small steps volunteers can say yes to. Free, open source, works offline. Small on-phone AI for the sector, in development.",
     kicker: "For volunteer groups", og: "Bayanihan works because someone does the extra work" },
+  "/bayani": { title: "Bayani 1: a small language model for Philippine civic work", absolute: true,
+    description: "A small language model in development for Philippine volunteer groups, built into Dasig and BIX. It breaks down work, suggests who to ask, and runs offline.",
+    kicker: "Bayanihan Intelligence · In development", og: "Small AI for the people who do the extra work" },
   "/pilot": { title: "Join the pilot", description: "Bring Dasig, the free volunteer coordination app, to your group. Pilot groups get the app on their phones and help setting up their teams.",
     kicker: "Join the pilot", og: "Share the extra work with your group" },
   "/directory": { title: "Directory of volunteer groups and projects", description: "Find volunteer groups and civic projects near you, from the public summaries groups choose to share on the Dasig Ecosystem.",

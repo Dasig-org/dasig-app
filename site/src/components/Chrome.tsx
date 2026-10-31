@@ -2,6 +2,7 @@ import Link from "next/link";
 import { site } from "@/lib/site";
 
 const NAV = [
+  { href: "/bayani", label: "Bayani AI", sm: false },
   { href: "/directory", label: "Directory", sm: false },
   { href: "/docs", label: "Docs", sm: false },
   { href: "/trust", label: "Trust", sm: true },
@@ -39,7 +40,7 @@ export function Footer() {
         <p style={{ maxWidth: 340 }}>Open tools for volunteer groups: the Dasig app, the Bayanihan Server, BIX and the Dasig Ecosystem. From Dasig Inc.</p>
       </div>
       <div><h4>Use it</h4><Link href="/get">Get the app</Link><Link href="/directory">Directory</Link><Link href="/docs/start-a-group">Start a group</Link><Link href="/docs/volunteering">Volunteering</Link></div>
-      <div><h4>Build on it</h4><Link href="/docs/bix">BIX</Link><Link href="/docs/api">API</Link><Link href="/docs/self-hosting">Run your own server</Link><Link href="/about#open-source">Open source</Link></div>
+      <div><h4>Build on it</h4><Link href="/docs/bix">BIX</Link><Link href="/docs/api">API</Link><Link href="/docs/self-hosting">Run your own server</Link><Link href="/bayani">Bayani 1</Link><Link href="/about#open-source">Open source</Link></div>
       <div><h4>Trust</h4><Link href="/trust/host-policy">Host policy</Link><Link href="/trust/privacy">Privacy</Link><Link href="/trust/safety">Safety and reports</Link><Link href="/status">Status</Link></div>
     </div>
     <p className="legal">Raising money for a cause? That's <a href="https://dasig.org" style={{ display: "inline", textDecoration: "underline" }}>Dasig Fundraising</a>.<br />

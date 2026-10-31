@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Footer, Header } from "@/components/Chrome";
 import { Icon, type IconName } from "@/components/Icon";
 import { Phone, Phones } from "@/components/Phone";
-import { BreakdownScene, NetworkScene, RecordScene, TeamsScene } from "@/components/Scenes";
+import { BayaniPlanScene, BreakdownScene, NetworkScene, RecordScene, TeamsScene } from "@/components/Scenes";
 import { site } from "@/lib/site";
 import { HomeJsonLd } from "@/components/JsonLd";
 export const metadata: Metadata = meta("/");
@@ -29,13 +29,19 @@ const PARTS: { icon: IconName; name: string; role: string; body: string; tags: s
   { icon: "book", name: "BIX", role: "The open standard", body: "The Bayanihan Information Exchange: one shared format for groups, teams, tasks, needs, offers and the record of who did what. Modelled on FHIR, the standard health systems use to exchange records.", tags: ["Spec: CC BY 4.0", "Schemas: Apache-2.0"], href: "/docs/bix" },
   { icon: "check", name: "Bayanihan Core", role: "The rules engine", body: "Checks every change against BIX: who may make it, what can come next, and who confirmed it. The same code runs on the phone and on the server.", tags: ["Apache-2.0"] },
   { icon: "building", name: "Bayanihan Server", role: "The reference server", body: "Stores a group's records and answers the BIX API. It runs inside the Dasig app, on a hub phone, or on your own machine.", tags: ["Apache-2.0"], href: "/docs/api" },
-  { icon: "spark", name: "Bayani 1", role: "The small language model", body: "Reads group chat messages in Filipino and English and drafts the tasks in them. It runs on the phone, and a person approves everything it suggests.", tags: ["In development"] },
+  { icon: "spark", name: "Bayani 1", role: "The small language model", body: "Works inside Dasig and any BIX app: suggests how to break down work, who to ask, and turns Filipino and English messages into drafts. It runs on the phone, and a person approves everything it suggests.", tags: ["In development"], href: "/bayani" },
   { icon: "phone", name: "Dasig", role: "The app", body: "The app for coordinators and volunteers, and the reference app for BIX. Dasig is a trademark of Dasig Inc.", tags: ["AGPL-3.0"], href: "/get" },
 ];
 const HUB: { icon: IconName; text: string }[] = [
   { icon: "phone", text: "Run a whole project on one phone" },
   { icon: "wifi", text: "Make one phone the group's hub. Others join over its hotspot." },
   { icon: "cloud", text: "Connect to the Dasig Ecosystem when you want, or never" },
+];
+const AI: { icon: IconName; text: string }[] = [
+  { icon: "check", text: "Suggests the smaller steps a job needs" },
+  { icon: "users", text: "Suggests who on your roster to ask" },
+  { icon: "send", text: "Turns group chat messages into drafts" },
+  { icon: "phone", text: "Runs on the phone, with no internet" },
 ];
 const WHO = ["Rotaract and Interact clubs", "JCI chapters", "Community event teams", "School organizations", "Faith communities", "Barangay youth groups", "Any informal group"];
 
@@ -50,7 +56,7 @@ export default function Home() {
           <h1>Bayanihan works because someone does the extra work</h1>
           <p className="lead">Someone keeps the list. Someone answers messages at 11pm. Dasig turns that work into small steps, so everyone can carry a part. It's free and open source.</p>
           <div className="btns"><a className="btn btn-primary" href={site.pilotMail}>Join the pilot</a><Link className="btn btn-outline" href="#how">How it works</Link></div>
-          <p className="muted small" style={{ marginTop: 14 }}>Free and open source · Mobile first · In pilot with a few groups</p>
+          <p className="muted small" style={{ marginTop: 14 }}>Free and open source · Mobile first · Small AI in development</p>
         </div>
         <div>
           <div className="hero-phones" aria-label="The Dasig app"><Phone src="coordinator-week" alt="A coordinator's week: what needs them, and what's coming up" width={250} /><Phone src="volunteer-today" alt="A volunteer saying I'm in to a coastal cleanup" width={250} /></div>
@@ -78,7 +84,17 @@ export default function Home() {
         <p style={{ marginTop: 18, textAlign: "center" }}><Link href="/docs/start-a-group" style={{ fontWeight: 700 }}>Read the full guide →</Link></p>
       </div></section>
 
-      <section className="band"><div className="wrap hero-grid">
+      <section className="band" id="ai"><div className="wrap hero-grid">
+        <BayaniPlanScene />
+        <div>
+          <p className="kicker">Bayanihan Intelligence · In development</p><h2>Small AI for the people who do the extra work</h2>
+          <p className="lead">We're building Bayani 1, a small language model for the civic sector, inside Dasig and anything built on BIX. It suggests how to break down the work and who to ask, turns messages into drafts, and a person confirms every change.</p>
+          <ul className="layers">{AI.map((l) => <li key={l.text}><span className="icon"><Icon name={l.icon} /></span><span>{l.text}</span></li>)}</ul>
+          <div className="btns"><Link className="btn btn-primary" href="/bayani">Meet Bayani 1</Link></div>
+        </div>
+      </div></section>
+
+      <section><div className="wrap hero-grid">
         <RecordScene />
         <div>
           <p className="kicker">Thanked and recorded</p><h2>The quiet work finally counts</h2>
@@ -87,7 +103,7 @@ export default function Home() {
         </div>
       </div></section>
 
-      <section id="offline"><div className="wrap hero-grid">
+      <section className="band" id="offline"><div className="wrap hero-grid">
         <div>
           <p className="kicker">Works offline</p><h2>Your phone is the server</h2>
           <p className="lead">Dasig doesn't need the internet. Every phone runs its own Bayanihan Server, so your group's records are saved on the phone itself.</p>
@@ -97,7 +113,7 @@ export default function Home() {
         <Phones items={[{ src: "hub-qr", alt: "A tablet as the group's hub, showing the QR code others scan to join" }]} />
       </div></section>
 
-      <section className="band"><div className="wrap hero-grid">
+      <section><div className="wrap hero-grid">
         <div>
           <p className="kicker">The Dasig Ecosystem · in pilot</p><h2>Find who's already helping near you</h2>
           <p className="lead">Groups that choose to be found can list their projects. Never the names of the people they serve, and never photos of children.</p>
@@ -106,7 +122,7 @@ export default function Home() {
         <NetworkScene />
       </div></section>
 
-      <section><div className="wrap hero-grid">
+      <section className="band"><div className="wrap hero-grid">
         <TeamsScene />
         <div>
           <p className="kicker">Who it's for</p><h2>Groups that run on volunteers</h2>
@@ -116,13 +132,13 @@ export default function Home() {
         </div>
       </div></section>
 
-      <section className="band" id="open-source"><div className="wrap">
+      <section id="open-source"><div className="wrap">
         <p className="kicker">Open source</p><h2>Five open parts, free for anyone to use</h2>
         <p className="lead" style={{ maxWidth: 720 }}>Dasig is one app built on open foundations. Any group, school, LGU or developer can use them, build on them, or host them.</p>
         <div className="grid grid-3 parts" style={{ marginTop: 22 }}>{PARTS.map((x) => {
           const inner = <><div className="icon"><Icon name={x.icon} /></div><p className="part-role">{x.role}</p><h3>{x.name}</h3><p>{x.body}</p>
             <div className="part-tags">{x.tags.map((t) => <span key={t} className={t === "In development" ? "soon" : "tag"}>{t}</span>)}</div></>;
-          return x.href ? <Link href={x.href} className="card on-white" key={x.name} style={{ textDecoration: "none" }}>{inner}</Link> : <div className="card on-white" key={x.name}>{inner}</div>;
+          return x.href ? <Link href={x.href} className="card" key={x.name} style={{ textDecoration: "none" }}>{inner}</Link> : <div className="card" key={x.name}>{inner}</div>;
         })}
           <Link href="/docs/self-hosting" className="card part-own" style={{ textDecoration: "none" }}><h3>Run your own</h3><p>An LGU, a federation or a school can host its own Bayanihan Server and still join the Dasig Ecosystem.</p><p className="part-link">Self-hosting guide →</p></Link>
         </div>

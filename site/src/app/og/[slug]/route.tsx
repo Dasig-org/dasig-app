@@ -16,6 +16,25 @@ const SCREEN: Partial<Record<PagePath, string>> = {
 const asset = (f: string) => readFile(join(process.cwd(), "og-assets", f));
 const dataUrl = async (path: string, type: string) => `data:${type};base64,${(await readFile(path)).toString("base64")}`;
 
+/** Bayani's suggestion card, drawn for the share image: a task, the steps it suggests, and who to ask. */
+function BayaniCard() {
+  const rows: [string, string][] = [["Shortlist 3 venues", "Ask Ana · booked it last year"], ["Visit the top two", "Ask Josh · free on Saturdays"], ["Get written quotes", "Good first step"], ["Pay the deposit", "Finance team"]];
+  return <div style={{ position: "absolute", right: 64, top: 92, width: 400, background: "#fff", borderRadius: 34, padding: 22, display: "flex", flexDirection: "column", boxShadow: "0 30px 60px rgba(232,92,33,.18)", transform: "rotate(2deg)" }}>
+    <span style={{ fontSize: 22, fontWeight: 800 }}>Secure the venue</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, background: "#FFF6E9", color: "#B4500F", borderRadius: 14, padding: "9px 12px", fontSize: 17, fontWeight: 600 }}>
+      <span style={{ width: 24, height: 24, borderRadius: 999, background: "#F47C26", display: "flex" }} />Bayani suggests 4 smaller steps
+    </div>
+    {rows.map(([t, w]) => <div key={t} style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 14 }}>
+      <span style={{ width: 26, height: 26, borderRadius: 999, border: "2px dashed #F5B98C", display: "flex" }} />
+      <div style={{ display: "flex", flexDirection: "column" }}><span style={{ fontSize: 19, fontWeight: 800 }}>{t}</span><span style={{ fontSize: 15, fontWeight: 600, color: "#64748B" }}>{w}</span></div>
+    </div>)}
+    <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+      <span style={{ flex: 1, display: "flex", justifyContent: "center", background: "#F47C26", color: "#fff", borderRadius: 999, padding: "10px 0", fontSize: 17, fontWeight: 800 }}>Use these steps</span>
+      <span style={{ flex: 1, display: "flex", justifyContent: "center", background: "#F1F5F9", borderRadius: 999, padding: "10px 0", fontSize: 17, fontWeight: 800 }}>Change</span>
+    </div>
+  </div>;
+}
+
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const path = pathForSlug((await ctx.params).slug);
   if (!path) return new Response("not found", { status: 404 });
@@ -43,7 +62,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
           <span>bayanihan.dasig.org</span>
         </div>
       </div>
-      {screen
+      {path === "/bayani" ? <BayaniCard />
+        : screen
         ? <div style={{ position: "absolute", right: 70, top: 70, width: 330, padding: 9, borderRadius: 52, background: "linear-gradient(135deg, #5b6372, #14171d 50%, #6b7382)", boxShadow: "0 30px 60px rgba(15,23,42,.30)", display: "flex", transform: "rotate(4deg)" }}>
             <img src={screen} width={312} height={675} alt="" style={{ borderRadius: 44 }} />
           </div>

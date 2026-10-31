@@ -70,3 +70,40 @@ export function BreakdownScene() {
     </div>
   </div>;
 }
+
+/** Bayani with a group chat message: the message in, a draft out, and a person who says yes. Sample message. */
+export function BayaniScene() {
+  return <div className="stage bayani-stage" aria-hidden="true">
+    <div className="bubble"><img src={av(5)} alt="" /><div><b>Marco</b><p>Ate, di ako makakapunta Saturday pero may 2 sacks of rice ako para sa feeding. Dadalhin ko na lang sa parish hall Friday night.</p></div></div>
+    <div className="bayani-arrow"><span><Icon name="spark" size={16} /></span>Bayani drafts, on the phone</div>
+    <div className="shot bayani-draft">
+      <div className="shot-bar"><span className="mark"><Icon name="spark" size={16} /></span>Suggested by Bayani · check it</div>
+      <div className="shot-row"><span className="tile" style={{ background: "#FFEBD9", color: "#B4500F" }}><Icon name="sack" size={15} /></span><span className="lines"><b>Offer: 2 sacks of rice</b><i>From Marco, for Saturday feeding</i></span></div>
+      <div className="shot-row"><span className="tile" style={{ background: "#FFEBD9", color: "#B4500F" }}><Icon name="handshake" size={15} /></span><span className="lines"><b>Receive the rice at the parish hall</b><i>Friday, 6–9 PM · open</i></span></div>
+      <div className="shot-row"><span className="tile" style={{ background: "#FFEBD9", color: "#B4500F" }}><Icon name="repeat" size={15} /></span><span className="lines"><b>Marco's Saturday slot opens up</b><i>Someone else can say “I'm in”</i></span></div>
+      <div className="draft-btns"><span className="yes">Looks right</span><span className="edit">Change it</span></div>
+    </div>
+  </div>;
+}
+
+/** Bayani inside a task: suggested smaller steps, and who on the roster to ask, with the reason. Fictional. */
+export function BayaniPlanScene() {
+  const steps = [
+    { t: "Shortlist 3 venues", who: "Ask Ana · booked the court last year", f: 4 },
+    { t: "Visit the top two", who: "Ask Josh · free on Saturdays", f: 3 },
+    { t: "Get written quotes", who: "Good first step · open to the team", f: 0 },
+    { t: "Pay the deposit", who: "Finance team · needs a second person to confirm", f: 6 },
+  ];
+  return <div className="stage bayani-stage" aria-hidden="true">
+    <div className="shot bayani-draft">
+      <div className="shot-bar"><span className="mark"><Icon name="flag" size={16} /></span>Secure the venue · Fun run 2027</div>
+      <div className="bayani-suggest"><span><Icon name="spark" size={14} /></span>Bayani suggests 4 smaller steps</div>
+      {steps.map((s) => <div className="shot-row" key={s.t}>
+        <span className="tile" style={{ background: "#fff", border: "1.5px dashed #F5B98C" }} />
+        <span className="lines"><b>{s.t}</b><i>{s.who}</i></span>
+        {s.f ? <span className="faces"><img src={av(s.f)} alt="" /></span> : <span className="faces"><span className="open-dot">+</span></span>}
+      </div>)}
+      <div className="draft-btns"><span className="yes">Use these steps</span><span className="edit">Change</span></div>
+    </div>
+  </div>;
+}
