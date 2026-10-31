@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import { Doc } from "@/components/Doc";
 
-export const metadata: Metadata = { title: "Status" };
+export const metadata: Metadata = meta("/status");
 
 export default function Status() {
   const rows = [

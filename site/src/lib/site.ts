@@ -1,6 +1,6 @@
 /** Facts the whole site shares. Change them here, never in a page. */
 export const site = {
-  name: "Dasig Ecosystem",
+  name: "Bayanihan",
   url: "https://bayanihan.dasig.org",
   api: "https://ecosystem.dasig.org",
   /** A review banner on every page (local review only). */
@@ -10,6 +10,6 @@ export const site = {
   contact: "hello@dasig.org",
   privacy: "privacy@dasig.org",
   pilotMail: "/pilot",
-  reportMail: "mailto:hello@dasig.org?subject=Report%20on%20the%20Dasig%20network",
+  reportMail: "mailto:hello@dasig.org?subject=Report%20on%20the%20Dasig%20Ecosystem",
   networkOpens: "2027",
 };

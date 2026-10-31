@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import { Doc } from "@/components/Doc";
 
-export const metadata: Metadata = { title: "Run your own Bayanihan Server", description: "Host a Bayanihan Server for your LGU, federation or school: one container, SQLite, and continuous backups to S3-compatible storage." };
+export const metadata: Metadata = meta("/docs/self-hosting");
 
 export default function SelfHosting() {
   return <Doc path="/docs/self-hosting" section="/docs">

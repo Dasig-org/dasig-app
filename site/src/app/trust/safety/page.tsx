@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import { Doc } from "@/components/Doc";
 import { site } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Safety and reports", description: "How to report a group, a listing or a person on the Dasig Ecosystem, and what happens next." };
+export const metadata: Metadata = meta("/trust/safety");
 
 export default function Safety() {
   return <Doc path="/trust/safety" section="/trust">

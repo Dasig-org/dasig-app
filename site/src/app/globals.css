@@ -141,8 +141,24 @@ section { padding: 56px 0; }
 .nav a.btn-primary:hover { background: var(--accent); }
 
 /* phone frames for design screens */
-.phone { margin: 0; flex: none; border-radius: 34px; padding: 7px; background: #0F172A; box-shadow: 0 24px 50px rgba(15,23,42,.18); }
-.phone img { width: 100%; height: auto; border-radius: 28px; background: #f1f5f9; }
+/* A phone with some definition: a titanium edge, a black bezel, side keys, a camera island, light on the glass.
+   Every size is a share of the phone's own width or height, so the same frame works at 168px and at 260px. */
+.phone { position: relative; margin: 0; flex: none; padding: 0; border-radius: 15% / 7%;
+  background: linear-gradient(135deg, #5b6372 0%, #2a2f39 18%, #14171d 50%, #2a2f39 82%, #6b7382 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), inset 0 0 0 2.5px #0b0d11, inset 0 1px 2px rgba(255,255,255,.35),
+    0 2px 3px rgba(15,23,42,.18), 0 18px 30px -14px rgba(15,23,42,.45), 0 40px 70px -24px rgba(15,23,42,.35); }
+.phone-screen { position: relative; display: block; overflow: hidden; margin: 2.2%; border-radius: 13.2% / 6.1%; background: #000;
+  box-shadow: 0 0 0 2.2px #050608; }
+.phone img { display: block; width: 100%; height: auto; }
+.phone-island { position: absolute; top: 1.3%; left: 50%; width: 26%; aspect-ratio: 3.6 / 1; transform: translateX(-50%); border-radius: 999px; background: #050608;
+  box-shadow: inset -6px 0 4px -3px rgba(60,80,120,.35); }
+.phone-glare { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(118deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,.04) 26%, rgba(255,255,255,0) 40%); }
+.phone-keys, .phone::after { position: absolute; width: 1.3%; border-radius: 2px; background: linear-gradient(90deg, #3c424d, #737b89 60%, #2a2f39); }
+.phone-keys { left: -1%; top: 17%; height: 4.5%; box-shadow: 0 calc(var(--k, 1) * 0px) 0 transparent; }
+.phone-keys::before, .phone-keys::after { content: ""; position: absolute; left: 0; width: 100%; height: 160%; border-radius: 2px; background: inherit; }
+.phone-keys::before { top: 180%; }
+.phone-keys::after { top: 400%; }
+.phone::after { content: ""; right: -1%; top: 24%; height: 10%; }
 .phones-wrap { margin-top: 26px; }
 .phones { display: flex; gap: 18px; overflow-x: auto; padding: 12px 4px 18px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
 .phones .phone { scroll-snap-align: center; }
@@ -230,3 +246,68 @@ section { padding: 56px 0; }
   .prose td:last-child { display: block; margin-top: 4px; }
   .prose td code { overflow-wrap: anywhere; word-break: normal; }
 }
+
+/* Small chains: a big thing, then the steps it becomes. */
+.chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.chain .from { font-weight: 700; }
+.chain .to { background: var(--wash); border-radius: 999px; padding: 5px 11px; font-size: 13.5px; font-weight: 600; }
+.chain .arrow { color: var(--primary); font-weight: 700; }
+.soon { display: inline-block; margin-left: 8px; background: #FFEBD9; color: #B4500F; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 700; vertical-align: 2px; }
+.open-dot { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 1.5px dashed var(--primary); color: var(--primary); font-weight: 700; }
+.quote { font-size: 20px; line-height: 1.45; font-weight: 600; color: var(--ink); max-width: 640px; }
+.quote span { display: block; color: var(--s500, #64748B); font-weight: 500; }
+.layers { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 14px; }
+.layers li { display: flex; align-items: center; gap: 14px; font-weight: 600; font-size: 17px; }
+.layers .icon { width: 42px; height: 42px; margin: 0; flex: none; }
+.layers .soon { margin-left: 8px; }
+.parts .card { display: flex; flex-direction: column; }
+.parts .part-role { margin: 0; font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--primary); }
+.parts h3 { margin: 4px 0 6px; }
+.parts .part-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 12px; }
+.parts .tag { background: var(--wash); border-radius: 999px; padding: 3px 10px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.parts .soon { margin-left: 0; }
+.parts .part-own { background: transparent; border: 1.5px dashed var(--s200, #E2E8F0); justify-content: center; }
+.parts .part-link { font-weight: 700; color: var(--ink); margin-top: 6px; }
+#offline .phones { justify-content: center; }
+.parts .on-white .tag { background: #fff; }
+
+/* ── directory ────────────────────────────────────────────────────────────────────────────────── */
+.dir-grid { list-style: none; padding: 0; margin: 22px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.dir-tile { width: 100%; min-height: 150px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 10px 14px; border: 0; border-radius: 22px; background: var(--white); cursor: pointer; font: inherit; color: var(--ink); text-align: center; }
+.dir-tile:hover, .dir-tile:focus-visible { background: #FFF6E9; outline: none; }
+.dir-tile:focus-visible { box-shadow: 0 0 0 3px rgba(244,124,38,.45); }
+.dir-logo { border-radius: 50%; object-fit: cover; background: var(--wash); flex: none; }
+.dir-initials { display: grid; place-items: center; background: #FFEBD9; color: #B4500F; font-weight: 800; }
+.dir-name { font-weight: 700; font-size: 14.5px; line-height: 1.3; }
+.dir-place { font-size: 12.5px; color: var(--s500, #64748B); }
+.dir-dialog { border: 0; padding: 0; border-radius: 26px; width: min(380px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); box-shadow: 0 24px 60px rgba(15,23,42,.25); }
+.dir-dialog::backdrop { background: rgba(15,23,42,.45); }
+.dir-sheet { position: relative; padding: 26px 22px 22px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.dir-sheet h3 { margin: 12px 0 2px; font-size: 20px; }
+.dir-meta { margin: 0; color: var(--s500, #64748B); font-size: 14px; }
+.dir-sheet .pill-row { justify-content: center; }
+.dir-sheet .pill { background: var(--wash); font-size: 13px; padding: 5px 11px; }
+.dir-about { margin: 14px 0 0; font-size: 15px; text-align: left; align-self: stretch; }
+.dir-sub { align-self: stretch; text-align: left; margin: 16px 0 6px; font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--primary); }
+.dir-projects { list-style: none; padding: 0; margin: 0; align-self: stretch; text-align: left; background: var(--wash); border-radius: 18px; }
+.dir-projects li { display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px; font-size: 14.5px; border-top: 1px solid #fff; }
+.dir-projects li:first-child { border-top: 0; }
+.dir-projects span { color: var(--s500, #64748B); font-size: 13px; white-space: nowrap; }
+.dir-close { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--wash); font-size: 26px; line-height: 1; color: var(--ink); cursor: pointer; }
+.dir-close:hover { background: #E2E8F0; }
+.dir-empty { margin-top: 22px; padding: 28px 22px; border-radius: 22px; background: var(--white); text-align: center; }
+@media (max-width: 759px) {
+  .dir-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .dir-tile { min-height: 0; padding: 14px 6px 12px; gap: 6px; border-radius: 18px; }
+  .dir-tile .dir-logo { width: 52px !important; height: 52px !important; }
+  .dir-name { font-size: 13px; }
+  .dir-place { display: none; }
+}
+.dir-first { padding: 36px 22px; }
+.dir-first p { max-width: 460px; margin: 8px auto 0; }
+.dir-seats { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
+.dir-seats span { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; border: 2px dashed #F5B98C; color: var(--primary); font-weight: 700; font-size: 22px; }
+.dir-seats span:first-child { border: 0; background: #FFF6E9; }
+.dir-yours { text-decoration: none; border: 2px dashed #F5B98C; background: transparent; }
+.dir-plus { width: 64px; height: 64px; display: grid; place-items: center; background: #FFF6E9; color: var(--primary); font-size: 28px; font-weight: 700; }
+@media (max-width: 759px) { .dir-tile .dir-plus { width: 52px; height: 52px; } .dir-seats span { width: 48px; height: 48px; } }

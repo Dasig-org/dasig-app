@@ -1,7 +1,12 @@
 /** A design screen from the app's mockups (apps/bayanihan/design), in a phone frame. */
 export function Phone({ src, alt, tilt = 0, width = 260 }: { src: string; alt: string; tilt?: number; width?: number }) {
   return <figure className="phone" style={{ width, transform: tilt ? `rotate(${tilt}deg)` : undefined }}>
-    <img src={`/screens/${src}.webp`} alt={alt} loading="lazy" width={width} height={Math.round(width * 2.166)} />
+    <span className="phone-keys" aria-hidden="true" />
+    <span className="phone-screen">
+      <img src={`/screens/${src}.webp`} alt={alt} loading="lazy" width={width} height={Math.round(width * 2.166)} />
+      <span className="phone-island" aria-hidden="true" />
+      <span className="phone-glare" aria-hidden="true" />
+    </span>
   </figure>;
 }
 

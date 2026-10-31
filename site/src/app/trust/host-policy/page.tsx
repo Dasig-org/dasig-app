@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import { Doc } from "@/components/Doc";
 import { Markdown } from "@/lib/md";
 
-export const metadata: Metadata = { title: "Host policy", description: "The Dasig Ecosystem's rules as a host: who can join, verification, what the server enforces, privacy, and promises about leaving." };
+export const metadata: Metadata = meta("/trust/host-policy");
 
 /** Rendered from content/HOST_POLICY.md, a copy of docs/network/HOST_POLICY.md made by `npm run sync` (Vercel builds only this folder). Internal status lines and open items are left out. */
 function policy() {

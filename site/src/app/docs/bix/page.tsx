@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import { Doc } from "@/components/Doc";
 
-export const metadata: Metadata = { title: "BIX: the Bayanihan Information Exchange", description: "BIX is an open format for civic and volunteer work: groups, teams, tasks, needs, offers, votes and signed records, modelled on HL7 FHIR." };
+export const metadata: Metadata = meta("/docs/bix");
 
 const TYPES = [
   ["Organization, Person, Role, Position", "Who: groups (registered or informal), people, their roles, and positions with seats and terms"],

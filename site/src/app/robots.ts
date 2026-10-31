@@ -1,7 +1,10 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/lib/site";
 
-/** While the site is a draft, pages carry noindex instead of a disallow, so the noindex is actually read. */
+/**
+ * Crawlers may fetch every page. Pages that shouldn't be indexed say so with noindex (the whole site while it's a
+ * draft, and invite links always), and a disallow would stop crawlers from ever reading that noindex.
+ */
 export default function robots(): MetadataRoute.Robots {
-  return { rules: [{ userAgent: "*", allow: "/", disallow: ["/join/"] }], sitemap: !site.indexable ? undefined : `${site.url}/sitemap.xml` };
+  return { rules: [{ userAgent: "*", allow: "/" }], ...(site.indexable ? { sitemap: `${site.url}/sitemap.xml` } : {}) };
 }

@@ -50,3 +50,23 @@ export function NetworkScene() {
     </div>
   </div>;
 }
+
+/** One big job broken into small steps, each with someone on it. Fictional. */
+export function BreakdownScene() {
+  const steps = [
+    { t: "Ask the barangay for tables", who: "Done", f: 2, done: true },
+    { t: "Pick up 300 bottles of water", who: "Josh is on it", f: 3 },
+    { t: "Hand out water at km 3", who: "2 more hands", f: 0 },
+    { t: "Count what's left", who: "Good first step", f: 0 },
+  ];
+  return <div className="stage" aria-hidden="true">
+    <div className="shot" style={{ transform: "rotate(-.8deg)" }}>
+      <div className="shot-bar"><span className="mark"><Icon name="flag" size={16} /></span>Water station at km 3</div>
+      {steps.map((s) => <div className="shot-row" key={s.t}>
+        <span className="tile" style={s.done ? { background: "var(--primary)", color: "#fff" } : { background: "#fff", border: "1.5px solid var(--s200)" }}>{s.done ? <Icon name="check" size={15} /> : null}</span>
+        <span className="lines"><b style={s.done ? { color: "var(--s500)" } : undefined}>{s.t}</b><i>{s.who}</i></span>
+        {s.f ? <span className="faces"><img src={av(s.f)} alt="" /></span> : <span className="faces"><span className="open-dot">+</span></span>}
+      </div>)}
+    </div>
+  </div>;
+}

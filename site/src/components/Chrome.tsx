@@ -12,7 +12,7 @@ export function Header({ current }: { current?: string }) {
   return <>
     {site.draft ? <div className="draft">Draft for review. Not published. Nothing here is live yet.</div> : null}
     <header className="top"><div className="wrap">
-      <Link href="/" className="brand" aria-label="Dasig Ecosystem, home"><img src="/emblem.png" alt="" width={34} height={34} /><span>Dasig<small>ECOSYSTEM</small></span></Link>
+      <Link href="/" className="brand" aria-label="Bayanihan, home"><img src="/emblem.png" alt="" width={34} height={34} /><span>Bayanihan</span></Link>
       <nav className="nav" aria-label="Main">
         {NAV.map((n) => <Link key={n.href} href={n.href} className="nav-wide" aria-current={current === n.href ? "page" : undefined}>{n.label}</Link>)}
         <a className="btn btn-primary btn-sm" href={site.pilotMail}>Join the pilot</a>
@@ -35,8 +35,8 @@ export function Footer() {
   return <footer className="foot"><div className="wrap">
     <div className="foot-grid">
       <div>
-        <Link href="/" className="brand"><img src="/emblem.png" alt="" width={30} height={30} /><span style={{ color: "var(--ink)" }}>Dasig Ecosystem</span></Link>
-        <p style={{ maxWidth: 340 }}>An open-source app and ecosystem for volunteer groups and organizations, run by Dasig Inc.</p>
+        <Link href="/" className="brand"><img src="/emblem.png" alt="" width={30} height={30} /><span style={{ color: "var(--ink)" }}>Bayanihan</span></Link>
+        <p style={{ maxWidth: 340 }}>Open tools for volunteer groups: the Dasig app, the Bayanihan Server, BIX and the Dasig Ecosystem. From Dasig Inc.</p>
       </div>
       <div><h4>Use it</h4><Link href="/get">Get the app</Link><Link href="/directory">Directory</Link><Link href="/docs/start-a-group">Start a group</Link><Link href="/docs/volunteering">Volunteering</Link></div>
       <div><h4>Build on it</h4><Link href="/docs/bix">BIX</Link><Link href="/docs/api">API</Link><Link href="/docs/self-hosting">Run your own server</Link><Link href="/about#open-source">Open source</Link></div>

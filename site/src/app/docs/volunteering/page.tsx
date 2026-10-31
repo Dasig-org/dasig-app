@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import { Phones } from "@/components/Phone";
 import { Doc } from "@/components/Doc";
 
-export const metadata: Metadata = { title: "Volunteering with Dasig", description: "How volunteers find work in Dasig, take it, and keep a signed record of what they did." };
+export const metadata: Metadata = meta("/docs/volunteering");
 
 export default function Volunteering() {
   return <Doc path="/docs/volunteering" section="/docs">

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import Link from "next/link";
 import { Doc } from "@/components/Doc";
 
-export const metadata: Metadata = { title: "Docs", description: "Guides for groups and volunteers using Dasig, and documentation for BIX, the API and running your own Bayanihan Server." };
+export const metadata: Metadata = meta("/docs");
 
 const CARDS = [
   { href: "/docs/start-a-group", t: "Start a group", d: "Set up your group, its teams and its first project." },

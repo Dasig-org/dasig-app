@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
+import { PAGES, absolute, type PagePath } from "@/lib/seo";
 import { site } from "@/lib/site";
 
-const PAGES = ["", "/pilot", "/directory", "/get", "/about", "/docs", "/docs/start-a-group", "/docs/volunteering", "/docs/hubs", "/docs/bix", "/docs/api", "/docs/self-hosting", "/trust", "/trust/host-policy", "/trust/privacy", "/trust/safety", "/status"];
-
+/** Every page in lib/seo.ts. Empty while the site carries noindex, so the two never disagree. No lastModified: we don't invent dates. */
 export default function sitemap(): MetadataRoute.Sitemap {
-  return !site.indexable ? [] : PAGES.map((p) => ({ url: `${site.url}${p}` }));
+  return site.indexable ? (Object.keys(PAGES) as PagePath[]).map((p) => ({ url: absolute(p) })) : [];
 }

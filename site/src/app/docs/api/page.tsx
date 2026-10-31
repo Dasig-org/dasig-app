@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import { Doc } from "@/components/Doc";
 import { site } from "@/lib/site";
 
-export const metadata: Metadata = { title: "API reference", description: "The Bayanihan Server API: read, search and change BIX records, verify signatures, share links, files, pairing and export." };
+export const metadata: Metadata = meta("/docs/api");
 
 const API: [string, string, string][] = [
   ["GET", "/metadata", "What this server supports: BIX version, resource types, interactions"],

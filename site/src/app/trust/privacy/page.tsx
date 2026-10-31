@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import Link from "next/link";
 import { Doc } from "@/components/Doc";
 import { site } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Privacy", description: "What the Dasig app and the Dasig Ecosystem keep, where, and your rights over it." };
+export const metadata: Metadata = meta("/trust/privacy");
 
 export default function Privacy() {
   return <Doc path="/trust/privacy" section="/trust">

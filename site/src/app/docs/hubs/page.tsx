@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import { Phones } from "@/components/Phone";
 import { Doc } from "@/components/Doc";
 
-export const metadata: Metadata = { title: "Hubs and working offline", description: "How a Dasig group runs on one phone as its hub, with no internet, and how records stay safe." };
+export const metadata: Metadata = meta("/docs/hubs");
 
 export default function Hubs() {
   return <Doc path="/docs/hubs" section="/docs">

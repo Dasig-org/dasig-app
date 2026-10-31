@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { meta } from "@/lib/seo";
 import { Footer, Header } from "@/components/Chrome";
 import { site } from "@/lib/site";
 import { NetworkScene } from "@/components/Scenes";
 
-export const metadata: Metadata = { title: "About", description: "Who makes Dasig, how it's open source, and how the names fit together." };
+export const metadata: Metadata = meta("/about");
 
 const PARTS = [
   ["Dasig", "The app for volunteers and organizations", "AGPL-3.0"],
