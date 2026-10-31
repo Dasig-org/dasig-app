@@ -29,7 +29,7 @@ export const PAGES = {
     kicker: "Guide", og: "Find something worthwhile to do today" },
   "/docs/hubs": { title: "Hubs and working offline", description: "Run your volunteer group with no internet: every phone runs its own Bayanihan Server, and one phone can be the group's hub.",
     kicker: "Works offline", og: "Your phone is the server" },
-  "/docs/bix": { title: "BIX: the Bayanihan Information Exchange", description: "BIX is an open standard for civic and volunteer work: groups, teams, tasks, needs, offers, votes and signed records, modelled on HL7 FHIR.",
+  "/docs/bix": { title: "BIX: the Bayanihan Information Exchange", description: "BIX is an open standard for volunteer and civic work, developed by Dasig Inc.: teams, tasks and smaller steps, needs, offers and signed records, modelled on HL7 FHIR.",
     kicker: "Open standard", og: "BIX: one shared format for civic work" },
   "/docs/api": { title: "API reference", description: "The Bayanihan Server API: read, search and change BIX records, verify signatures, share links, files, pairing and export.",
     kicker: "For developers", og: "The Bayanihan Server API" },
