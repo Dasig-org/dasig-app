@@ -15,7 +15,7 @@ await tap(don, "Next: how it's run"); await don.waitForTimeout(1200); if (await 
 await tap(don, "Create the group"); await tap(don, "Start a project");
 await don.getByPlaceholder(/e\.g\./).first().fill("Meetup 12");
 await don.getByText("Your group's setting doesn't allow this").waitFor(); log("project can't be more open than its group");
-await don.getByText(/^Keep these \d+ teams$/).click(); await don.getByText("Needs a lead").first().waitFor();
+await don.getByText(/^Keep these \d+ teams$/).click(); await don.getByText("Ask someone to lead").first().waitFor();
 await don.getByText("Communications", { exact: true }).click(); await don.getByText("You lead it").waitFor().catch(() => {});
 await don.getByPlaceholder("Add something to do").fill("Bring chairs"); await don.getByPlaceholder("Add something to do").press("Enter");
 await don.getByText("Bring chairs").click(); await tap(don, "Plan this task");

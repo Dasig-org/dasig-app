@@ -31,7 +31,7 @@ await don.getByPlaceholder("e.g. Lahug Uplands Fun Run 2027").fill("Lahug Upland
 await don.getByPlaceholder("e.g. LU").fill("LU");
 await don.getByPlaceholder("e.g. 2027-03-06").fill("2027-03-06");
 await don.getByText(/Keep these \d+ teams/).click();
-await don.getByText("Needs a lead").first().waitFor(); await shot(don, "07-project"); log("project page");
+await don.getByText("Ask someone to lead").first().waitFor(); await shot(don, "07-project"); log("project page");
 await don.getByLabel("Edit project").click(); await don.getByText("Edit project", { exact: true }).waitFor();
 await don.getByLabel("What it's about").fill("Two days of talks and workshops in Cebu"); await shot(don, "07a-edit-project"); await tap(don, "Save");
 await don.getByText("Two days of talks and workshops in Cebu").waitFor(); log("project details edited by its officer");
@@ -50,7 +50,7 @@ await mia.getByPlaceholder("e.g. Mia").fill("Mia"); await tap(mia, "Join the tea
 await mia.getByText("Draft call for speakers").click();
 await tap(mia, "I'll take it"); await mia.getByText("Mark done").waitFor();
 await tap(mia, "Mark done");
-await mia.getByText("Recorded and signed by your group").waitFor(); await shot(mia, "09-done"); log("Mia did it: recorded and signed");
+await mia.getByText("Signed by your group · unchanged").waitFor(); await shot(mia, "09-done"); log("Mia did it: recorded and signed");
 await mia.goto(APP + "/home"); await mia.getByText(/Good (morning|afternoon|evening), Mia/).waitFor(); await shot(mia, "10-volunteer-home"); log("volunteer home");
 
 // Don: the team page now shows the roster as one line that opens the people view

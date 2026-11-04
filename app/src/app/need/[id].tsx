@@ -47,7 +47,7 @@ export default function Need() {
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name="box" size={56} tone="white" />
         <View style={{ flex: 1 }}><Meta>{[`Need`, ini?.title, shortRef(need)].filter(Boolean).join(" · ")}</Meta><Text style={[t.title, { fontSize: 24 }]}>{need.category?.display}</Text></View></View>
       <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>{need.priority === "urgent" ? <Pill tone="state">Urgent</Pill> : null}{need.neededBy ? <Pill>{`By ${short(need.neededBy)}`}</Pill> : null}</View>
-      {want ? <Panel style={{ marginTop: 12 }}><View style={{ paddingVertical: 12 }}><View style={{ flexDirection: "row", justifyContent: "space-between" }}><Text style={t.row}>Covered</Text><Text>{`${got} of ${want} ${unit}`}</Text></View>
+      {want ? <Panel style={{ marginTop: 12 }}><View style={{ paddingVertical: 12 }}><View style={{ flexDirection: "row", justifyContent: "space-between" }}><Text style={t.row}>Covered</Text><Text>{`${got} of ${want} ${want === 1 ? unit : unit === "box" ? "boxes" : /s$/.test(unit) ? unit : `${unit}s`}`}</Text></View>
         <View style={{ height: 8, borderRadius: 4, backgroundColor: c.wash, marginTop: 8, overflow: "hidden" }}><View style={{ width: `${Math.min(1, got / want) * 100}%`, height: 8, backgroundColor: c.accent }} /></View></View></Panel> : null}
       {need.status !== "met" ? <Buttons><Primary label="I can help with this" onPress={() => setOffering(true)} /></Buttons> : null}
       {msg ? <Notice>{msg}</Notice> : null}

@@ -9,6 +9,6 @@ export const type = {
   row: { fontSize: 15, fontWeight: "600" as const, color: c.ink },
   meta: { fontSize: 13, color: c.s500 },
   body: { fontSize: 14.5, color: c.slate, lineHeight: 21 },
-  eyebrow: { fontSize: 11, fontWeight: "700" as const, letterSpacing: 1.8, textTransform: "uppercase" as const, color: c.s400 },
+  eyebrow: { fontSize: 12, fontWeight: "700" as const, letterSpacing: 1.4, textTransform: "uppercase" as const, color: c.s500 },
 };
 export const avatarColors = [c.accent, c.slate, c.gold, c.primary, c.ink, c.s400];

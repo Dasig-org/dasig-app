@@ -202,7 +202,7 @@ export function Tip({ id, title, children, onPress }: { id: string; title: strin
   const { useState } = require("react") as typeof import("react");
   const AsyncStorage = (require("@react-native-async-storage/async-storage") as { default: { getItem(k: string): Promise<string | null>; setItem(k: string, v: string): Promise<void> } }).default;
   const [show, setShow] = useState(false);
-  useEffect(() => { AsyncStorage.getItem(`dasig.tip.${id}`).then((v) => setShow(!v)); }, [id]);
+  useEffect(() => { AsyncStorage.getItem(`dasig.tip.${id}`).then((v) => { setShow(!v); if (!v) AsyncStorage.setItem(`dasig.tip.${id}`, "1"); }); }, [id]);
   if (!show) return null;
   return <View accessibilityRole="summary" style={{ backgroundColor: c.sand, borderRadius: radius.tile, paddingVertical: 10, paddingLeft: 12, paddingRight: 6, marginTop: 10, flexDirection: "row", gap: 10, alignItems: "center" }}>
     <Icon name="spark" size={18} />

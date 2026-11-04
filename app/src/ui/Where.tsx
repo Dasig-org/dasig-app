@@ -45,9 +45,9 @@ export function Where() {
   const w = useWhere();
   return (
     <Pressable onPress={() => router.push("/sync" as never)} accessibilityRole="button" accessibilityLabel={`${w.text}. Open sync.`} hitSlop={6}
-      style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: w.warn ? c.sand : "rgba(15,23,42,0.05)", alignSelf: "center", maxWidth: 250 }}>
-      <Icon name={w.icon} size={13} color={w.warn ? c.accent : c.s500} />
-      <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "600", color: w.warn ? c.accent : c.s500, flexShrink: 1 }}>{w.text}</Text>
+      style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: w.warn ? c.sand : "transparent", alignSelf: "center", maxWidth: 250 }}>
+      <Icon name={w.icon} size={12} color={w.warn ? c.accent : c.s400} />
+      <Text numberOfLines={1} style={{ fontSize: w.warn ? 12 : 11.5, fontWeight: w.warn ? "600" : "500", color: w.warn ? c.accent : c.s400, flexShrink: 1 }}>{w.text}</Text>
       {w.warn ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.accent }} /> : null}
     </Pressable>
   );

@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { act, personName, shortRef, stateLabel, teamIcon } from "@/lib/work";
+import { act, personName, stateLabel, teamIcon } from "@/lib/work";
 import { ContextPill } from "@/ui/Context";
 import { Avatar, Buttons, Eyebrow, Hero, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Tip } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
@@ -64,7 +64,7 @@ export default function Home() {
           <Row left={<IconCircle name="plus" tone="grey" />} title="Start a project" onPress={() => router.push("/new-project")} last />
         </Panel>
         {open.length ? <><Eyebrow right={`${open.length}`}>Open work</Eyebrow><Panel>
-          {open.slice(0, 5).map((x, i) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta={shortRef(x)} right={<Pill>Open</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === Math.min(open.length, 5) - 1} />)}
+          {open.slice(0, 5).map((x, i) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta={(data?.teams ?? []).find((y) => `Team/${y.id}` === x.team?.reference)?.name} right={<Pill>Open</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === Math.min(open.length, 5) - 1} />)}
         </Panel></> : null}
         <Eyebrow>Your group</Eyebrow>
         <Panel>
@@ -82,21 +82,33 @@ export default function Home() {
       {error ? <Notice>{error}</Notice> : null}
       <Tip id="volunteer-home" title="Find something to do">Tap “I'm in” to take it.</Tip>
       {asked.map((x) => <View key={x.id}><Eyebrow>Asked of you</Eyebrow>
-        <Hero><View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><IconCircle name="pen" size={48} /><View style={{ flex: 1 }}><Text style={t.row}>{x.title}</Text><Meta>{shortRef(x) ?? ""}</Meta></View></View>
+        <Hero><View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><IconCircle name="pen" size={48} /><View style={{ flex: 1 }}><Text style={t.row}>{x.title}</Text><Meta>{(data?.teams ?? []).find((y) => `Team/${y.id}` === x.team?.reference)?.name ?? ""}</Meta></View></View>
           <Buttons><Primary label="I'm in" onPress={() => answer(x, true)} /><Outline label="Can't make it" onPress={() => answer(x, false)} /></Buttons></Hero></View>)}
-      {mine.length ? <><Eyebrow>Yours now</Eyebrow><Panel>{mine.map((x, i) => <Row key={x.id} left={<IconCircle name="check" />} title={x.title} meta={shortRef(x)} right={<Pill tone={stateLabel(x, me).tone}>{stateLabel(x, me).label}</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === mine.length - 1} />)}</Panel></> : null}
-      <Eyebrow right={open.length ? `${open.length}` : undefined}>Lend a hand</Eyebrow>
-      {open.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-        {open.map((x) => { const tm = (data?.teams ?? []).find((y) => `Team/${y.id}` === x.team?.reference);
+      {mine.length ? <><Eyebrow>Yours now</Eyebrow><Panel>{mine.map((x, i) => <Row key={x.id} left={<IconCircle name="check" />} title={x.title} meta={(data?.teams ?? []).find((y) => `Team/${y.id}` === x.team?.reference)?.name} right={<Pill tone={stateLabel(x, me).tone}>{stateLabel(x, me).label}</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === mine.length - 1} />)}</Panel></> : null}
+      {open.length ? (() => { const x = open[0]!; const tm = (data?.teams ?? []).find((y) => `Team/${y.id}` === x.team?.reference);
+        const pr = (data?.projects ?? []).find((y) => `Initiative/${y.id}` === x.partOf?.reference); const going = (x.participant ?? []).filter((p: any) => p.status === "active").length;
+        return <><Eyebrow>Something worth doing</Eyebrow>
+          <Pressable onPress={() => router.push(`/task/${x.id}`)} accessibilityRole="button" accessibilityLabel={`${x.title}, ${tm?.name ?? ""}`} style={{ backgroundColor: c.white, borderRadius: radius.tile, overflow: "hidden" }}>
+            <View style={{ height: 140, backgroundColor: c.sand, alignItems: "center", justifyContent: "center" }}><IconCircle name={teamIcon(tm?.name ?? "")} size={72} tone="white" /></View>
+            <View style={{ padding: 16 }}>
+              <Meta>{[pr?.title, tm?.name].filter(Boolean).join(" · ")}</Meta>
+              <Text style={[t.title, { fontSize: 22, marginTop: 2 }]}>{x.title}</Text>
+              <Meta>{going ? `${going} already in` : x.goodFirstStep ? "A good first step" : "Be the first one in"}</Meta>
+              <Buttons><Primary label="I'm in" onPress={() => answer(x, true)} /></Buttons>
+            </View>
+          </Pressable></>; })() : null}
+      <Eyebrow right={open.length > 1 ? `${open.length - 1}` : undefined}>{open.length ? "More to help with" : "Lend a hand"}</Eyebrow>
+      {open.length > 1 ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+        {open.slice(1).map((x) => { const tm = (data?.teams ?? []).find((y) => `Team/${y.id}` === x.team?.reference);
           return <Pressable key={x.id} onPress={() => router.push(`/task/${x.id}`)} accessibilityRole="button" accessibilityLabel={`${x.title}, ${tm?.name ?? ""}`} style={{ width: 220 }}>
             <View style={{ height: 120, borderRadius: radius.tile, backgroundColor: c.sand, alignItems: "center", justifyContent: "center" }}><IconCircle name={teamIcon(tm?.name ?? "")} size={56} tone="white" /></View>
             <Text style={[t.row, { marginTop: 8 }]} numberOfLines={1}>{x.title}</Text><Meta>{tm?.name ?? "Open"}</Meta></Pressable>; })}
-      </ScrollView> : <Sand><IconCircle name="heart" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>Nothing open right now</Text><Meta>{s.groups.length ? "Your groups will post work here." : "Join a group to see their work."}</Meta></View></Sand>}
+      </ScrollView> : open.length ? null : <Sand><IconCircle name="heart" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>Nothing open right now</Text><Meta>{s.groups.length ? "Your groups will post work here." : "Join a group to see their work."}</Meta></View></Sand>}
       {!s.groups.length ? <Buttons><Primary label="Join a group" onPress={() => router.push("/volunteer" as never)} /></Buttons> : null}
       <Eyebrow>Near you</Eyebrow>
-      <Panel><Row left={<IconCircle name="pin" />} title="Groups working near you" meta="Needs internet and the Dasig Ecosystem" onPress={() => router.push("/nearby")} last /></Panel>
+      <Panel><Row left={<IconCircle name="pin" />} title="Groups working near you" meta="Find groups and projects to join" onPress={() => router.push("/nearby")} last /></Panel>
       <Eyebrow>Your story</Eyebrow>
-      <Sand><IconCircle name="check" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>{done.length ? `${done.length} thing${done.length === 1 ? "" : "s"} done` : "Your story starts with your first “I'm in”"}</Text><Meta>Recorded and signed by your groups</Meta></View></Sand>
+      <Sand><IconCircle name="check" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>{done.length ? `You helped with “${done[done.length - 1]!.title}”` : "Your story starts with your first “I'm in”"}</Text><Meta>{done.length ? `${done.length} thing${done.length === 1 ? "" : "s"} done · thanked and recorded` : "Every step you take is kept, and it's yours"}</Meta></View></Sand>
     </Screen>
   );
 }

@@ -9,11 +9,11 @@ import { Alert, Platform, Text, View } from "react-native";
 import { bix, BixError, type R } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { act, shortRef, stateLabel } from "@/lib/work";
+import { act, stateLabel } from "@/lib/work";
 import { Body, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton} from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { atMost, visibilityOf } from "@/ui/Privacy";
-import { c, type as t } from "@/ui/theme";
+import { c, radius, type as t } from "@/ui/theme";
 
 /** One template for every Task: the state decides the action (DESIGN_STANDARD §1a, §1b). */
 export default function Task() {
@@ -91,7 +91,7 @@ export default function Task() {
   return (
     <Screen back>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={task.status === "completed" ? "check" : "pen"} size={56} tone="white" />
-        <View style={{ flex: 1 }}><Meta>{[shortRef(task), team?.name].filter(Boolean).join(" · ")}</Meta><Text style={[t.title, { fontSize: 24 }]}>{task.title}</Text></View></View>
+        <View style={{ flex: 1 }}><Meta>{team?.name ?? ""}</Meta><Text style={[t.title, { fontSize: 24 }]}>{task.title}</Text></View></View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}><Pill tone={sl.tone}>{sl.label}</Pill>{task.due ? <Pill tone="ok">{`Due ${short(task.due)}`}</Pill> : null}{task.milestone ? <Pill tone="ok">Gate</Pill> : null}{task.goodFirstStep ? <Pill tone="ok">Good first step</Pill> : null}</View>
       {naming !== null ? <><Field value={naming} onChangeText={setNaming} placeholder="What needs doing" autoFocus /><Buttons><Primary label="Save" disabled={!naming.trim()} onPress={() => { run(bix.next(task, { title: naming.trim() })); setNaming(null); }} /><Outline label="Cancel" onPress={() => setNaming(null)} /></Buttons></> : null}
       {desc !== null ? <><Field value={desc} onChangeText={setDesc} multiline placeholder="What this is, and what done looks like" /><Buttons><Primary label="Save" onPress={() => { run(bix.next(task, { description: desc.trim() || undefined })); setDesc(null); }} /><Outline label="Cancel" onPress={() => setDesc(null)} /></Buttons></>
@@ -103,15 +103,18 @@ export default function Task() {
         {(task.checklist ?? []).map((x: any, i: number) => <Row key={i} left={<Check on={!!x.done} onPress={onIt || isLead ? () => run(act.toggle(task, i, me)) : undefined} />} title={x.text} />)}
         {(onIt || isLead) && task.status !== "completed" ? <View style={{ paddingVertical: 8 }}><Field value={item} onChangeText={setItem} placeholder="Add a smaller step" style={{ backgroundColor: c.wash }}
           onSubmitEditing={() => { if (item.trim()) { run(bix.next(task, { checklist: [...(task.checklist ?? []), { text: item.trim(), done: false }] })); setItem(""); } }} returnKeyType="done" /></View>
-          : (task.checklist ?? []).length ? null : <Row title="None yet" last />}
+          : (task.checklist ?? []).length ? null : <Row title="No smaller steps" meta="The lead can break this down" last />}
       </Panel>
 
 
       {task.status === "completed" && task.milestone && unblocks.length ? <><Eyebrow>{`The gate is open: ${unblocks.length} can go ahead`}</Eyebrow>
         <Panel>{unblocks.map((x, i) => <Row key={x.id} left={<IconCircle name="check" />} title={x.title} right={<Pill tone="ok">Ready</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === unblocks.length - 1} />)}</Panel></> : null}
-      {task.status === "completed" ? <View style={{ marginTop: 16 }}><Sand><Icon name="lock" color={c.accent} />
-        <View style={{ flex: 1 }}><Text style={t.row}>{signed?.allValid ? "Recorded and signed by your group" : "Recorded"}</Text>
-          <Meta>{signed?.signatures?.[0] ? `Signed ${new Date(signed.signatures[0].when).toLocaleString()} · unchanged` : "Added to the story of everyone who did it"}</Meta></View></Sand></View> : null}
+      {task.status === "completed" ? <View style={{ marginTop: 16, backgroundColor: c.sand, borderRadius: radius.tile, padding: 20, alignItems: "center" }}>
+        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: c.accent, alignItems: "center", justifyContent: "center" }}><Icon name="check" size={28} color="#fff" /></View>
+        <Text style={[t.title, { fontSize: 22, marginTop: 10, textAlign: "center" }]}>{(task.participant ?? []).some((p: any) => p.person?.reference === me) ? "Thank you!" : "Done"}</Text>
+        <Text style={[t.body, { textAlign: "center", marginTop: 2 }]}>{team?.name ? `It counts for ${team.name}, and for everyone who did it.` : "It counts for everyone who did it."}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10 }}><Icon name="lock" size={13} color={c.s500} /><Meta>{signed?.allValid ? "Signed by your group · unchanged" : "Recorded"}</Meta></View>
+      </View> : null}
 
       {(task.attachment ?? []).length || (canAdd && task.status !== "completed") ? <><Eyebrow right={(task.attachment ?? []).length ? `${(task.attachment ?? []).length}` : undefined}>Files</Eyebrow>
         <Files items={task.attachment ?? []} onAdd={canAdd && open ? () => setAdding(true) : undefined} onRemove={canEdit && open ? (a) => run(bix.next(task, { attachment: (task.attachment ?? []).filter((x: any) => x.hash !== a.hash) }), "File removed.") : undefined} /></> : null}

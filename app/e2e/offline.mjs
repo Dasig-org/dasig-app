@@ -9,7 +9,7 @@ await ana.goto(APP + "/"); await ana.getByPlaceholder("e.g. Don").fill("Ana"); a
 await ana.getByText("Start a group").click(); await ana.getByPlaceholder("e.g. Lahug Uplands Runners Club").fill("Rotaract Lahug Uplands");
 await ana.getByText("Create group", { exact: true }).click();
 await ana.getByPlaceholder("e.g. Lahug Uplands Fun Run 2027").fill("Coastal cleanup"); await ana.getByText(/Keep these/).click();
-await ana.getByText("Needs a lead").first().waitFor(); await ana.getByText("Communications", { exact: true }).click();
+await ana.getByText("Ask someone to lead").first().waitFor(); await ana.getByText("Communications", { exact: true }).click();
 await ana.getByPlaceholder("Add something to do").fill("Marshal, km 3"); await ana.getByPlaceholder("Add something to do").press("Enter");
 await ana.getByText("Marshal, km 3").waitFor();
 await ana.getByText("Invite your team").click(); const invite = await ana.getByText(/\/join\//).textContent();

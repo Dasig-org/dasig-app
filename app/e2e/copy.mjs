@@ -21,7 +21,7 @@ const rhea = await page(); await start(rhea, "Rhea"); await tap(rhea, "I run a g
 await rhea.getByPlaceholder("e.g. Lahug Uplands Runners Club").fill("Kabataan Tutors Lapu-Lapu"); await tap(rhea, "Next: how it's run");
 await rhea.getByText("Is this your group?").waitFor(); log("Rhea is asked first: is this your group?"); await tap(rhea, "No, ours is a different group");
 await tap(rhea, "Create the group"); await rhea.getByText("Bring your people in").waitFor(); await tap(rhea, "Start a project");
-await rhea.getByPlaceholder(/e\.g\./).first().fill("Saturday reading club"); await rhea.getByText(/^Keep these \d+ teams$/).click(); await rhea.getByText("Needs a lead").first().waitFor();
+await rhea.getByPlaceholder(/e\.g\./).first().fill("Saturday reading club"); await rhea.getByText(/^Keep these \d+ teams$/).click(); await rhea.getByText("Ask someone to lead").first().waitFor();
 await rhea.goto(APP + "/groups"); await rhea.getByText("Kabataan Tutors Lapu-Lapu").click();
 await rhea.goto(APP + "/home"); await rhea.getByText(/Your week, Rhea/).waitFor();
 await rhea.getByText("Group profile").click(); await tap(rhea, "Copy this group to the Dasig Ecosystem");
