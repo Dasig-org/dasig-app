@@ -5,16 +5,18 @@ import QRCode from "react-native-qrcode-svg";
 import { bix, now, type R } from "@/lib/bix";
 import { getConnection } from "@/lib/connection";
 import { appUrl } from "@/lib/env";
-import { ROLE_WORDS } from "@/lib/org";
+import { isCoreTeam, ROLE_WORDS, seesAllByRole } from "@/lib/org";
 import { pairUrl } from "@/lib/pairing";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { teamIcon } from "@/lib/work";
-import { Avatar, Buttons, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, Title } from "@/ui/kit";
+import { Avatar, Buttons, Check, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, Title } from "@/ui/kit";
 import { InviteOptions, linkOpts, type InviteOpts } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
 
-const ROLES = [{ value: "officer", label: "Officer" }, { value: "core-member", label: "Core member" }, { value: "member", label: "Member" }, { value: "volunteer-regular", label: "Regular volunteer" }, { value: "volunteer-episodic", label: "Volunteer" }] as const;
+const CORE_ROLES = [{ value: "officer", label: "Officer" }, { value: "core-member", label: "Core member" }, { value: "member", label: "Member" }] as const;
+const VOLUNTEER_ROLES = [{ value: "volunteer-regular", label: "Regular volunteer" }, { value: "volunteer-episodic", label: "Volunteer" }, { value: "service-learning", label: "Student volunteer" }] as const;
+const ROLES = [...CORE_ROLES, ...VOLUNTEER_ROLES] as const;
 
 /** People: everyone in the group, their role and position; invite, add by nickname, approve requests, change roles, add to teams. */
 export default function People() {
@@ -67,17 +69,17 @@ export default function People() {
   return (
     <Screen onRefresh={reload} back>
       <Title sub={s.current?.name}>People</Title>
-      <Tip id="people" title="Everyone counts">Volunteers are part of your group. Give them roles and teams.</Tip>
+      <Tip id="people" title="Core team and volunteers">The core team runs the group. Volunteers help with parts of it and see their own teams' work.</Tip>
       {manage ? <Buttons><Primary label="Invite people" onPress={() => invite()} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}
       {msg ? <Notice>{msg}</Notice> : null}
       {requests.length && manage ? <><Eyebrow right={`${requests.length}`}>Asking to join</Eyebrow><Panel>
         {requests.map((r, i) => <Row key={r.id} left={<Avatar name={name(r)} photo={data?.people[r.person.reference]?.photo} />} title={name(r)} meta="Wants to join as a volunteer" last={i === requests.length - 1}
           right={<View style={{ flexDirection: "row", gap: 6 }}><Outline label="Accept" onPress={() => act(() => bix.commit(bix.next(r, { status: "active", period: { start: now() } })))} /></View>} />)}
       </Panel></> : null}
-      {list("Officers", byRole(["officer"]))}
-      {list("Core members", byRole(["core-member"]))}
-      {list("Members", byRole(["member"]))}
-      {list("Volunteers", byRole(["volunteer-regular", "volunteer-episodic"]))}
+      {/* BIX "Core team and volunteers": two kinds of people, though everyone here volunteers. */}
+      {list("Core team", [...byRole(["officer"]), ...byRole(["core-member"]), ...byRole(["member"])])}
+      {list("Volunteers", byRole(["volunteer-regular", "volunteer-episodic", "service-learning"]))}
+      {list("Partners and donors", byRole(["partner-representative", "donor"]))}
 
       <Sheet open={asking} onClose={() => setAsking(false)}><InviteOptions what="your group" onCreate={(o) => invite(o)} /></Sheet>
       <Sheet open={!!inviting} onClose={() => setInviting(null)}>
@@ -97,15 +99,23 @@ export default function People() {
       <Sheet open={!!open} onClose={() => setOpen(null)}>
         {open ? <>
           <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><Avatar name={name(open.role)} size={44} photo={open.person?.photo} /><View><Text style={[t.row, { fontSize: 18 }]}>{name(open.role)}</Text><Meta>{open.person?.description ?? ""}</Meta></View></View>
-          <Eyebrow>Role</Eyebrow>
-          <Chips options={[...ROLES]} value={open.role.code?.code} onChange={(v) => { act(() => bix.commit(bix.next(open.role, { code: { system: "bayanihan:role", code: v } }))); setOpen(null); }} />
+          <Eyebrow>Core team</Eyebrow>
+          <Chips options={[...CORE_ROLES]} value={open.role.code?.code} onChange={(v) => { act(() => bix.commit(bix.next(open.role, { code: { system: "bayanihan:role", code: v } }))); setOpen(null); }} />
+          <Eyebrow>Volunteer</Eyebrow>
+          <Chips options={[...VOLUNTEER_ROLES]} value={open.role.code?.code} onChange={(v) => { act(() => bix.commit(bix.next(open.role, { code: { system: "bayanihan:role", code: v } }))); setOpen(null); }} />
+          <Eyebrow>What they see</Eyebrow>
+          {(() => { const code = open.role.code?.code; const granted = (open.role.permissions ?? []).some((p: any) => p.code === "view.organization");
+            if (seesAllByRole(code)) return <Panel style={{ backgroundColor: c.wash }}><Row left={<IconCircle name="eye" tone="white" />} title="All of the group's work" meta={`${ROLE_WORDS[code ?? ""]}s see everything`} last /></Panel>;
+            return <Panel style={{ backgroundColor: c.wash }}><Row left={<IconCircle name="eye" tone="white" />} title="All of the group's work" last
+              meta={granted ? "On. They can open every team's work" : isCoreTeam(code) ? "Off. Members see the teams in projects they're on" : "Off. Volunteers see their own teams, and work open to the group"}
+              right={<Check on={granted} onPress={() => { act(() => bix.commit(bix.next(open.role, { permissions: granted ? (open.role.permissions ?? []).filter((p: any) => p.code !== "view.organization") : [...(open.role.permissions ?? []), { system: "bayanihan:permission", code: "view.organization" }] }))); setOpen(null); }} />} /></Panel>; })()}
           {data?.positions.length ? <><Eyebrow>Position</Eyebrow>
             <Chips options={[{ value: "", label: "None" }, ...data.positions.map((p) => ({ value: `Position/${p.id}`, label: p.title }))]} value={open.role.position?.reference ?? ""}
               onChange={(v) => { act(() => bix.commit(bix.next(open.role, { position: v ? { reference: v } : undefined }))); setOpen(null); }} /></> : null}
           {data?.teams.length ? <><Eyebrow>Add to a team</Eyebrow><Panel style={{ backgroundColor: c.wash }}>
             {data.teams.map((tm) => { const on = (tm.participant ?? []).some((p: any) => p.person.reference === open.role.person.reference && p.status === "active");
               return <Row key={tm.id} left={<IconCircle name={teamIcon(tm.name)} tone="white" />} title={tm.name} right={on ? <Pill tone="state">On it</Pill> : <Pill>Add</Pill>}
-                onPress={on ? undefined : () => { act(() => bix.commit(bix.next(tm, { participant: [...(tm.participant ?? []), { person: open.role.person, role: open.role.code?.code?.startsWith("volunteer") ? "volunteer" : "member", status: "active" }] })), `Added to ${tm.name}.`); setOpen(null); }} />; })}
+                onPress={on ? undefined : () => { act(() => bix.commit(bix.next(tm, { participant: [...(tm.participant ?? []), { person: open.role.person, role: isCoreTeam(open.role.code?.code) ? "member" : "volunteer", status: "active" }] })), `Added to ${tm.name}.`); setOpen(null); }} />; })}
           </Panel></> : null}
           <Buttons><Outline flex label="Remove from the group" onPress={() => { act(() => bix.commit(bix.next(open.role, { status: "ended", period: { ...(open.role.period ?? {}), end: now() } })), "Removed. Their past work stays in the group's history and their story."); setOpen(null); }} /></Buttons>
         </> : null}

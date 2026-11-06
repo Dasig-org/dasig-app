@@ -24,4 +24,9 @@ export const STRUCTURES: Record<string, { label: string; summary: string; icon: 
   own: { label: "Our own way", summary: "Start with just you, add positions later", icon: "pen", positions: [] },
 };
 export type StructureKey = keyof typeof STRUCTURES;
-export const ROLE_WORDS: Record<string, string> = { officer: "Officer", "core-member": "Core member", member: "Member", "volunteer-regular": "Regular volunteer", "volunteer-episodic": "Volunteer" };
+export const ROLE_WORDS: Record<string, string> = { officer: "Officer", "core-member": "Core member", member: "Member", "volunteer-regular": "Regular volunteer", "volunteer-episodic": "Volunteer", "service-learning": "Student volunteer", "partner-representative": "Partner", donor: "Donor" };
+/** BIX "Core team and volunteers": the core team runs the group; everyone else helps with parts of it. Matches Core's CORE_TEAM_ROLES. */
+export const CORE_TEAM = ["officer", "core-member", "member"];
+export const isCoreTeam = (code?: string) => CORE_TEAM.includes(code ?? "");
+/** Who sees all of the group's work without being given it (BIX "Seeing other committees' work"). */
+export const seesAllByRole = (code?: string) => code === "officer" || code === "core-member";

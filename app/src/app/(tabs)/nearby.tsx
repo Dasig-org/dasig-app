@@ -23,6 +23,7 @@ export default function Nearby() {
   const [status, setStatus] = useState<"checking" | "offline" | "down" | "ok">("checking");
   const [cause, setCause] = useState<string>("all");
   const [q, setQ] = useState("");
+  const [place, setPlace] = useState("");
   const [found, setFound] = useState<Found | null>(null);
   const [open, setOpen] = useState<{ group?: R; project?: R & { groupName?: string } } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -31,7 +32,7 @@ export default function Nearby() {
     const net = await Network.getNetworkStateAsync().catch(() => null);
     if (net && net.isInternetReachable === false) return setStatus("offline");
     try {
-      const p = new URLSearchParams({ ...(cause !== "all" ? { cause } : {}), ...(q.trim() ? { q: q.trim() } : {}) });
+      const p = new URLSearchParams({ ...(cause !== "all" ? { cause } : {}), ...(q.trim() ? { q: q.trim() } : {}), ...(place.trim() ? { place: place.trim() } : {}) });
       const r = await fetch(`${networkUrl}/$directory?${p}`);
       if (!r.ok) return setStatus("down");
       setFound(await r.json()); setStatus("ok");
@@ -50,7 +51,8 @@ export default function Nearby() {
   return (
     <Screen onRefresh={search}>
       <Title sub="Groups and projects that chose to be found.">Who's working here</Title>
-      <Field value={q} onChangeText={setQ} placeholder="Search a name or place" returnKeyType="search" onSubmitEditing={search} />
+      <Field value={q} onChangeText={setQ} placeholder="Search a group or project" returnKeyType="search" onSubmitEditing={search} />
+      <Field value={place} onChangeText={setPlace} placeholder="Where, e.g. Lahug or Cebu City" returnKeyType="search" onSubmitEditing={search} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18 }}>
         <Chips options={[{ value: "all", label: "All" }, ...CAUSES.slice(0, 9).map((x) => ({ value: x.code, label: x.label }))]} value={cause} onChange={setCause} />
       </ScrollView>
@@ -66,10 +68,10 @@ export default function Nearby() {
           onPress={() => setOpen({ group: g })} last={i === found.groups.length - 1} />)}
       </Panel></> : null}
       {found?.projects.length ? <><Eyebrow right={`${found.projects.length}`}>Projects</Eyebrow><Panel>
-        {found.projects.map((p, i) => <Row key={p.id} left={<IconCircle name="flag" />} title={p.title} meta={[p.groupName, placeOf(groupOf(p))].filter(Boolean).join(" · ")}
+        {found.projects.map((p, i) => <Row key={p.id} left={<IconCircle name="flag" />} title={p.title} meta={[p.groupName, placeOf(p) ?? placeOf(groupOf(p))].filter(Boolean).join(" · ")}
           onPress={() => setOpen({ project: p, group: groupOf(p) })} last={i === found.projects.length - 1} />)}
       </Panel></> : null}
-      <View style={{ marginTop: 14, marginHorizontal: 4 }}><Meta>{"Only a summary is ever shown: name, place, causes. Never people, tasks or files. Small numbers are hidden."}</Meta></View>
+      <View style={{ marginTop: 14, marginHorizontal: 4 }}><Meta>{"Only groups and projects their organizers made public, and only a summary: name, place, causes. Never people, tasks or files."}</Meta></View>
 
       <Sheet open={!!open} onClose={() => setOpen(null)}>
         {open?.group || open?.project ? <>

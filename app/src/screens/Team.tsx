@@ -9,7 +9,7 @@ import { appUrl } from "@/lib/env";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, shortRef, stateLabel, teamIcon } from "@/lib/work";
-import { Avatar, Buttons, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Screen, Sheet, Skeleton } from "@/ui/kit";
+import { Avatar, Buttons, Check, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { InviteOptions, linkOpts, type InviteOpts } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
 
@@ -86,6 +86,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
       } else setInvite(`${appUrl()}/join/${l.token}`);
     } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
   };
+  const setTeamField = async (f: Record<string, unknown>) => { try { await bix.commit(bix.next(team, f)); reload(); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };
   const setup = work.length === 0 && parts.length <= 1;
   const everyone = parts.map((p: any) => name(p.person.reference));
   const count = (n: number, one: string, many: string) => (n ? `${n} ${n === 1 ? one : many}` : null);
@@ -112,6 +113,15 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
         <Row left={who(byRole("volunteer"), photosOf("volunteer"))} title="Volunteers" meta={byRole("volunteer").join(", ") || "None yet"} last />
       </Panel>
       <Buttons><Outline flex label={parts.length > 1 ? "Invite more people" : "Invite your team"} onPress={() => makeInvite()} /></Buttons>
+      {/* BIX "Seeing other committees' work": who sees this team's work, and what this team sees. Leads and officers set it. */}
+      <Eyebrow>Who sees what</Eyebrow>
+      <Panel>
+        <Row left={<IconCircle name="eye" />} title="Who sees this team's work" meta={team.visibility === "team" ? "Only this team, and officers and core members" : "Core team members on the project, and this team"}
+          right={lead ? <Check on={team.visibility === "team"} onPress={() => setTeamField({ visibility: team.visibility === "team" ? undefined : "team" })} /> : undefined} />
+        <Row left={<IconCircle name="users" />} title="This team sees the whole project" meta={team.access === "initiative" ? "On, so its volunteers can open every team's work, as Communications needs" : "Off. Its volunteers see this team's work only"}
+          right={lead ? <Check on={team.access === "initiative"} onPress={() => setTeamField({ access: team.access === "initiative" ? "own-tasks" : "initiative" })} /> : undefined} last />
+      </Panel>
+      {lead ? <Meta>{"\nTick to keep this team's work to itself, or to let its volunteers see the whole project."}</Meta> : null}
   </>);
   return (
     <Screen onRefresh={reload} back right={<RoundButton icon="userplus" label="Invite people" onPress={() => makeInvite()} />}
