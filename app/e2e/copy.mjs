@@ -8,7 +8,7 @@ const tap = (p, t) => p.getByText(t, { exact: true }).filter({ visible: true }).
 const log = (...a) => console.log("•", ...a);
 async function start(p, nick) { await p.goto(APP + "/"); await tap(p, "Skip"); await p.getByLabel("Your nickname").fill(nick); await tap(p, "Continue"); await p.getByText("Tell us about you").waitFor(); await tap(p, "Continue"); }
 async function makeGroup(p, name) {
-  await p.goto(APP + "/start-group"); await p.getByPlaceholder("e.g. Lahug Uplands Runners Club").fill(name); await tap(p, "Next: how it's run");
+  await p.goto(APP + "/start-group"); await p.getByPlaceholder("e.g. Lahug Uplands Runners Club").fill(name); await tap(p, "Next"); await tap(p, "Next: how it's run");
   if (await p.getByText("Is this your group?").isVisible().catch(() => false)) await tap(p, "No, ours is a different group");
   await tap(p, "Create the group"); await p.getByText("Bring your people in").waitFor();
 }
@@ -18,10 +18,10 @@ await ana.goto(APP + "/network"); await tap(ana, "Connect to the Dasig Ecosystem
 await makeGroup(ana, "Kabataan Tutors");
 // Rhea made her own "Kabataan Tutors Lapu-Lapu" on her device and copies it.
 const rhea = await page(); await start(rhea, "Rhea"); await tap(rhea, "I run a group");
-await rhea.getByPlaceholder("e.g. Lahug Uplands Runners Club").fill("Kabataan Tutors Lapu-Lapu"); await tap(rhea, "Next: how it's run");
+await rhea.getByPlaceholder("e.g. Lahug Uplands Runners Club").fill("Kabataan Tutors Lapu-Lapu"); await tap(rhea, "Next"); await tap(rhea, "Next: how it's run");
 await rhea.getByText("Is this your group?").waitFor(); log("Rhea is asked first: is this your group?"); await tap(rhea, "No, ours is a different group");
 await tap(rhea, "Create the group"); await rhea.getByText("Bring your people in").waitFor(); await tap(rhea, "Start a project");
-await rhea.getByPlaceholder(/e\.g\./).first().fill("Saturday reading club"); await rhea.getByText(/^Keep these \d+ teams$/).click(); await rhea.getByText("Ask someone to lead").first().waitFor();
+await rhea.getByPlaceholder(/e\.g\./).first().fill("Saturday reading club"); await rhea.getByText("Next", { exact: true }).click(); await rhea.getByText("Next", { exact: true }).click(); await rhea.getByText(/^Keep these \d+ teams$/).click(); await rhea.getByText("Ask someone to lead").first().waitFor();
 await rhea.goto(APP + "/groups"); await rhea.getByText("Kabataan Tutors Lapu-Lapu").click();
 await rhea.goto(APP + "/home"); await rhea.getByText(/Your week, Rhea/).waitFor();
 await rhea.getByText("Group profile").click(); await tap(rhea, "Copy this group to the Dasig Ecosystem");

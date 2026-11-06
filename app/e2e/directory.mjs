@@ -13,11 +13,11 @@ async function onEcosystem(p, nick) {
 }
 const ana = await page(); await onEcosystem(ana, "Ana");
 await ana.goto(APP + "/start-group"); await ana.getByPlaceholder("e.g. Lahug Uplands Runners Club").fill("Rotaract Club of Lahug Uplands");
-await ana.getByLabel("Where (optional)").fill("Lahug, Cebu City"); await tap(ana, "Environment");
+await tap(ana, "Next"); await ana.getByLabel("Where (optional)").fill("Lahug, Cebu City"); await tap(ana, "Environment");
 await tap(ana, "Next: how it's run"); await ana.waitForTimeout(1200); if (await ana.getByText("Is this your group?").isVisible().catch(() => false)) await tap(ana, "No, ours is a different group"); await tap(ana, "Create the group"); await ana.getByText("Bring your people in").waitFor(); log("Ana's club is on the Ecosystem, listed");
 const ben = await page(); await onEcosystem(ben, "Ben");
 await ben.goto(APP + "/start-group"); await ben.getByPlaceholder("e.g. Lahug Uplands Runners Club").fill("Lahug Uplands Rotaract");
-await tap(ben, "Next: how it's run"); await ben.getByText("Is this your group?").waitFor(); await ben.screenshot({ path: "/tmp/e2e/d-similar.png" });
+await tap(ben, "Next"); await tap(ben, "Next: how it's run"); await ben.getByText("Is this your group?").waitFor(); await ben.screenshot({ path: "/tmp/e2e/d-similar.png" });
 log("Ben is asked: is this your group?"); await tap(ben, "Ask to join"); await ben.getByText(/Asked to join Rotaract Club of Lahug Uplands/).waitFor(); log("Ben asked to join instead of duplicating");
 await ben.goto(APP + "/nearby"); await ben.getByText("Rotaract Club of Lahug Uplands").waitFor(); await tap(ben, "Environment"); await ben.getByText("Rotaract Club of Lahug Uplands").waitFor();
 await ben.screenshot({ path: "/tmp/e2e/d-nearby.png" }); log("the directory lists it, filtered by cause");
