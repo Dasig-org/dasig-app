@@ -6,7 +6,7 @@ import { saveJson } from "@/lib/save";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { Buttons, Check, Eyebrow, IconCircle, Meta, Notice, Outline, Panel, Row, Screen, Sheet, Title } from "@/ui/kit";
-import { c, type as t } from "@/ui/theme";
+import { c, radius, type as t } from "@/ui/theme";
 
 /** Your data (sketch: trust #3, #4): what's kept, download it, choose what shows, delete your account. Not legal advice. */
 const isMinimal = (p: any) => (p?.extension ?? []).some((x: any) => x.url === "bayanihan:profile-visibility" && x.value === "nickname-only");
@@ -20,7 +20,7 @@ export default function YourData() {
   const count = (type: string) => entries.filter((r) => r.resourceType === type).length;
   const photos = entries.flatMap((r) => [...(r.attachment ?? []), ...((r.output ?? []).flatMap((o: any) => o.attachment ?? []))]).length;
   const dueDelete = (s.person?.extension ?? []).find((x: any) => x.url === "bayanihan:delete-after")?.value;
-  const tile = (icon: any, n: string, label: string) => <View style={{ flex: 1, backgroundColor: c.white, borderRadius: 22, padding: 14, gap: 8 }}><IconCircle name={icon} /><Text style={t.row}>{n}</Text><Meta>{label}</Meta></View>;
+  const tile = (icon: any, n: string, label: string) => <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, gap: 8 }}><IconCircle name={icon} /><Text style={t.row}>{n}</Text><Meta>{label}</Meta></View>;
   return (
     <Screen back>
       <Title sub="What Dasig keeps about you, and what you can do with it.">Your data</Title>

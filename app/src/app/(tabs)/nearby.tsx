@@ -51,8 +51,8 @@ export default function Nearby() {
   return (
     <Screen onRefresh={search}>
       <Title sub="Groups and projects that chose to be found.">Who's working here</Title>
-      <Field value={q} onChangeText={setQ} placeholder="Search a group or project" returnKeyType="search" onSubmitEditing={search} />
-      <Field value={place} onChangeText={setPlace} placeholder="Where, e.g. Lahug or Cebu City" returnKeyType="search" onSubmitEditing={search} />
+      <Field icon="search" value={q} onChangeText={setQ} placeholder="Search a group or project" returnKeyType="search" onSubmitEditing={search} />
+      <Field icon="pin" value={place} onChangeText={setPlace} placeholder="Where, e.g. Lahug or Cebu City" returnKeyType="search" onSubmitEditing={search} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18 }}>
         <Chips options={[{ value: "all", label: "All" }, ...CAUSES.slice(0, 9).map((x) => ({ value: x.code, label: x.label }))]} value={cause} onChange={setCause} />
       </ScrollView>

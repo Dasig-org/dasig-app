@@ -61,7 +61,7 @@ export default function Project() {
   const removeFile = (a: any) => run(bix.next(p, { attachment: (p.attachment ?? []).filter((x: any) => x.hash !== a.hash) }), "File removed.");
   return (
     <Screen onRefresh={reload} back right={can.edit ? <RoundButton icon="pen" label="Edit project" onPress={edit} /> : undefined}>
-      <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>{logo ? <Image source={{ uri: logo }} style={{ width: 56, height: 56, borderRadius: 18 }} /> : <IconCircle name="flag" size={56} tone="white" />}
+      <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>{logo ? <Image source={{ uri: logo }} style={{ width: 56, height: 56, borderRadius: 16 }} /> : <IconCircle name="flag" size={56} tone="white" />}
         <View style={{ flex: 1 }}><Text style={[t.title, { fontSize: 24 }]}>{p.title}</Text>
           <Meta>{[p.period?.start ? short(p.period.start) : null, placeOf(p), p.status === "completed" ? "Done" : p.status === "cancelled" ? "Cancelled" : null].filter(Boolean).join(" · ")}</Meta></View></View>
       {/* Summary first (UX_GAPS A3): what it is, whose it is, and how it's going. Teams and files come after. */}
@@ -127,7 +127,7 @@ export default function Project() {
         <Text style={[t.row, { fontSize: 18 }]}>Edit project</Text>
         <Pressable onPress={async () => { const a = await pickPhoto(false).catch((e: any) => { setMsg(String(e?.message ?? e)); return null; }); if (a) setForm((f) => ({ ...f, image: a })); }}
           accessibilityRole="button" accessibilityLabel="Change the project's picture" style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12 }}>
-          {formLogo ? <Image source={{ uri: formLogo }} style={{ width: 64, height: 64, borderRadius: 20 }} /> : <IconCircle name="camera" size={64} />}
+          {formLogo ? <Image source={{ uri: formLogo }} style={{ width: 64, height: 64, borderRadius: 16 }} /> : <IconCircle name="camera" size={64} />}
           <Text style={[t.row, { color: c.accent }]}>{form.image ? "Change picture" : "Add a picture"}</Text>
         </Pressable>
         <Field label="Name" value={form.title} onChangeText={(v) => setForm((f) => ({ ...f, title: v }))} />

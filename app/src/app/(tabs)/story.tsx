@@ -5,7 +5,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { personName, shortRef } from "@/lib/work";
 import { Avatar, Eyebrow, IconCircle, LinkText, Meta, Panel, Row, Screen } from "@/ui/kit";
-import { c, type as t } from "@/ui/theme";
+import { c, radius, type as t } from "@/ui/theme";
 
 /** Your story: finished work across every group, and everything about you and your connection. */
 export default function Story() {
@@ -17,7 +17,7 @@ export default function Story() {
     const hours = done.reduce((h, x) => h + (x.executionPeriod?.start && x.executionPeriod?.end ? (Date.parse(x.executionPeriod.end) - Date.parse(x.executionPeriod.start)) / 3600000 : 0), 0);
     return { done, hours };
   }, [me]);
-  const tile = (icon: any, n: string, label: string) => <View style={{ flex: 1, backgroundColor: c.white, borderRadius: 22, padding: 14, gap: 8 }}><IconCircle name={icon} /><Text style={t.row}>{n}</Text><Meta>{label}</Meta></View>;
+  const tile = (icon: any, n: string, label: string) => <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, gap: 8 }}><IconCircle name={icon} /><Text style={t.row}>{n}</Text><Meta>{label}</Meta></View>;
   return (
     <Screen>
       <View style={{ alignItems: "center", marginTop: 10 }}><Avatar name={personName(s.person)} size={80} photo={s.person?.photo} /></View>

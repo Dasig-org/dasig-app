@@ -6,7 +6,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act } from "@/lib/work";
 import { Avatar, Buttons, Meta, Notice, Outline, Panel, Screen, Title } from "@/ui/kit";
-import { c, type as t } from "@/ui/theme";
+import { c, radius, type as t } from "@/ui/theme";
 
 /** Ideas from the team (sketch: P1 #5): accept, or "Not now" which keeps it as a draft with a note. */
 export default function Ideas() {
@@ -29,7 +29,7 @@ export default function Ideas() {
     <Screen back>
       <Title sub="Accepted ideas credit the person who suggested them.">Ideas from the team</Title>
       {msg ? <Notice>{msg}</Notice> : null}
-      {(data ?? []).map(({ task, who, photo }) => <View key={task.id} style={{ backgroundColor: c.white, borderRadius: 22, padding: 16, marginTop: 10 }}>
+      {(data ?? []).map(({ task, who, photo }) => <View key={task.id} style={{ backgroundColor: c.white, borderRadius: radius.panel, padding: 16, marginTop: 10 }}>
         <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><Avatar name={who} size={40} photo={photo} /><View style={{ flex: 1 }}><Text style={t.eyebrow}>{`${who} suggested`}</Text><Text style={[t.row, { marginTop: 2 }]} onPress={() => router.push(`/task/${task.id}`)}>{task.title}</Text></View></View>
         {(task.note ?? []).length ? <Meta>{task.note[task.note.length - 1].text}</Meta> : null}
         <Buttons><Outline flex label="Accept" onPress={() => run(act.accept(task), "Accepted. It's now open work.")} /><Outline label="Not now" onPress={() => run(bix.next(task, { note: [...(task.note ?? []), { text: "Not now — kept for later.", time: new Date().toISOString() }] }), "Kept for later.")} /></Buttons>

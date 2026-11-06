@@ -30,8 +30,8 @@ function FileSheet({ a, onClose, onRemove }: { a: Attachment | null; onClose: ()
   };
   return <Sheet open={!!a} onClose={onClose}>
     {a ? <>
-      {image ? <View style={{ borderRadius: 20, overflow: "hidden", backgroundColor: c.wash, alignItems: "center" }}>{uri ? <Image source={{ uri }} resizeMode="contain" style={{ width: "100%", height: 300 }} /> : <View style={{ height: 300 }} />}</View>
-        : <View style={{ height: 120, borderRadius: 20, backgroundColor: c.sand, alignItems: "center", justifyContent: "center" }}><Icon name="receipt" size={40} /></View>}
+      {image ? <View style={{ borderRadius: 16, overflow: "hidden", backgroundColor: c.wash, alignItems: "center" }}>{uri ? <Image source={{ uri }} resizeMode="contain" style={{ width: "100%", height: 300 }} /> : <View style={{ height: 300 }} />}</View>
+        : <View style={{ height: 120, borderRadius: 16, backgroundColor: c.sand, alignItems: "center", justifyContent: "center" }}><Icon name="receipt" size={40} /></View>}
       <Text style={[t.row, { fontSize: 17, marginTop: 14 }]} numberOfLines={2}>{a.title ?? (image ? "Photo" : "File")}</Text>
       <Meta>{[kb(a.size), a.capturedAt ? new Date(a.capturedAt).toLocaleDateString() : null, a.showsMinors ? "Shows children · stays in the group" : null].filter(Boolean).join(" · ")}</Meta>
       <Buttons>

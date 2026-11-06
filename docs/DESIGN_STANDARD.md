@@ -92,11 +92,12 @@ A page with no files doesn't show an empty Files section; "Add a file" sits in t
 
 Dasig's app-parity system, unchanged (Dasig's design styleguide, §6):
 
-- Page on the wash `#f1f5f9`; white, borderless, shadowless surfaces.
-- Radius scale: 999 for every button, chip, pill, avatar and toggle · 26 hero cards and covers · 22 fields, list panels · 20 tiles and Sand notes · 28 bottom sheets.
+- Page on the wash `#f1f5f9`; white, borderless, shadowless surfaces. The one shadow is the primary button's.
+- Radius scale (2026-11-07, one continuous-curve system): 999 for every button, chip, pill, avatar and toggle · **24** for outer surfaces: list panels, hero cards, covers, Sand notes, tips, bottom sheets · **16** for elements inside them: fields, thumbnails, file tiles, previews · 48 for the device frame in mockups. Tokens: `radius.panel`, `radius.inner` in `src/ui/theme.ts`.
 - **One orange per screen:** Primary `#F47C26` for the single main action. Accent-a `#E85C21` for state (checks, selected). Sand `#FFF6E9` for soft notes and icon circles. Ink `#0F172A` for text only, never fills.
-- Type: screen title 26px bold · row title 15px semibold · meta 13px slate-500 · eyebrow 11px bold uppercase, tracked .16em, slate-400.
-- Buttons 48px in flow, fully round. "Can't make it" is the same size as "I'm in".
+- Type: screen title 26px bold, tracked −0.02em · row title 15px semibold, tracked −0.01em · meta 13px slate-500 · eyebrow 11px bold uppercase, tracked .16em, slate-400.
+- Buttons 48px in flow, fully round. "Can't make it" is the same size as "I'm in". Primary: a subtle vertical gradient `#F47C26 → #E85C21` with a soft orange shadow (`primaryFill`); solid `#E85C21` when pressed, flat when disabled. Secondary: borderless, an ink tint at 6% (`tint`), never an outline.
+- Fields: radius 16, no outline at rest, a 1.5px slate-300 border and a white fill when focused (200ms on web). Search and place fields carry a leading icon (`search`, `pin`).
 
 ## 7 · Making mockups
 

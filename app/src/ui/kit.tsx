@@ -8,7 +8,7 @@ import { Icon, type IconName } from "./Icon";
 import { SyncBar } from "./SyncBar";
 import { KScroll, KSticky } from "./kbd";
 import { Where } from "./Where";
-import { avatarColors, c, radius, type } from "./theme";
+import { avatarColors, c, primaryFill, radius, tint, type } from "./theme";
 
 /** A screen on the wash, phone-first, with an optional fixed bottom bar. */
 /** `dock` is a composer pinned to the bottom that rises with the keyboard (e.g. "Add something to do"). */
@@ -45,7 +45,7 @@ export const Eyebrow = ({ children, right }: { children: ReactNode; right?: Reac
   </View>
 );
 export const Panel = ({ children, style }: { children: ReactNode; style?: ViewStyle }) => (
-  <View style={[{ backgroundColor: c.white, borderRadius: radius.field, paddingHorizontal: 16, paddingVertical: 4 }, style]}>{children}</View>
+  <View style={[{ backgroundColor: c.white, borderRadius: radius.panel, paddingHorizontal: 16, paddingVertical: 4 }, style]}>{children}</View>
 );
 export const Hero = ({ children }: { children: ReactNode }) => <View style={{ backgroundColor: c.white, borderRadius: radius.hero, padding: 18 }}>{children}</View>;
 export const Meta = ({ children }: { children: ReactNode }) => <Text style={type.meta}>{children}</Text>;
@@ -98,12 +98,12 @@ export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone
     <Text style={{ fontSize: 12, fontWeight: "600", color: s.fg }}>{children}</Text></View>;
 }
 export function Primary({ label, onPress, busy, disabled }: { label: string; onPress: () => void; busy?: boolean; disabled?: boolean }) {
-  return <Pressable android_ripple={{ color: "rgba(255,255,255,.25)", borderless: false }} onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); onPress(); }} disabled={busy || disabled} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!(busy || disabled), busy: !!busy }} style={({ pressed }) => ({ flex: 1, minHeight: 48, borderRadius: radius.pill, backgroundColor: pressed ? c.accent : c.primary, opacity: disabled ? 0.5 : 1, alignItems: "center", justifyContent: "center" })}>
+  return <Pressable android_ripple={{ color: "rgba(255,255,255,.25)", borderless: false }} onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); onPress(); }} disabled={busy || disabled} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!(busy || disabled), busy: !!busy }} style={({ pressed }) => ({ flex: 1, minHeight: 48, borderRadius: radius.pill, backgroundColor: pressed ? c.accent : c.primary, ...(pressed || disabled ? {} : primaryFill), opacity: disabled ? 0.5 : 1, alignItems: "center", justifyContent: "center" })}>
     {busy ? <ActivityIndicator color={c.white} /> : <Text style={{ color: c.white, fontWeight: "700", fontSize: 15 }}>{label}</Text>}
   </Pressable>;
 }
 export function Outline({ label, onPress, flex }: { label: string; onPress: () => void; flex?: boolean }) {
-  return <Pressable onPress={onPress} android_ripple={{ color: c.s200 }} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ overflow: "hidden", flex: flex ? 1 : undefined, minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: c.white, borderWidth: 1.5, borderColor: pressed ? c.ink : c.s300, alignItems: "center", justifyContent: "center" })}>
+  return <Pressable onPress={onPress} android_ripple={{ color: tint.pressed }} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ overflow: "hidden", flex: flex ? 1 : undefined, minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: pressed ? tint.pressed : tint.rest, alignItems: "center", justifyContent: "center" })}>
     <Text style={{ color: c.ink, fontWeight: "600", fontSize: 15 }}>{label}</Text></Pressable>;
 }
 export const Buttons = ({ children }: { children: ReactNode }) => <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>{children}</View>;
@@ -115,12 +115,25 @@ export function RoundButton({ icon, onPress, style, label }: { icon: IconName; o
     <Icon name={icon} size={18} color={c.ink} /></Pressable>;
 }
 const OnSheet = createContext(false);
-export const Field = (p: TextInputProps & { label?: string }) => { const onSheet = useContext(OnSheet); return (
-  <View style={{ marginTop: 10 }}>
-    {p.label ? <Text style={{ fontSize: 12.5, fontWeight: "600", color: c.s500, marginBottom: 6, marginLeft: 4 }}>{p.label}</Text> : null}
-    <TextInput placeholderTextColor={c.s400} accessibilityLabel={p.accessibilityLabel ?? p.label} {...p} style={[{ backgroundColor: onSheet ? c.wash : c.white, borderRadius: radius.field, paddingHorizontal: 19, paddingVertical: 15, fontSize: 16, color: c.ink, minHeight: p.multiline ? 84 : undefined, textAlignVertical: p.multiline ? "top" : "center", ...(Platform.OS === "web" ? { outlineColor: c.accent } as object : {}) }, p.style]} />
-  </View>
-); };
+/** A text field: 16 radius, a clear border when focused instead of a fill change, and an optional leading icon (e.g. search). */
+export function Field({ icon, ...p }: TextInputProps & { label?: string; icon?: IconName }) {
+  const onSheet = useContext(OnSheet);
+  const [focused, setFocused] = useState(false);
+  const rest = onSheet ? c.wash : c.white;
+  return (
+    <View style={{ marginTop: 10 }}>
+      {p.label ? <Text style={{ fontSize: 12.5, fontWeight: "600", color: c.s500, marginBottom: 6, marginLeft: 4 }}>{p.label}</Text> : null}
+      <View>
+        {icon ? <View pointerEvents="none" style={{ position: "absolute", left: 16, top: 0, bottom: 0, justifyContent: "center", zIndex: 1 }}><Icon name={icon} size={18} color={focused ? c.ink : c.s400} /></View> : null}
+        <TextInput placeholderTextColor={c.s400} accessibilityLabel={p.accessibilityLabel ?? p.label ?? p.placeholder} {...p}
+          onFocus={(e) => { setFocused(true); p.onFocus?.(e); }} onBlur={(e) => { setFocused(false); p.onBlur?.(e); }}
+          style={[{ backgroundColor: focused ? c.white : rest, borderWidth: 1.5, borderColor: focused ? c.s300 : "transparent", borderRadius: radius.inner,
+            paddingLeft: icon ? 44 : 19, paddingRight: 19, paddingVertical: 14, fontSize: 16, fontWeight: "500", color: c.ink, minHeight: p.multiline ? 84 : undefined, textAlignVertical: p.multiline ? "top" : "center",
+            ...(Platform.OS === "web" ? { outlineStyle: "none", transitionProperty: "border-color, background-color", transitionDuration: "200ms" } as object : {}) }, p.style]} />
+      </View>
+    </View>
+  );
+}
 export function Chips<T extends string>({ options, value, onChange }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
   const onSheet = useContext(OnSheet);
   return <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
@@ -172,7 +185,7 @@ export function Skeleton({ rows = 4 }: { rows?: number }) {
   useEffect(() => { Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }), Animated.timing(pulse, { toValue: 0.5, duration: 700, useNativeDriver: true })])).start(); }, []);
   return <Animated.View accessibilityLabel="Loading" style={{ opacity: pulse }}>
     <View style={{ width: "60%", height: 26, borderRadius: 13, backgroundColor: c.s200, marginBottom: 16 }} />
-    <View style={{ backgroundColor: c.white, borderRadius: radius.field, padding: 16, gap: 18 }}>
+    <View style={{ backgroundColor: c.white, borderRadius: radius.panel, padding: 16, gap: 18 }}>
       {Array.from({ length: rows }, (_, i) => <View key={i} style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.wash }} />
         <View style={{ flex: 1, gap: 6 }}><View style={{ width: "70%", height: 12, borderRadius: 6, backgroundColor: c.wash }} /><View style={{ width: "40%", height: 10, borderRadius: 5, backgroundColor: c.wash }} /></View></View>)}
     </View>

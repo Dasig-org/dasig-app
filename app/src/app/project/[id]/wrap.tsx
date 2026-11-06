@@ -5,7 +5,7 @@ import { bix, ref } from "@/lib/bix";
 import { DAY } from "@/lib/dates";
 import { useLoad } from "@/lib/use";
 import { Buttons, Eyebrow, IconCircle, Meta, Notice, Panel, Primary, Row, Screen, Title, Outline , Skeleton} from "@/ui/kit";
-import { c, type as t } from "@/ui/theme";
+import { c, radius, type as t } from "@/ui/theme";
 
 /** Wrapping up: finish the project, and save its teams and usual work for next time (BIX InitiativeTemplate, never shown by that name). */
 export default function Wrap() {
@@ -42,8 +42,8 @@ export default function Wrap() {
     <Screen back>
       <Title sub={p.status === "completed" ? "It's done. Salamat!" : "When the work is done."}>{p.title}</Title>
       <View style={{ flexDirection: "row", gap: 10 }}>
-        <View style={{ flex: 1, backgroundColor: c.white, borderRadius: 22, padding: 14, gap: 8 }}><IconCircle name="users" /><Text style={t.row}>{`${people.size} people`}</Text><Meta>did the work</Meta></View>
-        <View style={{ flex: 1, backgroundColor: c.white, borderRadius: 22, padding: 14, gap: 8 }}><IconCircle name="check" /><Text style={t.row}>{`${done} of ${tasks.length}`}</Text><Meta>things done</Meta></View>
+        <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, gap: 8 }}><IconCircle name="users" /><Text style={t.row}>{`${people.size} people`}</Text><Meta>did the work</Meta></View>
+        <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, gap: 8 }}><IconCircle name="check" /><Text style={t.row}>{`${done} of ${tasks.length}`}</Text><Meta>things done</Meta></View>
       </View>
       <Eyebrow>Wrap up</Eyebrow>
       <Panel>
