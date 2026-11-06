@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "expo-router";
-import { Text, View } from "react-native";
+import { Platform, Text, View } from "react-native";
 import { useSession } from "@/lib/session";
 import { Buttons, Field, Notice, Primary, Screen } from "@/ui/kit";
 import { Emblem } from "@/ui/onboarding/Emblem";
@@ -27,7 +27,7 @@ export default function Start() {
       <Field accessibilityLabel="Your nickname" value={name} onChangeText={setName} placeholder="e.g. Don" autoFocus onSubmitEditing={go} returnKeyType="go" />
       {err ? <Notice>{err}</Notice> : null}
       <Buttons><Primary label="Continue" onPress={go} busy={busy} disabled={!name.trim()} /></Buttons>
-      <Text style={[t.meta, { textAlign: "center", marginTop: 14 }]}>Kept on this phone. No account or internet needed.</Text>
+      <Text style={[t.meta, { textAlign: "center", marginTop: 14 }]}>{Platform.OS === "web" ? "Saved on the Dasig Ecosystem. No account needed." : "Kept on this phone. No account or internet needed."}</Text>
     </Screen>
   );
   return <Intro onDone={() => setAsking(true)} />;

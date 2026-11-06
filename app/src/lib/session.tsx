@@ -83,6 +83,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const out = await res.json();
       if (!res.ok) throw new Error(String(out.error));
       await setConnection({ kind: "phone", token: out.token });
+    } else if (c.kind === "ecosystem" && !c.token) {
+      // The web app: join the Ecosystem with a nickname. This browser's key is added to the Person on the next refresh.
+      const res = await fetch(`${c.url}/$join`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nickname: name }) }).catch(() => null);
+      const out = res ? await res.json().catch(() => ({})) : { error: "the Dasig Ecosystem didn't answer; check your internet" };
+      if (!res || !res.ok) throw new Error(String(out.error ?? "Couldn't join the Dasig Ecosystem"));
+      await setConnection({ kind: "ecosystem", url: c.url, token: out.token });
     }
     await refresh();
   };
