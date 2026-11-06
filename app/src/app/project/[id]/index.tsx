@@ -6,7 +6,8 @@ import { parseDate, short } from "@/lib/dates";
 import { pickDocument, pickPhoto } from "@/lib/files";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { shortRef, teamIcon } from "@/lib/work";
+import { placeOf, shortRef, teamIcon } from "@/lib/work";
+import { Logo } from "@/ui/Context";
 import { Files } from "@/ui/Files";
 import { Body, Buttons, Eyebrow, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Sheet, Tip, Skeleton, usePhoto } from "@/ui/kit";
 import { atMost, InviteOptions, linkOpts, VisibilityChoice, visibilityFields, visibilityOf, type Visibility } from "@/ui/Privacy";
@@ -19,7 +20,7 @@ export default function Project() {
   const s = useSession();
   const [msg, setMsg] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<{ title: string; about: string; start: string; image: any; vis: Visibility }>({ title: "", about: "", start: "", image: null, vis: "invited" });
+  const [form, setForm] = useState<{ title: string; about: string; place: string; start: string; image: any; vis: Visibility }>({ title: "", about: "", place: "", start: "", image: null, vis: "invited" });
   const [addingFile, setAddingFile] = useState(false);
   const [inviteAsk, setInviteAsk] = useState(false);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
@@ -28,13 +29,14 @@ export default function Project() {
     const ref = `Initiative/${id}`;
     const [teams, tasks, needs, decisions] = await Promise.all([bix.search("Team", { initiative: ref }), bix.search("Task", { partOf: ref }), bix.search("Need", { initiative: ref }), bix.search("Decision", { partOf: ref })]);
     const can = await bix.can("Initiative", id);
-    return { p, teams, tasks, needs, decisions, can };
+    const org = p.organization ? await bix.get("Organization", p.organization.reference.split("/")[1]).catch(() => null) : null;
+    return { p, teams, tasks, needs, decisions, can, org };
   }, [id]);
   const logo = usePhoto(data?.p.image);
   const formLogo = usePhoto(form.image);
   if (error) return <Screen onRefresh={reload} back><Notice>{error}</Notice></Screen>;
   if (!data) return <Screen onRefresh={reload} back><Skeleton /></Screen>;
-  const { p, teams, tasks, needs, decisions, can } = data;
+  const { p, teams, tasks, needs, decisions, can, org } = data;
   const lead = s.isLead || teams.some((tm) => (tm.participant ?? []).some((x: any) => x.person.reference === `Person/${s.person?.id}` && x.role === "lead" && x.status === "active"));
   const people = new Set(teams.flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)));
   const gates = tasks.filter((x) => x.milestone && x.status !== "completed");
@@ -43,13 +45,13 @@ export default function Project() {
   const addFile = async (pick: () => Promise<any>) => { setAddingFile(false); const a = await pick().catch((e: any) => { setMsg(String(e?.message ?? e)); return null; }); if (a) run(bix.next(p, { attachment: [...(p.attachment ?? []), a] })); };
   const openVotes = decisions.filter((d) => d.status === "open");
   const groupVis = visibilityOf(s.groups.find((g) => `Organization/${g.org.id}` === p.organization?.reference)?.org);
-  const edit = () => { setForm({ title: p.title ?? "", about: p.description ?? "", start: p.period?.start?.slice(0, 10) ?? "", image: p.image ?? null, vis: atMost(visibilityOf(p), groupVis) }); setEditing(true); };
+  const edit = () => { setForm({ title: p.title ?? "", about: p.description ?? "", place: placeOf(p) ?? "", start: p.period?.start?.slice(0, 10) ?? "", image: p.image ?? null, vis: atMost(visibilityOf(p), groupVis) }); setEditing(true); };
   const save = () => {
     if (!form.title.trim()) return;
     const start = form.start.trim() ? parseDate(form.start) : null;
     if (form.start.trim() && !start) { setMsg("That date didn't read right. Try 2027-02-15."); return; }
     setEditing(false);
-    run(bix.next(p, { ...visibilityFields(p, atMost(form.vis, groupVis)), title: form.title.trim(), description: form.about.trim() || undefined, image: form.image ?? undefined, period: start ? { ...(p.period ?? {}), start } : p.period?.end ? { end: p.period.end } : undefined }), "Saved.");
+    run(bix.next(p, { ...visibilityFields(p, atMost(form.vis, groupVis)), title: form.title.trim(), description: form.about.trim() || undefined, extension: [...(p.extension ?? []).filter((x: any) => x.url !== "bayanihan:place-text"), ...(form.place.trim() ? [{ url: "bayanihan:place-text", value: form.place.trim() }] : [])], image: form.image ?? undefined, period: start ? { ...(p.period ?? {}), start } : p.period?.end ? { end: p.period.end } : undefined }), "Saved.");
   };
   const cancelProject = () => {
     const go = () => { setEditing(false); run(bix.next(p, { status: "cancelled" }), "The project is cancelled. Its history is kept."); };
@@ -61,8 +63,15 @@ export default function Project() {
     <Screen onRefresh={reload} back right={can.edit ? <RoundButton icon="pen" label="Edit project" onPress={edit} /> : undefined}>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>{logo ? <Image source={{ uri: logo }} style={{ width: 56, height: 56, borderRadius: 18 }} /> : <IconCircle name="flag" size={56} tone="white" />}
         <View style={{ flex: 1 }}><Text style={[t.title, { fontSize: 24 }]}>{p.title}</Text>
-          <Meta>{[p.period?.start ? short(p.period.start) : null, `${teams.length} teams · ${people.size} ${people.size === 1 ? "person" : "people"}`, p.status === "completed" ? "Done" : p.status === "cancelled" ? "Cancelled" : null].filter(Boolean).join(" · ")}</Meta></View></View>
-      <View style={{ marginTop: 10 }}>{p.description ? <Body>{p.description}</Body> : can.edit ? <Text style={t.meta} onPress={edit}>＋ Add what this project is about</Text> : null}</View>
+          <Meta>{[p.period?.start ? short(p.period.start) : null, placeOf(p), p.status === "completed" ? "Done" : p.status === "cancelled" ? "Cancelled" : null].filter(Boolean).join(" · ")}</Meta></View></View>
+      {/* Summary first (UX_GAPS A3): what it is, whose it is, and how it's going. Teams and files come after. */}
+      <View style={{ marginTop: 10 }}>{p.description ? <Body>{p.description}</Body> : can.edit ? <Text style={[t.meta, { color: c.accent, fontWeight: "600" }]} onPress={edit}>＋ Say what this project is about: what, for whom, and why</Text> : null}</View>
+      <View style={{ marginTop: 12 }}><Panel>
+        {org ? <Row left={<Logo name={org.name} image={org.image} size={36} />} title={org.name} meta="About the group" onPress={() => router.push(`/org/${org.id}` as never)} /> : null}
+        {(() => { const live = tasks.filter((k) => k.status !== "draft" && k.status !== "cancelled"); const d = live.filter((k) => k.status === "completed").length;
+          return <Row left={<IconCircle name="check" />} title={live.length ? `${d} of ${live.length} done` : "No work added yet"} meta={`${teams.length} team${teams.length === 1 ? "" : "s"} · ${people.size} ${people.size === 1 ? "person" : "people"}`} last
+            right={live.length ? <View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${(d / live.length) * 100}%`, height: 8, backgroundColor: c.accent }} /></View> : undefined} />; })()}
+      </Panel></View>
       {msg ? <Notice>{msg}</Notice> : null}
       <Tip id="project-page" title="The whole project">Gates, teams, needs and votes, in one place.</Tip>
 
@@ -71,8 +80,6 @@ export default function Project() {
         <Text style={{ fontWeight: "600", textDecorationLine: "underline", color: c.ink }} onPress={() => router.push(`/task/${g.id}`)}>Open</Text></Sand></View>)}
 
       {openVotes.map((d) => <View key={d.id} style={{ marginTop: 12 }}><Panel><Row left={<IconCircle name="flag" />} title={d.question} meta="Vote open" right={<Pill tone="state">Vote</Pill>} onPress={() => router.push(`/vote/${d.id}` as never)} last /></Panel></View>)}
-
-      {(p.attachment ?? []).length || can.edit ? <><Eyebrow right={(p.attachment ?? []).length ? `${(p.attachment ?? []).length}` : undefined}>Files</Eyebrow><Files items={p.attachment ?? []} onAdd={can.edit ? () => setAddingFile(true) : undefined} onRemove={can.edit ? removeFile : undefined} /></> : null}
 
       <Eyebrow right={`${teams.length}`}>Teams</Eyebrow>
       <Panel>
@@ -85,6 +92,8 @@ export default function Project() {
             right={mine.length ? <View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${pct * 100}%`, height: 8, backgroundColor: c.accent }} /></View> : undefined} />;
         })}
       </Panel>
+
+      {(p.attachment ?? []).length || can.edit ? <><Eyebrow right={(p.attachment ?? []).length ? `${(p.attachment ?? []).length}` : undefined}>Files</Eyebrow><Files hint="Add a brief, budget or photo for the project" items={p.attachment ?? []} onAdd={can.edit ? () => setAddingFile(true) : undefined} onRemove={can.edit ? removeFile : undefined} /></> : null}
 
       <Eyebrow right={needs.length ? `${needs.length}` : undefined}>What we need</Eyebrow>
       <Panel>
@@ -122,7 +131,8 @@ export default function Project() {
           <Text style={[t.row, { color: c.accent }]}>{form.image ? "Change picture" : "Add a picture"}</Text>
         </Pressable>
         <Field label="Name" value={form.title} onChangeText={(v) => setForm((f) => ({ ...f, title: v }))} />
-        <Field label="What it's about" value={form.about} onChangeText={(v) => setForm((f) => ({ ...f, about: v }))} multiline />
+        <Field label="What it's about" placeholder="What it is, who it's for, and why it matters" value={form.about} onChangeText={(v) => setForm((f) => ({ ...f, about: v }))} multiline />
+        <Field label="Where" value={form.place} onChangeText={(v) => setForm((f) => ({ ...f, place: v }))} placeholder="e.g. Mactan Expo" />
         <Field label="Starts" value={form.start} onChangeText={(v) => setForm((f) => ({ ...f, start: v }))} placeholder="e.g. 2027-02-15" />
         <Text style={[t.eyebrow, { marginTop: 16, marginBottom: 8, marginHorizontal: 4 }]}>Who can see this project</Text>
         <VisibilityChoice value={form.vis} onChange={(v) => setForm((f) => ({ ...f, vis: v }))} cap={groupVis} />

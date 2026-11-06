@@ -40,14 +40,15 @@ export function useWhere(): { icon: IconName; text: string; warn: boolean; detai
     detail: kind === "hub" ? `Saved on ${(s.connection as { name?: string }).name ?? "your group's hub"} and copied to this phone.` : kind === "ecosystem" ? "Saved on the Dasig Ecosystem, Dasig's online Bayanihan Server, and backed up." : "Saved on the online Bayanihan Server." };
 }
 
-/** The small "where is this saved" pill at the top of every screen. Tap for Sync. */
+/** The small "where is this saved" mark at the top of every screen: an icon, with words only when something is wrong. Tap for Sync. */
 export function Where() {
   const w = useWhere();
   return (
     <Pressable onPress={() => router.push("/sync" as never)} accessibilityRole="button" accessibilityLabel={`${w.text}. Open sync.`} hitSlop={6}
       style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: w.warn ? c.sand : "transparent", alignSelf: "center", maxWidth: 250 }}>
       <Icon name={w.icon} size={12} color={w.warn ? c.accent : c.s400} />
-      <Text numberOfLines={1} style={{ fontSize: w.warn ? 12 : 11.5, fontWeight: w.warn ? "600" : "500", color: w.warn ? c.accent : c.s400, flexShrink: 1 }}>{w.text}</Text>
+      {/* Quiet when all is well: just the icon. Words only when something needs attention (UX_GAPS B11). */}
+      {w.warn ? <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "600", color: c.accent, flexShrink: 1 }}>{w.text}</Text> : null}
       {w.warn ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.accent }} /> : null}
     </Pressable>
   );

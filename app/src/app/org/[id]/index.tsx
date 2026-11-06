@@ -27,14 +27,18 @@ export default function Org() {
   const { data, reload } = useLoad(async () => {
     const org = await bix.get("Organization", id);
     const [roles, projects] = await Promise.all([bix.search("Role", { organization: `Organization/${id}` }), bix.search("Initiative", { organization: `Organization/${id}` })]);
-    return { org, roles: roles.filter((r) => r.status === "active"), requests: roles.filter((r) => r.status === "requested"), projects };
+    const active = roles.filter((r) => r.status === "active");
+    const contacts: string[] = [];
+    for (const r of active.filter((x) => x.code?.code === "officer").slice(0, 3)) { try { const pp = await bix.get("Person", r.person.reference.split("/")[1]); if (pp.name?.text) contacts.push(pp.name.text); } catch {} }
+    return { org, roles: active, requests: roles.filter((r) => r.status === "requested"), projects, contacts };
   }, [id]);
   const [logoUri, setLogoUri] = useState<string | null>(null);
   useEffect(() => { if (data?.org.image) fileUri(data.org.image).then(setLogoUri).catch(() => {}); }, [data?.org.image?.hash]);
   const [name, setName] = useState(""); const [about, setAbout] = useState("");
   useEffect(() => { if (data) { setName(data.org.name); setAbout(data.org.description ?? ""); } }, [data?.org.meta.version]);
   if (!data) return <Screen back><Skeleton /></Screen>;
-  const { org, roles, requests, projects } = data;
+  const { org, roles, requests, projects, contacts } = data;
+  const place = (org.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value as string | undefined;
   const officer = s.groups.some((g) => g.org.id === id && g.role.code?.code === "officer");
   const save = async (fields: Record<string, unknown>) => { try { await bix.commit(bix.next(org, fields)); setMsg("Saved."); setEditing(false); reload(); s.refresh(); } catch (e) { setMsg(String(e instanceof Error ? e.message : e)); } };
   return (
@@ -44,15 +48,23 @@ export default function Org() {
           {logoUri ? <Image source={{ uri: logoUri }} style={{ width: 84, height: 84, borderRadius: 26 }} /> : <Logo name={org.name} size={84} />}
         </Pressable>
         <Text style={[t.title, { textAlign: "center", marginTop: 10 }]}>{org.name}</Text>
-        <Meta>{[(org.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value, org.publicSummary !== false ? "Findable" : "Private"].filter(Boolean).join(" · ")}</Meta>
+        <Meta>{[place, org.publicSummary !== false ? "Findable" : "Private"].filter(Boolean).join(" · ")}</Meta>
       </View>
       {editing ? <>
         <Field label="Name" value={name} onChangeText={setName} />
         <Field label="What you do" value={about} onChangeText={setAbout} multiline />
         <Buttons><Primary label="Save" onPress={() => save({ name: name.trim(), description: about.trim() || undefined })} /><Outline label="Cancel" onPress={() => setEditing(false)} /></Buttons>
       </> : <>
-        {org.description ? <View style={{ marginTop: 10 }}><Body>{org.description}</Body></View> : null}
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10, justifyContent: "center" }}>{(org.cause ?? []).map((x: any) => <Pill key={x.code}>{CAUSES.find((y) => y.code === x.code)?.label ?? x.code}</Pill>)}</View>
+        {/* About (UX_GAPS A4): what the group does, where, its causes, and who to contact. Task and project pages link here. */}
+        <Eyebrow>About</Eyebrow>
+        <Panel>
+          <View style={{ paddingVertical: 10 }}>{org.description ? <Body>{org.description}</Body>
+            : officer ? <Text style={[t.meta, { color: c.accent, fontWeight: "600" }]} onPress={() => setEditing(true)}>＋ Say what your group does, so volunteers know who they're helping</Text>
+            : <Meta>The group hasn't written about itself yet.</Meta>}</View>
+          {(org.cause ?? []).length ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, paddingBottom: 10 }}>{(org.cause ?? []).map((x: any) => <Pill key={x.code}>{CAUSES.find((y) => y.code === x.code)?.label ?? x.code}</Pill>)}</View> : null}
+          {place ? <Row left={<IconCircle name="pin" />} title={place} meta="Where it works" last={!contacts.length} /> : null}
+          {contacts.length ? <Row left={<IconCircle name="users" />} title={contacts.join(", ")} meta={contacts.length === 1 ? "Officer · ask them about the group" : "Officers · ask them about the group"} last /> : null}
+        </Panel>
         {officer ? <Buttons><Outline flex label="Edit profile" onPress={() => setEditing(true)} /></Buttons> : null}
       </>}
       {msg ? <Notice>{msg}</Notice> : null}

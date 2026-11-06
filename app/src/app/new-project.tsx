@@ -18,6 +18,7 @@ export default function NewProject() {
   const [title, setTitle] = useState("");
   const [prefix, setPrefix] = useState("");
   const [place, setPlace] = useState("");
+  const [about, setAbout] = useState("");
   const [when, setWhen] = useState("");
   const [from, setFrom] = useState<string>("suggested");
   const { data: saved } = useLoad(async () => (orgId ? bix.search("InitiativeTemplate", { organization: `Organization/${orgId}` }) : []), [orgId]);
@@ -39,7 +40,8 @@ export default function NewProject() {
       const ini = bix.create("Initiative", {
         title: title.trim(), kind: "project", status: "active", organization: { reference: `Organization/${orgId}` }, ...visibilityFields(null, atMost(chosen, groupVis)),
         ...(start ? { period: { start } } : {}),
-        ...(place.trim() ? { description: `At ${place.trim()}` } : {}),
+        ...(about.trim() ? { description: about.trim() } : {}),
+        ...(place.trim() ? { extension: [{ url: "bayanihan:place-text", value: place.trim() }] } : {}),
         ...(prefix.trim() ? { identifier: [{ system: "bayanihan:ref-prefix", value: prefix.trim().toUpperCase() }] } : {}),
       });
       const kept = (tmpl ? (tmpl.team ?? []).map((x: any) => ({ name: x.name, icon: "users" as const, keep: true })) : teams).map((x: any, i: number) => ({ ...x, i })).filter((x: any) => x.keep);
@@ -68,6 +70,7 @@ export default function NewProject() {
     <Screen back>
       <Title sub="What's coming up?">New project</Title>
       <Field label="Project" value={title} onChangeText={setTitle} placeholder="e.g. Lahug Uplands Fun Run 2027" />
+      <Field label="What it's about" value={about} onChangeText={setAbout} multiline placeholder="What it is, who it's for, and why it matters. Volunteers read this first." />
       <Field label="Short code for references (optional)" value={prefix} onChangeText={setPrefix} placeholder="e.g. LU" autoCapitalize="characters" />
       <Field label="Where (optional)" value={place} onChangeText={setPlace} placeholder="e.g. Mactan Expo" />
       <Field label="When (optional)" value={when} onChangeText={setWhen} placeholder="e.g. 2027-03-06" />

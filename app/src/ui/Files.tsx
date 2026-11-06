@@ -43,8 +43,12 @@ function FileSheet({ a, onClose, onRemove }: { a: Attachment | null; onClose: ()
 }
 
 /** Attachments render by type: images as thumbnails, documents as tiles (DESIGN_STANDARD §1a). Tap one to open it. */
-export function Files({ items, onAdd, onRemove }: { items: Attachment[]; onAdd?: () => void; onRemove?: (a: Attachment) => void }) {
+export function Files({ items, onAdd, onRemove, hint }: { items: Attachment[]; onAdd?: () => void; onRemove?: (a: Attachment) => void; hint?: string }) {
   const [open, setOpen] = useState<Attachment | null>(null);
+  // Empty: one wide tile that says what belongs here, not a bare "+" (UX_GAPS C12).
+  if (!items.length && onAdd) return <Pressable onPress={onAdd} accessibilityRole="button" accessibilityLabel={hint ?? "Add a photo or file"}
+    style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 16, backgroundColor: c.sand }}>
+    <Icon name="plus" size={22} /><Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: c.ink }}>{hint ?? "Add a photo or file"}</Text></Pressable>;
   return <>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
       {items.map((a) => <Tile key={a.hash} a={a} onPress={() => setOpen(a)} />)}

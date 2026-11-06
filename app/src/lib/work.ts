@@ -11,10 +11,13 @@ export function stateLabel(t: R, me?: string): { label: string; tone: "neutral" 
   if (t.status === "draft") return { label: "Suggested", tone: "neutral" };
   if (t.status === "requested") return t.owner?.reference === me ? { label: "Asked of you", tone: "state" } : { label: "Asked", tone: "neutral" };
   if (t.status === "ready") return { label: "Open", tone: "neutral" };
-  if (t.status === "accepted" || t.status === "in-progress") return t.owner?.reference === me ? { label: "Yours", tone: "state" } : { label: "Taken", tone: "neutral" };
+  if (t.status === "accepted" || t.status === "in-progress") return t.owner?.reference === me ? { label: "You're on it", tone: "state" } : { label: "Taken", tone: "neutral" };
   if (t.status === "completed") return t.verification === "pending" ? { label: "Done · to confirm", tone: "ok" } : { label: "Done", tone: "ok" };
   return { label: String(t.status), tone: "neutral" };
 }
+
+/** A free-text place on a group or project ("Mactan Expo"). */
+export const placeOf = (r?: R | null): string | undefined => (r?.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value;
 
 /** Task changes. Each returns the next version; the server decides with Bayanihan Core. */
 export const act = {

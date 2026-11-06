@@ -14,7 +14,7 @@ await p.goto(APP + "/network"); await p.getByText("Try the Dasig Ecosystem").wai
 await p.screenshot({ path: "/tmp/e2e/eco-before.png", fullPage: true });
 await tap("Connect to the Dasig Ecosystem");
 await p.getByText("In use").nth(0).waitFor(); await p.getByText("Go back to this phone's records").waitFor();
-await p.getByText(/Ecosystem · up to date/).first().waitFor(); log("connected; label says Ecosystem · up to date");
+await p.getByLabel(/Ecosystem · up to date/).first().waitFor(); log("connected; sync mark says Ecosystem · up to date");
 await p.screenshot({ path: "/tmp/e2e/eco-after.png", fullPage: true });
 await p.goto(APP + "/groups"); await p.getByText("Your groups").waitFor();
 const seesOld = await p.getByText("Group on this device").count(); log("old group hidden online (fresh start):", seesOld === 0);

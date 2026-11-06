@@ -9,7 +9,8 @@ import { Alert, Platform, Text, View } from "react-native";
 import { bix, BixError, type R } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { act, stateLabel } from "@/lib/work";
+import { act, placeOf, stateLabel } from "@/lib/work";
+import { Logo } from "@/ui/Context";
 import { Body, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton} from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { atMost, visibilityOf } from "@/ui/Privacy";
@@ -41,11 +42,13 @@ export default function Task() {
     const siblings = task.partOf ? (await bix.search("Task", { partOf: task.partOf.reference })).filter((x) => x.id !== task.id && x.status !== "draft") : [];
     const can = await bix.can("Task", id);
     const project = task.partOf ? await bix.get("Initiative", task.partOf.reference.split("/")[1]).catch(() => null) : null;
-    return { task, team, people, signed, siblings, can, project };
+    const orgRef = project?.organization?.reference ?? team?.organization?.reference;
+    const org = orgRef ? await bix.get("Organization", orgRef.split("/")[1]!).catch(() => null) : null;
+    return { task, team, people, signed, siblings, can, project, org };
   }, [id]);
   if (error) return <Screen back><Notice>{error}</Notice></Screen>;
   if (!data) return <Screen back><Skeleton /></Screen>;
-  const { task, team, people, signed, siblings, can, project } = data;
+  const { task, team, people, signed, siblings, can, project, org } = data;
   const openAllowed = atMost(visibilityOf(project), visibilityOf(s.groups.find((g) => `Organization/${g.org.id}` === (project?.organization?.reference ?? team?.organization?.reference))?.org)) === "public";
   const deps = (task.dependsOn ?? []).map((d: any) => siblings.find((x) => `Task/${x.id}` === d.reference)).filter(Boolean) as R[];
   const waitingOn = deps.filter((x) => x.status !== "completed");
@@ -94,16 +97,24 @@ export default function Task() {
         <View style={{ flex: 1 }}><Meta>{team?.name ?? ""}</Meta><Text style={[t.title, { fontSize: 24 }]}>{task.title}</Text></View></View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}><Pill tone={sl.tone}>{sl.label}</Pill>{task.due ? <Pill tone="ok">{`Due ${short(task.due)}`}</Pill> : null}{task.milestone ? <Pill tone="ok">Gate</Pill> : null}{task.goodFirstStep ? <Pill tone="ok">Good first step</Pill> : null}</View>
       {naming !== null ? <><Field value={naming} onChangeText={setNaming} placeholder="What needs doing" autoFocus /><Buttons><Primary label="Save" disabled={!naming.trim()} onPress={() => { run(bix.next(task, { title: naming.trim() })); setNaming(null); }} /><Outline label="Cancel" onPress={() => setNaming(null)} /></Buttons></> : null}
-      {desc !== null ? <><Field value={desc} onChangeText={setDesc} multiline placeholder="What this is, and what done looks like" /><Buttons><Primary label="Save" onPress={() => { run(bix.next(task, { description: desc.trim() || undefined })); setDesc(null); }} /><Outline label="Cancel" onPress={() => setDesc(null)} /></Buttons></>
-        : task.description ? <View style={{ marginTop: 10 }}><Body>{task.description}</Body></View> : null}
+      {desc !== null ? <><Field value={desc} onChangeText={setDesc} multiline placeholder="What it's for and who it helps, when and where, what to bring or know" /><Buttons><Primary label="Save" onPress={() => { run(bix.next(task, { description: desc.trim() || undefined })); setDesc(null); }} /><Outline label="Cancel" onPress={() => setDesc(null)} /></Buttons></>
+        : task.description ? <View style={{ marginTop: 10 }}><Body>{task.description}</Body></View>
+        : canEdit && open ? <View style={{ marginTop: 10 }}><Text style={t.meta} onPress={() => setDesc("")}>＋ What's this about? Who it helps, when and where, what to bring</Text></View> : null}
+
+      {/* Context before the button that finishes it (UX_GAPS A1): the group, the project, where, and who's on it. */}
+      {org || project ? <View style={{ marginTop: 14 }}><Panel>
+        {org ? <Row left={<Logo name={org.name} image={org.image} size={36} />} title={org.name} meta={[placeOf(org), "About the group"].filter(Boolean).join(" · ")} onPress={() => router.push(`/org/${org.id}` as never)} last={!project} /> : null}
+        {project ? <Row left={<IconCircle name="flag" />} title={project.title} meta={[project.period?.start ? short(project.period.start) : null, placeOf(project), "The project"].filter(Boolean).join(" · ")} onPress={() => router.push(`/project/${project.id}`)} last /> : null}
+      </Panel></View> : null}
+      {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} photos={parts.map((p: any) => people[p.person.reference]?.photo)} />} title={parts.map((p: any) => p.person.reference === me ? "You" : name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? (task.owner.reference === me ? "You're on it" : `${name(task.owner.reference)} is on it`) : undefined} last /></Panel></> : null}
       {actions}
       {msg ? <Notice>{msg}</Notice> : null}
       <Eyebrow right={(task.checklist ?? []).length ? `${(task.checklist ?? []).filter((x: any) => x.done).length} of ${(task.checklist ?? []).length}` : undefined}>Smaller steps</Eyebrow>
       <Panel>
         {(task.checklist ?? []).map((x: any, i: number) => <Row key={i} left={<Check on={!!x.done} onPress={onIt || isLead ? () => run(act.toggle(task, i, me)) : undefined} />} title={x.text} />)}
-        {(onIt || isLead) && task.status !== "completed" ? <View style={{ paddingVertical: 8 }}><Field value={item} onChangeText={setItem} placeholder="Add a smaller step" style={{ backgroundColor: c.wash }}
+        {(onIt || isLead) && task.status !== "completed" ? <View style={{ paddingVertical: 8 }}><Field value={item} onChangeText={setItem} placeholder="Break this into smaller steps" style={{ backgroundColor: c.wash }}
           onSubmitEditing={() => { if (item.trim()) { run(bix.next(task, { checklist: [...(task.checklist ?? []), { text: item.trim(), done: false }] })); setItem(""); } }} returnKeyType="done" /></View>
-          : (task.checklist ?? []).length ? null : <Row title="No smaller steps" meta="The lead can break this down" last />}
+          : (task.checklist ?? []).length ? null : <Row title="No smaller steps yet" meta="The lead can break this down" last />}
       </Panel>
 
 
@@ -117,11 +128,10 @@ export default function Task() {
       </View> : null}
 
       {(task.attachment ?? []).length || (canAdd && task.status !== "completed") ? <><Eyebrow right={(task.attachment ?? []).length ? `${(task.attachment ?? []).length}` : undefined}>Files</Eyebrow>
-        <Files items={task.attachment ?? []} onAdd={canAdd && open ? () => setAdding(true) : undefined} onRemove={canEdit && open ? (a) => run(bix.next(task, { attachment: (task.attachment ?? []).filter((x: any) => x.hash !== a.hash) }), "File removed.") : undefined} /></> : null}
+        <Files hint="Add a file the team needs" items={task.attachment ?? []} onAdd={canAdd && open ? () => setAdding(true) : undefined} onRemove={canEdit && open ? (a) => run(bix.next(task, { attachment: (task.attachment ?? []).filter((x: any) => x.hash !== a.hash) }), "File removed.") : undefined} /></> : null}
       {outputs.length || (canAdd && task.status === "completed") ? <><Eyebrow>What came out of it</Eyebrow>
-        <Files items={outputs} onAdd={canAdd ? () => setAdding(true) : undefined} /></> : null}
+        <Files hint="Add a photo or result of the work" items={outputs} onAdd={canAdd ? () => setAdding(true) : undefined} /></> : null}
 
-      {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} photos={parts.map((p: any) => people[p.person.reference]?.photo)} />} title={parts.map((p: any) => name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? `${name(task.owner.reference)} is accountable` : undefined} last /></Panel></> : null}
 
 
       {canEdit && open ? <View style={{ marginTop: 20 }}><Panel>
@@ -138,7 +148,7 @@ export default function Task() {
         <Row left={<IconCircle name="heart" />} title="Anyone can help" meta={openAllowed ? "Show to outside volunteers" : "Your group or project isn't public. Invite volunteers with a link instead"} right={<Check on={task.audience === "open"} onPress={!openAllowed && task.audience !== "open" ? undefined : () => run(bix.next(task, { audience: task.audience === "open" ? "team" : "open" }))} />} />
         <Row left={<IconCircle name="smile" />} title="Good first step" meta="Suggested to newcomers" right={<Check on={!!task.goodFirstStep} onPress={() => run(bix.next(task, { goodFirstStep: !task.goodFirstStep }))} />} />
         <Row left={<IconCircle name="pen" />} title="Rename" meta={task.title} onPress={() => { setTuning(false); setNaming(task.title ?? ""); }} />
-        <Row left={<IconCircle name="pen" />} title="About this task" onPress={() => { setTuning(false); setDesc(task.description ?? ""); }} />
+        <Row left={<IconCircle name="pen" />} title="What's this about?" meta={task.description ? "Edit" : "Who it helps, when, where, what to bring"} onPress={() => { setTuning(false); setDesc(task.description ?? ""); }} />
         {task.partOf ? <Row left={<IconCircle name="flag" />} title="Start a vote about this" onPress={() => { setTuning(false); router.push({ pathname: "/vote/new" as never, params: { project: task.partOf.reference.split("/")[1], about: `Task/${task.id}` } }); }} last /> : null}
         </Panel>
         <View style={{ marginTop: 10 }}><Meta>{can.who}</Meta></View>

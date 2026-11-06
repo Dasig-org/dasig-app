@@ -68,7 +68,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
     if (!title.trim()) return;
     const task = bix.create("Task", { intent: lead ? "plan" : "proposal", status: lead ? "ready" : "draft", title: title.trim(), owner: { reference: `Team/${id}` }, team: { reference: `Team/${id}` }, partOf: team.initiative, audience: "team",
       ...(lead ? {} : { note: [{ author: { reference: me }, time: new Date().toISOString(), text: "Suggested" }] }) });
-    try { await bix.commit(task); setTitle(""); setMsg(lead ? null : "Suggested. Your lead will see it."); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
+    try { await bix.commit(task); setTitle(""); setMsg(lead ? "Added. Open it to say what it's about, so whoever takes it knows." : "Suggested. Your lead will see it."); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
     reload();
   };
   const makeInvite = async (o?: InviteOpts) => {
