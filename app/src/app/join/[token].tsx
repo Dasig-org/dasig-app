@@ -5,7 +5,8 @@ import { bix } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { teamIcon } from "@/lib/work";
-import { Avatar, Buttons, Field, IconCircle, Meta, Notice, Primary, Sand, Screen } from "@/ui/kit";
+import { Avatar, Buttons, Field, IconCircle, LinkText, Meta, Notice, Primary, Sand, Screen } from "@/ui/kit";
+import { dasigAccountAvailable, startDasigSignIn } from "@/lib/dasig-account";
 import { type as t } from "@/ui/theme";
 
 /** An invite link: useful before joining; a nickname is enough to join (growth loop 1). */
@@ -44,6 +45,8 @@ export default function Join() {
       {sent ? <Notice>{"Your request was sent. You'll see it here once someone in the group accepts it."}</Notice> : null}
       <Buttons><Primary label={data.resourceType === "Team" ? "Join the team" : data.resourceType === "Initiative" ? "Help with this project" : "Join the group"} disabled={sent || (!s.person && !nick.trim())} busy={busy} onPress={join} /></Buttons>
       <Meta>{s.person ? "" : "No account needed to join."}</Meta>
+      {/* Already on Dasig: sign in first, then come back to this link, so nobody becomes a second person. */}
+      {!s.person && dasigAccountAvailable ? <View style={{ marginTop: 12 }}><LinkText onPress={() => { startDasigSignIn(typeof window !== "undefined" ? window.location.pathname : "/").catch((e) => setErr(String(e?.message ?? e))); }}>Already on Dasig? Sign in</LinkText></View> : null}
     </Screen>
   );
 }

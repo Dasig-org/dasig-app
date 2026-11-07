@@ -3,6 +3,9 @@ import { Image, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
 import { short } from "@/lib/dates";
 import { appUrl } from "@/lib/env";
+import { useEffect, useState } from "react";
+import { Platform } from "react-native";
+import { dasigAccountAvailable, dasigLinked, startDasigSignIn } from "@/lib/dasig-account";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, personName, teamIcon } from "@/lib/work";
@@ -51,6 +54,10 @@ export default function Home() {
   const s = useSession();
   const me = s.person ? `Person/${s.person.id}` : "";
   const { data, error, reload } = useLoad(() => (me ? load(me, s.current?.id ?? null) : Promise.resolve(null)), [me, s.current?.id]);
+  const [linked, setLinked] = useState(true);
+  useEffect(() => { dasigLinked().then(setLinked).catch(() => {}); }, [me]);
+  // A nickname on the web lives in this browser only: offer a Dasig account once they've joined or taken something.
+  const keepAccount = Platform.OS === "web" && dasigAccountAvailable && !linked && s.groups.length > 0;
   const tasks = data?.tasks ?? [];
   const projOf = (x: R) => (data?.projects ?? []).find((y) => `Initiative/${y.id}` === x.partOf?.reference);
   const teamOf = (x: R) => (data?.teams ?? []).find((y) => `Team/${y.id}` === x.team?.reference);
@@ -146,6 +153,9 @@ export default function Home() {
       <Text style={[t.title, { marginTop: 14, marginBottom: 2 }]}>{`${hello()}, ${personName(s.person)}`}</Text>
       {error ? <Notice>{error}</Notice> : null}
       <Tip id="volunteer-home" title="Find something to do">Tap “I'm in” to take it.</Tip>
+      {keepAccount ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="lock" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>Keep your account</Text>
+        <Meta>Add your Dasig account so you can sign in on any phone or browser. Your work stays yours.</Meta>
+        <View style={{ marginTop: 6 }}><LinkText onPress={() => { startDasigSignIn("/home").catch(() => {}); }}>Add a Dasig account</LinkText></View></View></Sand></View> : null}
 
       {asked.map((x) => { const asker = x.requester?.reference ?? (x.note ?? [])[0]?.author?.reference;
         return <View key={x.id}><Eyebrow>{asker && data?.people[asker] ? `${personName(data.people[asker])} asked you` : "Asked of you"}</Eyebrow>
