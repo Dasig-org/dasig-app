@@ -144,7 +144,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   };
   const signOut = async () => {
     const c = await getConnection();
+    // On the Ecosystem, end the session on the server too; the account (Dasig or Google) is how you get back in.
+    if (c.kind === "ecosystem" && c.token) await fetch(`${c.url}/$signout`, { method: "POST", headers: { authorization: `Bearer ${c.token}` } }).catch(() => {});
+    await AsyncStorage.removeItem("dasig.account.linked");
     if (c.kind === "cloud") await supabase.auth.signOut();
+    else if (c.kind === "ecosystem" && Platform.OS === "web") await setConnection({ kind: "ecosystem", url: c.url, token: "" });
     else await setConnection(c.kind === "hub" || c.kind === "ecosystem" ? { kind: "phone", token: await AsyncStorageGet() } : { kind: "phone" });
     setPerson(null); setGroups([]); setCurrent(null); await refresh();
   };
@@ -156,6 +160,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
 /** The phone's own token, remembered when switching to a hub, so going back keeps your local records. */
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 async function AsyncStorageGet(): Promise<string | undefined> { return (await AsyncStorage.getItem("dasig.phone.token")) ?? undefined; }
 export async function rememberPhoneToken(t?: string) { if (t) await AsyncStorage.setItem("dasig.phone.token", t); }
 
