@@ -8,6 +8,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { facesOf, peopleFor, placeOf, shortRef, teamIcon } from "@/lib/work";
 import { Logo } from "@/ui/Context";
+import { History } from "@/ui/History";
 import { Files } from "@/ui/Files";
 import { Body, Buttons, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Sheet, Tip, Skeleton, usePhoto } from "@/ui/kit";
 import { atMost, InviteOptions, linkOpts, VisibilityChoice, visibilityFields, visibilityOf, type Visibility } from "@/ui/Privacy";
@@ -106,6 +107,7 @@ export default function Project() {
         <Row left={<IconCircle name="plus" tone="grey" />} title={lead ? "Post a need" : "See what's needed"} meta="Goods, a venue, a skill, people" onPress={() => router.push({ pathname: "/need/new" as never, params: { project: id } })} last />
       </Panel>
 
+      <History type="Initiative" id={p.id} groupName={org?.name} version={p.meta.version} />
       <Eyebrow>More</Eyebrow>
       <Panel>
         <Row left={<IconCircle name="cal" />} title="Timeline" meta="Work by week, with gates" onPress={() => router.push(`/project/${id}/timeline` as never)} />

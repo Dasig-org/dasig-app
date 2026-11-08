@@ -34,7 +34,9 @@ export const bix = {
   get: (type: string, id: string) => call<R>("GET", `/${type}/${id}`),
   byRef: (r: string) => call<R>("GET", `/$ref/${encodeURIComponent(r)}`),
   search: async (type: string, q: Record<string, string>) => entries(await call<{ entry: { resource: R }[] }>("GET", `/${type}?${new URLSearchParams(q)}`)),
-  verify: (type: string, id: string) => call<{ allValid: boolean; signatures: { signedBy: string; when: string; unchanged: boolean }[] }>("GET", `/${type}/${id}/$verify`),
+  history: (type: string, id: string) => call<{ entry: { version: number; activity: string; by: string | null; model: boolean; rule: boolean; when: string; offline: boolean; signed: { by: string; unchanged: boolean } | null }[] }>("GET", `/${type}/${id}/$provenance`),
+  proof: (type: string, id: string) => call<{ entry: { resource: R }[] }>("GET", `/${type}/${id}/$proof`),
+    verify: (type: string, id: string) => call<{ allValid: boolean; signatures: { signedBy: string; when: string; unchanged: boolean }[] }>("GET", `/${type}/${id}/$verify`),
   /** Apply changes now; if there's no connection, keep them to sync later. Throws BixError if refused. */
   async commit(...records: R[]): Promise<R[]> {
     try { return await this.commitNow(...records); }

@@ -5,6 +5,7 @@ import { bix, now, type R } from "@/lib/bix";
 import { short } from "@/lib/dates";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
+import { History } from "@/ui/History";
 import { shortRef } from "@/lib/work";
 import { Avatar, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet , Skeleton} from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
@@ -51,6 +52,7 @@ export default function Need() {
         <View style={{ height: 8, borderRadius: 4, backgroundColor: c.wash, marginTop: 8, overflow: "hidden" }}><View style={{ width: `${Math.min(1, got / want) * 100}%`, height: 8, backgroundColor: c.accent }} /></View></View></Panel> : null}
       {need.status !== "met" ? <Buttons><Primary label="I can help with this" onPress={() => setOffering(true)} /></Buttons> : null}
       {msg ? <Notice>{msg}</Notice> : null}
+      <History type="Need" id={id} version={need.meta.version} />
       <Eyebrow right={`${offers.length}`}>Offers</Eyebrow>
       <Panel>{offers.map((o, i) => { const who = o.offeredBy?.reference; const nm = people[who]?.name?.text ?? "Someone";
         return <Row key={o.id} left={<Avatar name={nm} photo={people[who]?.photo} />} title={nm} meta={[o.quantity ? `${o.quantity.value} ${o.quantity.unit}` : null, o.description].filter(Boolean).join(" · ")} last={i === offers.length - 1}

@@ -11,6 +11,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, placeOf, stateLabel } from "@/lib/work";
 import { Logo } from "@/ui/Context";
+import { History } from "@/ui/History";
 import { Body, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton} from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { atMost, visibilityOf } from "@/ui/Privacy";
@@ -133,6 +134,8 @@ export default function Task() {
         <Files hint="Add a photo or result of the work" items={outputs} onAdd={canAdd ? () => setAdding(true) : undefined} /></> : null}
 
 
+
+      <History type="Task" id={task.id} groupName={org?.name} version={task.meta.version} />
 
       {canEdit && open ? <View style={{ marginTop: 20 }}><Panel>
         <Row left={<IconCircle name="cal" />} title="Plan this task" onPress={() => setTuning(true)} last

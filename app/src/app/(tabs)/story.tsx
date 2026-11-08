@@ -6,7 +6,8 @@ import { bix } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { personName, shortRef } from "@/lib/work";
-import { Avatar, Eyebrow, IconCircle, LinkText, Meta, Panel, Row, Screen } from "@/ui/kit";
+import { Avatar, Body, Buttons, Eyebrow, IconCircle, LinkText, Meta, Notice, Outline, Panel, Primary, Row, Screen, Sheet } from "@/ui/kit";
+import { openSite } from "@/ui/About";
 import { c, radius, type as t } from "@/ui/theme";
 
 /** Your story: finished work across every group, and everything about you and your connection. */
@@ -17,7 +18,10 @@ export default function Story() {
     if (!me) return null;
     const done = (await bix.search("Task", { participant: me })).filter((x) => x.status === "completed");
     const hours = done.reduce((h, x) => h + (x.executionPeriod?.start && x.executionPeriod?.end ? (Date.parse(x.executionPeriod.end) - Date.parse(x.executionPeriod.start)) / 3600000 : 0), 0);
-    return { done, hours };
+    // Check each item's signature for real, rather than saying "signed" on trust.
+    const checks: Record<string, { allValid: boolean; when?: string; by?: string }> = {};
+    await Promise.all(done.slice(0, 8).map(async (x) => { try { const v = await bix.verify("Task", x.id); checks[x.id] = { allValid: v.allValid, when: v.signatures.at(-1)?.when, by: v.signatures.at(-1)?.signedBy }; } catch {} }));
+    return { done, hours, checks };
   }, [me]);
   const [linked, setLinked] = useState(false);
   useEffect(() => { dasigLinked().then(setLinked).catch(() => {}); }, [me]);
@@ -29,6 +33,9 @@ export default function Story() {
     if (web) { if (typeof window === "undefined" || window.confirm(`Sign out?\n\n${warn}`)) out("start"); return; }
     Alert.alert("Sign out?", warn, [{ text: "Stay signed in", style: "cancel" }, { text: "Sign out", style: "destructive", onPress: () => out("start") }]);
   };
+  const [proof, setProof] = useState<any>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  const saveProof = async (x: any) => { try { const b = await bix.proof("Task", x.id); const { saveJson } = await import("@/lib/save"); await saveJson(`dasig-proof-${shortRef(x) ?? x.id}.json`, b); setSaved("Saved. Anyone can check it at bayanihan.dasig.org/trust/check."); } catch (e) { setSaved(e instanceof Error ? e.message : String(e)); } };
   const tile = (icon: any, n: string, label: string) => <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, gap: 8 }}><IconCircle name={icon} /><Text style={t.row}>{n}</Text><Meta>{label}</Meta></View>;
   return (
     <Screen>
@@ -37,7 +44,8 @@ export default function Story() {
       {s.person?.description ? <Text style={[t.body, { textAlign: "center" }]}>{s.person.description}</Text> : null}
       <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>{tile("check", `${data?.done.length ?? 0}`, "things done")}{tile("clock", `${Math.round(data?.hours ?? 0)}`, "hours")}{tile("users", `${s.groups.length}`, "groups")}</View>
       <Eyebrow right={data?.done.length ? `${data.done.length}` : undefined}>Done</Eyebrow>
-      <Panel>{(data?.done ?? []).slice(0, 8).map((x, i, all) => <Row key={x.id} left={<IconCircle name="check" />} title={x.title} meta={[shortRef(x), "signed by your group"].filter(Boolean).join(" · ")} onPress={() => router.push(`/task/${x.id}`)} last={i === all.length - 1} />)}
+      <Panel>{(data?.done ?? []).slice(0, 8).map((x, i, all) => <Row key={x.id} left={<IconCircle name={data?.checks[x.id]?.allValid ? "lock" : "check"} />} title={x.title}
+        meta={[shortRef(x), data?.checks[x.id]?.allValid ? "Signed by your group · unchanged" : "Recorded"].filter(Boolean).join(" · ")} onPress={() => setProof(x)} last={i === all.length - 1} />)}
         {!data?.done.length ? <Row title="Nothing yet" meta="Work you finish shows up here, signed by your group." last /> : null}</Panel>
       <Eyebrow>You</Eyebrow>
       <Panel>
@@ -68,6 +76,18 @@ export default function Story() {
       <Panel>
         <Row left={<IconCircle name="book" />} title="BIX, Bayanihan and Bayani" meta="Open source from Dasig Inc., and why we share it" onPress={() => router.push("/about" as never)} last />
       </Panel>
+      <Sheet open={!!proof} onClose={() => { setProof(null); setSaved(null); }}>
+        {proof ? <>
+          <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><IconCircle name={data?.checks[proof.id]?.allValid ? "lock" : "check"} size={48} />
+            <View style={{ flex: 1 }}><Text style={[t.row, { fontSize: 18 }]}>{proof.title}</Text><Meta>{shortRef(proof) ?? ""}</Meta></View></View>
+          <View style={{ marginTop: 12 }}><Body>{data?.checks[proof.id]?.allValid
+            ? `Signed by your group${data.checks[proof.id]!.when ? ` on ${new Date(data.checks[proof.id]!.when!).toLocaleDateString()}` : ""}, and unchanged since. Anyone you share the proof with can check it, without signing in.`
+            : "Recorded by your group. It hasn't been signed yet, so there's no proof to share."}</Body></View>
+          {saved ? <Notice>{saved}</Notice> : null}
+          <Buttons>{data?.checks[proof.id]?.allValid ? <Primary label="Save the proof" onPress={() => saveProof(proof)} /> : null}<Outline flex label="Open the task" onPress={() => { setProof(null); router.push(`/task/${proof.id}`); }} /></Buttons>
+          {data?.checks[proof.id]?.allValid ? <View style={{ marginTop: 10, alignItems: "center" }}><LinkText onPress={() => openSite("/trust/check")}>How others check it</LinkText></View> : null}
+        </> : null}
+      </Sheet>
     </Screen>
   );
 }
