@@ -6,10 +6,10 @@ import { parseDate, short } from "@/lib/dates";
 import { pickDocument, pickPhoto } from "@/lib/files";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { placeOf, shortRef, teamIcon } from "@/lib/work";
+import { facesOf, peopleFor, placeOf, shortRef, teamIcon } from "@/lib/work";
 import { Logo } from "@/ui/Context";
 import { Files } from "@/ui/Files";
-import { Body, Buttons, Eyebrow, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Sheet, Tip, Skeleton, usePhoto } from "@/ui/kit";
+import { Body, Buttons, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Sheet, Tip, Skeleton, usePhoto } from "@/ui/kit";
 import { atMost, InviteOptions, linkOpts, VisibilityChoice, visibilityFields, visibilityOf, type Visibility } from "@/ui/Privacy";
 import { appUrl } from "@/lib/env";
 import { c, type as t } from "@/ui/theme";
@@ -30,13 +30,15 @@ export default function Project() {
     const [teams, tasks, needs, decisions] = await Promise.all([bix.search("Team", { initiative: ref }), bix.search("Task", { partOf: ref }), bix.search("Need", { initiative: ref }), bix.search("Decision", { partOf: ref })]);
     const can = await bix.can("Initiative", id);
     const org = p.organization ? await bix.get("Organization", p.organization.reference.split("/")[1]).catch(() => null) : null;
-    return { p, teams, tasks, needs, decisions, can, org };
+    const folks = await peopleFor(teams.flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)), 20);
+    return { p, teams, tasks, needs, decisions, can, org, folks };
   }, [id]);
   const logo = usePhoto(data?.p.image);
   const formLogo = usePhoto(form.image);
   if (error) return <Screen onRefresh={reload} back><Notice>{error}</Notice></Screen>;
   if (!data) return <Screen onRefresh={reload} back><Skeleton /></Screen>;
-  const { p, teams, tasks, needs, decisions, can, org } = data;
+  const { p, teams, tasks, needs, decisions, can, org, folks } = data;
+  const activeOf = (tm: any) => (tm.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference as string);
   const lead = s.isLead || teams.some((tm) => (tm.participant ?? []).some((x: any) => x.person.reference === `Person/${s.person?.id}` && x.role === "lead" && x.status === "active"));
   const people = new Set(teams.flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)));
   const gates = tasks.filter((x) => x.milestone && x.status !== "completed");
@@ -69,7 +71,8 @@ export default function Project() {
       <View style={{ marginTop: 12 }}><Panel>
         {org ? <Row left={<Logo name={org.name} image={org.image} size={36} />} title={org.name} meta="About the group" onPress={() => router.push(`/org/${org.id}` as never)} /> : null}
         {(() => { const live = tasks.filter((k) => k.status !== "draft" && k.status !== "cancelled"); const d = live.filter((k) => k.status === "completed").length;
-          return <Row left={<IconCircle name="check" />} title={live.length ? `${d} of ${live.length} done` : "No work added yet"} meta={`${teams.length} team${teams.length === 1 ? "" : "s"} · ${people.size} ${people.size === 1 ? "person" : "people"}`} last
+          const f = facesOf([...people], folks);
+          return <Row left={f.names.length ? <View style={{ width: 64 }}><Faces {...f} /></View> : <IconCircle name="check" />} title={live.length ? `${d} of ${live.length} done` : "No work added yet"} meta={`${teams.length} team${teams.length === 1 ? "" : "s"} · ${people.size} ${people.size === 1 ? "person" : "people"}`} last
             right={live.length ? <View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${(d / live.length) * 100}%`, height: 8, backgroundColor: c.accent }} /></View> : undefined} />; })()}
       </Panel></View>
       {msg ? <Notice>{msg}</Notice> : null}
@@ -89,7 +92,7 @@ export default function Project() {
           const pct = mine.length ? doneN / mine.length : 0;
           return <Row key={x.id} left={<IconCircle name={teamIcon(x.name)} />} title={x.name} last={i === teams.length - 1} onPress={() => router.push(`/team/${x.id}`)}
             meta={mine.length ? `${doneN} of ${mine.length} done` : (x.participant ?? []).some((y: any) => y.role === "lead" && y.status === "active") ? "Add its first task" : "Ask someone to lead"}
-            right={mine.length ? <View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${pct * 100}%`, height: 8, backgroundColor: c.accent }} /></View> : undefined} />;
+            right={<View style={{ alignItems: "flex-end", gap: 6 }}>{facesOf(activeOf(x), folks).names.length ? <Faces {...facesOf(activeOf(x), folks)} /> : null}{mine.length ? <View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${pct * 100}%`, height: 8, backgroundColor: c.accent }} /></View> : null}</View>} />;
         })}
       </Panel>
 

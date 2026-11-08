@@ -4,7 +4,8 @@ import { Text, View } from "react-native";
 import { bix, ref } from "@/lib/bix";
 import { DAY } from "@/lib/dates";
 import { useLoad } from "@/lib/use";
-import { Buttons, Eyebrow, IconCircle, Meta, Notice, Panel, Primary, Row, Screen, Title, Outline , Skeleton} from "@/ui/kit";
+import { facesOf, peopleFor } from "@/lib/work";
+import { Buttons, Eyebrow, Faces, IconCircle, Meta, Notice, Panel, Primary, Row, Screen, Title, Outline , Skeleton} from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
 
 /** Wrapping up: finish the project, and save its teams and usual work for next time (BIX InitiativeTemplate, never shown by that name). */
@@ -14,10 +15,12 @@ export default function Wrap() {
   const [busy, setBusy] = useState(false);
   const { data, reload } = useLoad(async () => {
     const [p, teams, tasks] = await Promise.all([bix.get("Initiative", id), bix.search("Team", { initiative: `Initiative/${id}` }), bix.search("Task", { partOf: `Initiative/${id}` })]);
-    return { p, teams, tasks: tasks.filter((x) => x.status !== "draft") };
+    const live = tasks.filter((x) => x.status !== "draft");
+    const folks = await peopleFor(live.flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)), 12);
+    return { p, teams, tasks: live, folks };
   }, [id]);
   if (!data) return <Screen back><Skeleton /></Screen>;
-  const { p, teams, tasks } = data;
+  const { p, teams, tasks, folks } = data;
   const done = tasks.filter((x) => x.status === "completed").length;
   const people = new Set(tasks.flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)));
   const anchor = p.period?.start ? new Date(p.period.start).getTime() : null;
@@ -42,7 +45,7 @@ export default function Wrap() {
     <Screen back>
       <Title sub={p.status === "completed" ? "It's done. Salamat!" : "When the work is done."}>{p.title}</Title>
       <View style={{ flexDirection: "row", gap: 10 }}>
-        <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, gap: 8 }}><IconCircle name="users" /><Text style={t.row}>{`${people.size} people`}</Text><Meta>did the work</Meta></View>
+        <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, gap: 8 }}>{facesOf([...people], folks).names.length ? <View style={{ height: 40, justifyContent: "center" }}><Faces {...facesOf([...people], folks)} /></View> : <IconCircle name="users" />}<Text style={t.row}>{`${people.size} people`}</Text><Meta>did the work</Meta></View>
         <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, gap: 8 }}><IconCircle name="check" /><Text style={t.row}>{`${done} of ${tasks.length}`}</Text><Meta>things done</Meta></View>
       </View>
       <Eyebrow>Wrap up</Eyebrow>

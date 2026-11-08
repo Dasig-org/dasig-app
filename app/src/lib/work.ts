@@ -16,6 +16,18 @@ export function stateLabel(t: R, me?: string): { label: string; tone: "neutral" 
   return { label: String(t.status), tone: "neutral" };
 }
 
+/** Load people for an avatar stack (names and photos), at most `max`. Missing or hidden people are skipped. */
+export async function peopleFor(refs: Iterable<string>, max = 12): Promise<Record<string, R>> {
+  const out: Record<string, R> = {};
+  await Promise.all([...new Set(refs)].slice(0, max).map(async (r) => { try { out[r] = await bix.get("Person", r.split("/")[1]!); } catch {} }));
+  return out;
+}
+/** Names and photos for <Faces />, in the order given. */
+export const facesOf = (refs: string[], people: Record<string, R>) => {
+  const xs = refs.filter((r) => people[r]);
+  return { names: xs.map((r) => personName(people[r])), photos: xs.map((r) => people[r]?.photo) };
+};
+
 /** A free-text place on a group or project ("Mactan Expo"). */
 export const placeOf = (r?: R | null): string | undefined => (r?.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value;
 

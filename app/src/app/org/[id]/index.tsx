@@ -6,7 +6,7 @@ import { fileUri, pickPhoto } from "@/lib/files";
 import { CAUSES } from "@/lib/org";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { Body, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton } from "@/ui/kit";
+import { Body, Buttons, Faces, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { Logo } from "@/ui/Context";
 import { Icon } from "@/ui/Icon";
 import { directoryOpen, networkOpen } from "@/lib/network";
@@ -28,8 +28,8 @@ export default function Org() {
     const org = await bix.get("Organization", id);
     const [roles, projects] = await Promise.all([bix.search("Role", { organization: `Organization/${id}` }), bix.search("Initiative", { organization: `Organization/${id}` })]);
     const active = roles.filter((r) => r.status === "active");
-    const contacts: string[] = [];
-    for (const r of active.filter((x) => x.code?.code === "officer").slice(0, 3)) { try { const pp = await bix.get("Person", r.person.reference.split("/")[1]); if (pp.name?.text) contacts.push(pp.name.text); } catch {} }
+    const contacts: { name: string; photo?: any }[] = [];
+    for (const r of active.filter((x) => x.code?.code === "officer").slice(0, 3)) { try { const pp = await bix.get("Person", r.person.reference.split("/")[1]); if (pp.name?.text) contacts.push({ name: pp.name.text, photo: pp.photo }); } catch {} }
     return { org, roles: active, requests: roles.filter((r) => r.status === "requested"), projects, contacts };
   }, [id]);
   const [logoUri, setLogoUri] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export default function Org() {
             : <Meta>The group hasn't written about itself yet.</Meta>}</View>
           {(org.cause ?? []).length ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, paddingBottom: 10 }}>{(org.cause ?? []).map((x: any) => <Pill key={x.code}>{CAUSES.find((y) => y.code === x.code)?.label ?? x.code}</Pill>)}</View> : null}
           {place ? <Row left={<IconCircle name="pin" />} title={place} meta="Where it works" last={!contacts.length} /> : null}
-          {contacts.length ? <Row left={<IconCircle name="users" />} title={contacts.join(", ")} meta={contacts.length === 1 ? "Officer · ask them about the group" : "Officers · ask them about the group"} last /> : null}
+          {contacts.length ? <Row left={<View style={{ width: 54 }}><Faces names={contacts.map((x) => x.name)} photos={contacts.map((x) => x.photo)} /></View>} title={contacts.map((x) => x.name).join(", ")} meta={contacts.length === 1 ? "Officer · ask them about the group" : "Officers · ask them about the group"} last /> : null}
         </Panel>
         {officer ? <Buttons><Outline flex label="Edit profile" onPress={() => setEditing(true)} /></Buttons> : null}
       </>}

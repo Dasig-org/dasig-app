@@ -119,7 +119,7 @@ export default function Home() {
               left={<View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: first ? c.accent : c.sand, alignItems: "center", justifyContent: "center" }}>
                 <Text style={{ fontSize: 13, fontWeight: "700", color: first ? c.white : c.accent }}>{day(e.due)}</Text></View>}
               title={e.items.length === 1 ? e.items[0]!.title : e.project?.title ?? "Work"} meta={e.items.length === 1 ? e.project?.title : `${e.items.length} things`}
-              right={openN ? <Pill>{`${openN} open`}</Pill> : <Pill tone="ok">All set</Pill>} />; })}
+              right={<View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>{(() => { const f = e.items.flatMap((x) => faces(x)); return f.length ? <Faces names={f.map((y) => y.name)} photos={f.map((y) => y.photo)} /> : null; })()}{openN ? <Pill>{`${openN} open`}</Pill> : <Pill tone="ok">All set</Pill>}</View>} />; })}
         </Panel></> : null}
 
         {lastDone ? <><Eyebrow right={`${imagesOf(lastDone).length} photo${imagesOf(lastDone).length === 1 ? "" : "s"}`}>{`From ${lastDone.title}`}</Eyebrow>
