@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { Platform, Text, View } from "react-native";
@@ -119,6 +120,7 @@ export function AboutHome() {
 export function AboutTopic() {
   const { topic } = useLocalSearchParams<{ topic: string }>();
   const x = TOPICS[topic ?? ""];
+  const [map, setMap] = useState(false);
   if (!x) return <Screen back><Title>About</Title></Screen>;
   return (
     <Screen back>
@@ -130,8 +132,11 @@ export function AboutTopic() {
         {sct.p ? <View style={{ backgroundColor: c.white, borderRadius: radius.panel, padding: 16 }}><Body>{sct.p}</Body></View> : null}
         {sct.rows ? <Panel>{sct.rows.map((r, i) => <Row key={r.title} left={<IconCircle name={r.icon} />} title={r.title} meta={r.meta} last={i === sct.rows!.length - 1}
           onPress={topic === "dasig" && DASIG_LINKS[r.title] ? () => openSite(DASIG_LINKS[r.title]!) : undefined} />)}</Panel> : null}
-        {topic === "bix" && sct.h === "What it is" ? <><Eyebrow>How it fits together</Eyebrow><BixMap /></> : null}
       </View>)}
+      {/* The map wraps up: folded by default so it never pushes the explanation down. */}
+      {topic === "bix" ? <><Eyebrow>How it fits together</Eyebrow>
+        <Panel><Row left={<IconCircle name="link" />} title={map ? "Hide the map" : "See it as a map"} meta="Tap each part to see what it connects to" onPress={() => setMap(!map)} last /></Panel>
+        {map ? <View style={{ marginTop: 10 }}><BixMap /></View> : null}</> : null}
       <Buttons><Outline flex label={x.web.label} onPress={() => openSite(x.web.path)} /></Buttons>
     </Screen>
   );
