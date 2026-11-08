@@ -4,6 +4,7 @@ import { Platform, Text, View } from "react-native";
 import { Body, Buttons, Eyebrow, IconCircle, Meta, Outline, Panel, Row, Screen, Title } from "@/ui/kit";
 import type { IconName } from "@/ui/Icon";
 import { c, radius, type as t } from "@/ui/theme";
+import { BixMap } from "@/ui/BixMap";
 
 /*
  * About: what's open, who makes it, and why. Reached from Me → About; never shown in the way of the work.
@@ -129,6 +130,7 @@ export function AboutTopic() {
         {sct.p ? <View style={{ backgroundColor: c.white, borderRadius: radius.panel, padding: 16 }}><Body>{sct.p}</Body></View> : null}
         {sct.rows ? <Panel>{sct.rows.map((r, i) => <Row key={r.title} left={<IconCircle name={r.icon} />} title={r.title} meta={r.meta} last={i === sct.rows!.length - 1}
           onPress={topic === "dasig" && DASIG_LINKS[r.title] ? () => openSite(DASIG_LINKS[r.title]!) : undefined} />)}</Panel> : null}
+        {topic === "bix" && sct.h === "What it is" ? <><Eyebrow>How it fits together</Eyebrow><BixMap /></> : null}
       </View>)}
       <Buttons><Outline flex label={x.web.label} onPress={() => openSite(x.web.path)} /></Buttons>
     </Screen>
