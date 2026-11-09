@@ -11,6 +11,7 @@ import { useLoad } from "@/lib/use";
 import { act, personName, teamIcon } from "@/lib/work";
 import { ContextPill, Logo } from "@/ui/Context";
 import { ZeroHome } from "@/ui/ZeroHome";
+import { CoordinatorHome } from "@/ui/CoordinatorHome";
 import { Buttons, Eyebrow, Faces, Hero, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Tip, usePhoto } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
 
@@ -78,72 +79,8 @@ export default function Home() {
   const from = (x: R) => [s.current ? null : groupOf(x)?.name, projOf(x)?.title, teamOf(x)?.name].filter(Boolean).join(" · ");
   const icon = (x: R) => <IconCircle name={teamIcon(teamOf(x)?.name ?? "")} size={44} tone="white" />;
 
-  if (s.isLead) {
-    const ideas = tasks.filter((x) => x.status === "draft");
-    const waiting = tasks.filter((x) => x.status === "requested");
-    const noLead = (data?.teams ?? []).filter((tm) => !(tm.participant ?? []).some((p: any) => p.role === "lead" && p.status === "active"));
-    const soon = open.filter((x) => x.due && new Date(x.due).getTime() - Date.now() < 7 * 86400000)[0];
-    const needs = (soon ? 1 : 0) + (ideas.length ? 1 : 0) + waiting.length + (noLead.length ? 1 : 0);
-    // Coming up: one row per day and project, its state in one pill (sketch 3).
-    const start = new Date(); start.setHours(0, 0, 0, 0); const horizon = Date.now() + 14 * 86400000;
-    const dated = tasks.filter((x) => x.due && x.status !== "draft" && x.status !== "cancelled" && new Date(x.due).getTime() >= start.getTime() && new Date(x.due).getTime() < horizon);
-    const slots = new Map<string, { due: string; project: R | undefined; items: R[] }>();
-    for (const x of dated) { const k = `${new Date(x.due).toDateString()}|${x.partOf?.reference}`; const e = slots.get(k) ?? { due: x.due, project: projOf(x), items: [] as R[] }; e.items.push(x); slots.set(k, e); }
-    const coming = [...slots.values()].sort((a, b) => a.due.localeCompare(b.due)).slice(0, 5);
-    const lastDone = tasks.filter((x) => x.status === "completed" && imagesOf(x).length).sort((a, b) => (b.executionPeriod?.end ?? "").localeCompare(a.executionPeriod?.end ?? ""))[0];
-    const share = (x: R) => Share.share({ message: `Can you help with “${x.title}”${projOf(x) ? ` for ${projOf(x)!.title}` : ""}? ${appUrl()}/task/${x.id}` }).catch(() => {});
-    return (
-      <Screen onRefresh={reload}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill />
-          <RoundButton icon="plus" label="Start a project" onPress={() => router.push("/new-project")} /></View>
-        <Text style={[t.title, { marginTop: 14 }]}>{`Your week, ${personName(s.person)}`}</Text>
-        <Text style={t.body}>{needs ? `${needs === 1 ? "One thing needs" : `${needs} things need`} you.` : "On track. Nothing needs you."}</Text>
-        {error ? <Notice>{error}</Notice> : null}
-        <Tip id="coordinator-home" title="Your week">What needs you comes first.</Tip>
-        {s.connection?.kind !== "cloud" && tasks.some((x) => x.status === "completed") ? <Tip id="keep-a-copy" title="Everything is on your phones" onPress={() => router.push("/network" as never)}>If one is lost, its records go with it.</Tip> : null}
-
-        {needs ? <><Eyebrow>Needs you</Eyebrow><Hero>
-          {soon ? <><Pressable onPress={() => router.push(`/task/${soon.id}`)}><Text style={t.row}>{`${soon.title} needs someone`}</Text><Meta>{[short(soon.due), projOf(soon)?.title].filter(Boolean).join(" · ")}</Meta></Pressable>
-            <Buttons><Primary label="Share in the group chat" onPress={() => share(soon)} /></Buttons></> : null}
-          {waiting.slice(0, 2).map((x) => <View key={x.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: soon ? 14 : 0, paddingTop: soon ? 14 : 0, borderTopWidth: soon ? 1 : 0, borderTopColor: c.s200 }}>
-            <View style={{ flex: 1 }}><Text style={t.row}>{`${personName(data?.people[x.owner?.reference])} hasn't replied`}</Text><Meta>{x.title}</Meta></View>
-            <LinkText onPress={() => router.push(`/task/${x.id}`)}>Ask someone else</LinkText></View>)}
-          {ideas.length ? <Row left={<IconCircle name="pen" />} title={`${ideas.length} idea${ideas.length === 1 ? "" : "s"} from the team`} meta="Accept or keep for later" onPress={() => router.push("/ideas" as never)} last={!noLead.length} /> : null}
-          {noLead.length ? <Row left={<IconCircle name={noLead.length === 1 ? teamIcon(noLead[0]!.name) : "users"} />} title={noLead.length === 1 ? `${noLead[0]!.name} needs a lead` : `${noLead.length} teams need a lead`}
-            meta={noLead.length === 1 ? "Tap Lead on the team to choose" : noLead.slice(0, 3).map((x) => x.name).join(", ")} onPress={() => router.push(noLead.length === 1 ? `/team/${noLead[0]!.id}` : `/project/${(data?.projects ?? [])[0]?.id ?? ""}`)} last /> : null}
-        </Hero></> : null}
-
-        {coming.length ? <><Eyebrow>Coming up</Eyebrow><Panel>
-          {coming.map((e, i) => { const openN = e.items.filter((x) => x.status === "ready" || x.status === "requested").length; const first = i === 0;
-            return <Row key={i} last={i === coming.length - 1} onPress={() => router.push(e.items.length === 1 ? `/task/${e.items[0]!.id}` : `/project/${e.project?.id ?? ""}`)}
-              left={<View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: first ? c.accent : c.sand, alignItems: "center", justifyContent: "center" }}>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: first ? c.white : c.accent }}>{day(e.due)}</Text></View>}
-              title={e.items.length === 1 ? e.items[0]!.title : e.project?.title ?? "Work"} meta={e.items.length === 1 ? e.project?.title : `${e.items.length} things`}
-              right={<View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>{(() => { const f = e.items.flatMap((x) => faces(x)); return f.length ? <Faces names={f.map((y) => y.name)} photos={f.map((y) => y.photo)} /> : null; })()}{openN ? <Pill>{`${openN} open`}</Pill> : <Pill tone="ok">All set</Pill>}</View>} />; })}
-        </Panel></> : null}
-
-        {lastDone ? <><Eyebrow right={`${imagesOf(lastDone).length} photo${imagesOf(lastDone).length === 1 ? "" : "s"}`}>{`From ${lastDone.title}`}</Eyebrow>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-            {imagesOf(lastDone).slice(0, 8).map((a, i) => <Photo key={a?.hash ?? i} image={a} w={86} h={86} />)}</ScrollView></> : null}
-
-        <Eyebrow right={data?.projects.length ? "See all" : undefined}>Projects</Eyebrow>
-        <Panel>
-          {(data?.projects ?? []).map((p) => { const ts = tasks.filter((x) => x.partOf?.reference === `Initiative/${p.id}` && x.status !== "draft" && x.status !== "cancelled"); const d = ts.filter((x) => x.status === "completed").length;
-            return <Row key={p.id} left={<Photo image={p.image} w={44} h={44} fallback={<IconCircle name="flag" size={44} />} />} title={p.title} meta={ts.length ? `${d} of ${ts.length} done` : "No work added yet"} onPress={() => router.push(`/project/${p.id}`)}
-              right={<View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${ts.length ? (d / ts.length) * 100 : 0}%`, height: 8, backgroundColor: c.accent }} /></View>} />; })}
-          <Row left={<IconCircle name="plus" tone="grey" size={44} />} title="Start a project" onPress={() => router.push("/new-project")} last />
-        </Panel>
-        {open.length ? <><Eyebrow right={`${open.length}`}>Open work</Eyebrow><Panel>
-          {open.slice(0, 5).map((x, i) => <Row key={x.id} left={<Photo image={coverOf(x)} w={44} h={44} fallback={icon(x)} />} title={x.title} meta={from(x)} right={x.due ? <Pill tone="ok">{short(x.due)}</Pill> : <Pill>Open</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === Math.min(open.length, 5) - 1} />)}
-        </Panel></> : null}
-        <Eyebrow>Your group</Eyebrow>
-        <Panel>
-          <Row left={<IconCircle name="users" />} title="People" meta="Invite, roles, teams" onPress={() => router.push(`/org/${s.current!.id}/people` as never)} />
-          <Row left={<IconCircle name="building" />} title="Group profile" onPress={() => router.push(`/org/${s.current!.id}` as never)} last />
-        </Panel>
-      </Screen>
-    );
-  }
+  // Coordinators get the event home (workspace/design/coordinator-sketches.html A1).
+  if (s.isLead && s.current) return <CoordinatorHome />;
 
   // Zero state: no group and no work yet. A starter home, never "nothing here" (design/home-sketches.html).
   if (data && !s.groups.length && !asked.length && !mine.length && !done.length && !open.length) return <ZeroHome />;
