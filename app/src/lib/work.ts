@@ -28,6 +28,11 @@ export const facesOf = (refs: string[], people: Record<string, R>) => {
   return { names: xs.map((r) => personName(people[r])), photos: xs.map((r) => people[r]?.photo) };
 };
 
+/** Skills the person declared (BIX Person.skill, 2026-11-09), falling back to the older app extension. */
+export const skillsOf = (p?: R | null): string[] =>
+  ((p?.skill as { code: string }[] | undefined)?.map((x) => x.code)) ?? ((p?.extension ?? []).find((x: any) => x.url === "bayanihan:skills")?.value as string[] | undefined) ?? [];
+export const skillCodings = (codes: string[]) => codes.map((code) => ({ system: "bayanihan:skill", code }));
+
 /** A free-text place on a group or project ("Mactan Expo"). */
 export const placeOf = (r?: R | null): string | undefined => (r?.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value;
 

@@ -4,6 +4,7 @@ import { Image, Pressable, Text, View } from "react-native";
 import { bix } from "@/lib/bix";
 import { fileUri, pickPhoto } from "@/lib/files";
 import { useSession } from "@/lib/session";
+import { skillCodings, skillsOf } from "@/lib/work";
 import { Avatar, Buttons, Chips, Eyebrow, Field, Notice, Primary, Screen, Title } from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { c } from "@/ui/theme";
@@ -18,7 +19,7 @@ export default function Profile() {
   const [nick, setNick] = useState(p?.name?.text ?? "");
   const [full, setFull] = useState((p?.extension ?? []).find((x: any) => x.url === "bayanihan:full-name")?.value ?? "");
   const [about, setAbout] = useState(p?.description ?? "");
-  const [skills, setSkills] = useState<string[]>((p?.extension ?? []).find((x: any) => x.url === "bayanihan:skills")?.value ?? []);
+  const [skills, setSkills] = useState<string[]>(skillsOf(p));
   const [credit, setCredit] = useState<"nickname" | "full" | "anonymous">(p?.credit ?? "nickname");
   const [photo, setPhoto] = useState<any>(p?.photo ?? null);
   const [uri, setUri] = useState<string | null>(null);
@@ -30,8 +31,8 @@ export default function Profile() {
     setBusy(true); setErr(null);
     try {
       const ext = [...(p.extension ?? []).filter((x: any) => !["bayanihan:full-name", "bayanihan:skills", "bayanihan:profile-done"].includes(x.url)),
-        ...(full.trim() ? [{ url: "bayanihan:full-name", value: full.trim() }] : []), ...(skills.length ? [{ url: "bayanihan:skills", value: skills }] : []), { url: "bayanihan:profile-done", value: true }];
-      await bix.commit(bix.next(p, { name: { text: nick.trim() || "Friend", use: "nickname" }, credit, description: about.trim() || undefined, photo: photo ?? undefined, extension: ext }));
+        ...(full.trim() ? [{ url: "bayanihan:full-name", value: full.trim() }] : []), { url: "bayanihan:profile-done", value: true }];
+      await bix.commit(bix.next(p, { name: { text: nick.trim() || "Friend", use: "nickname" }, credit, skill: skills.length ? skillCodings(skills) : undefined, description: about.trim() || undefined, photo: photo ?? undefined, extension: ext }));
       await s.refresh();
       router.replace(first ? ("/paths" as never) : "/story");
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }

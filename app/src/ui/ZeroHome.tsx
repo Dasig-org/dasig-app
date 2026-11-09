@@ -4,7 +4,7 @@ import { Image, Platform, Pressable, ScrollView, Text, View } from "react-native
 import { dasigLinked } from "@/lib/dasig-account";
 import { networkUrl } from "@/lib/env";
 import { useSession } from "@/lib/session";
-import { personName } from "@/lib/work";
+import { personName, skillsOf } from "@/lib/work";
 import { ContextPill, Logo } from "@/ui/Context";
 import { IconCircle, Meta, Panel, Row, RoundButton, Screen } from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
@@ -43,7 +43,7 @@ export function ZeroHome() {
   useEffect(() => { dasigLinked().then(setLinked).catch(() => {}); }, []);
   useEffect(() => { fetch(`${networkUrl}/$directory?count=12`).then((r) => r.json()).then(setFound).catch(() => setFound(null)); }, []);
   const p = s.person;
-  const skills = ((p?.extension ?? []).find((x: any) => x.url === "bayanihan:skills")?.value ?? []) as string[];
+  const skills = skillsOf(p);
   const steps = [
     { done: linked || Platform.OS !== "web", title: "Keep your account", meta: "Sign in on any phone or browser", go: "/story" },
     { done: !!p?.photo, title: "Add a photo", meta: "So your group knows who's coming", go: "/profile" },
