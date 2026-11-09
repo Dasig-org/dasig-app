@@ -32,6 +32,9 @@ export default function Task() {
   const [dueText, setDueText] = useState("");
   const [desc, setDesc] = useState<string | null>(null);
   const [naming, setNaming] = useState<string | null>(null);
+  const [arrive, setArrive] = useState<{ at: string; note: string } | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const [word, setWord] = useState("");
   useEffect(() => onSynced(() => setMsg(null)), []);
   const { data, error, reload } = useLoad(async () => {
     const task = await bix.get("Task", id);
@@ -90,12 +93,12 @@ export default function Task() {
   if (waitingOn.length && ["ready", "requested"].includes(task.status)) actions = <View style={{ marginTop: 14 }}><Sand><IconCircle name="pending" tone="white" />
     <View style={{ flex: 1 }}><Text style={t.row}>{`Waiting on ${waitingOn[0]!.title}`}</Text><Meta>You can prepare now. It can be taken once that's done.</Meta></View></Sand></View>;
   // A shift (Task.slots > 1): "I'm in" takes a place; full shifts take backups (BIX 2026-11-09).
-  else if (pl.shift && (task.status === "ready" || task.status === "accepted") && onIt) actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /> : null}<Outline flex label="Can't make it" onPress={() => run(act.leavePlace(task, me), "That's okay. Your place is open again.")} /></Buttons>;
+  else if (pl.shift && (task.status === "ready" || task.status === "accepted") && onIt) actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /> : null}<Outline flex label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if (pl.shift && task.status === "ready") actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.takePlace(task, me), "You're in.")} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
   else if (pl.shift && task.status === "accepted") actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /> : <Primary label="Be a backup" onPress={backup} />}</Buttons>;
   else if (task.status === "ready") actions = <Buttons><Primary label="I'll take it" busy={busy} onPress={() => run(act.claim(task, me))} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
-  else if (task.status === "requested" && mine) actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.claim(task, me))} /><Outline label="Can't make it" onPress={() => run(act.release(task), "That's okay, thanks for telling us.")} /></Buttons>;
-  else if ((task.status === "accepted" || task.status === "in-progress") && (mine || isLead)) actions = <Buttons><Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /><Outline label="Can't make it" onPress={() => run(act.release(task), "That's okay, thanks for telling us.")} /></Buttons>;
+  else if (task.status === "requested" && mine) actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.claim(task, me))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
+  else if ((task.status === "accepted" || task.status === "in-progress") && (mine || isLead)) actions = <Buttons><Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if ((task.status === "accepted" || task.status === "in-progress") && !onIt) actions = <Buttons><Outline flex label="I'll help" onPress={() => run(act.helpOut(task, me))} /></Buttons>;
   else if (task.status === "draft" && isLead) actions = <Buttons><Primary label="Accept this idea" onPress={() => run(act.accept(task))} /></Buttons>;
 
@@ -107,7 +110,7 @@ export default function Task() {
       {naming !== null ? <><Field value={naming} onChangeText={setNaming} placeholder="What needs doing" autoFocus /><Buttons><Primary label="Save" disabled={!naming.trim()} onPress={() => { run(bix.next(task, { title: naming.trim() })); setNaming(null); }} /><Outline label="Cancel" onPress={() => setNaming(null)} /></Buttons></> : null}
       {desc !== null ? <><Field value={desc} onChangeText={setDesc} multiline placeholder="What it's for and who it helps, when and where, what to bring or know" /><Buttons><Primary label="Save" onPress={() => { run(bix.next(task, { description: desc.trim() || undefined })); setDesc(null); }} /><Outline label="Cancel" onPress={() => setDesc(null)} /></Buttons></>
         : task.description ? <View style={{ marginTop: 10 }}><Body>{task.description}</Body></View>
-        : canEdit && open ? <View style={{ marginTop: 10 }}><Text style={t.meta} onPress={() => setDesc("")}>＋ What's this about? Who it helps, when and where, what to bring</Text></View> : null}
+        : isLead && open ? <View style={{ marginTop: 10 }}><Text style={t.meta} onPress={() => setDesc("")}>＋ What's this about? Who it helps, when and where, what to bring</Text></View> : null}
 
       {/* Context before the button that finishes it (UX_GAPS A1): the group, the project, where, and who's on it. */}
       {org || project ? <View style={{ marginTop: 14 }}><Panel>
@@ -115,6 +118,12 @@ export default function Task() {
         {project ? <Row left={<IconCircle name="flag" />} title={project.title} meta={[project.period?.start ? short(project.period.start) : null, placeOf(project), "The project"].filter(Boolean).join(" · ")} onPress={() => router.push(`/project/${project.id}`)} last /> : null}
       </Panel></View> : null}
       {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} photos={parts.map((p: any) => people[p.person.reference]?.photo)} />} title={parts.map((p: any) => p.person.reference === me ? "You" : name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? (task.owner.reference === me ? "You're on it" : `${name(task.owner.reference)} is on it`) : undefined} last /></Panel></> : null}
+      {/* What to know (sketch V2): when and where to arrive, what to bring, who leads. For the people on it. */}
+      {onIt && open ? (() => { const a = task.restriction?.arrival; const ld = (team?.participant ?? []).find((p: any) => p.role === "lead" && p.status === "active");
+        return <><Eyebrow>What to know</Eyebrow><Panel>
+          <Row left={<IconCircle name="pin" />} title={a?.at ? `Be there ${new Date(a.at).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}` : project?.period?.start ? short(project.period.start) : "Time to be confirmed"} meta={a?.note ?? placeOf(project) ?? undefined} />
+          {ld ? <Row left={<Avatar name={name(ld.person.reference)} photo={people[ld.person.reference]?.photo} />} title={`Your lead is ${name(ld.person.reference)}`} meta={team?.name} last /> : <Row left={<IconCircle name="users" />} title={team?.name ?? "Your team"} meta="No lead yet" last />}
+        </Panel></>; })() : null}
       {actions}
       {msg ? <Notice>{msg}</Notice> : null}
       <Eyebrow right={(task.checklist ?? []).length ? `${(task.checklist ?? []).filter((x: any) => x.done).length} of ${(task.checklist ?? []).length}` : undefined}>Smaller steps</Eyebrow>
@@ -153,6 +162,8 @@ export default function Task() {
         <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>Plan this task</Text>
         <Panel style={{ backgroundColor: c.wash }}>
         <Row left={<IconCircle name="cal" />} title="Due date" meta={task.due ? short(task.due) : "None yet"} onPress={() => { setTuning(false); setTimeout(() => setPlanning(true), 260); }} />
+        <Row left={<IconCircle name="pin" />} title="When and where to arrive" meta={task.restriction?.arrival?.note ?? (task.restriction?.arrival?.at ? new Date(task.restriction.arrival.at).toLocaleString() : "Call time and meeting point")}
+          onPress={() => { setTuning(false); setTimeout(() => setArrive({ at: task.restriction?.arrival?.at ? new Date(task.restriction.arrival.at).toISOString().slice(0, 16).replace("T", " ") : "", note: task.restriction?.arrival?.note ?? "" }), 260); }} />
         <Row left={<IconCircle name="users" />} title="People needed" meta={pl.n > 1 ? `${pl.n} places · ${pl.on} taken` : "One person"}
           right={<View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}><Outline label="−" onPress={() => { if (pl.n > Math.max(1, pl.on)) run(act.setSlots(task, pl.n - 1)); }} /><Text style={t.row}>{pl.n}</Text><Outline label="+" onPress={() => run(act.setSlots(task, pl.n + 1))} /></View>} />
         <Row left={<IconCircle name="building" />} title="Others wait on this" meta="Make it a gate on the project page" right={<Check on={!!task.milestone} onPress={() => run(bix.next(task, { milestone: !task.milestone }))} />} />
@@ -183,6 +194,29 @@ export default function Task() {
           <Row left={<IconCircle name="smile" tone="white" />} title="Photo that shows children" meta="Never leaves the group" onPress={() => pickPhoto(true).then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
           <Row left={<IconCircle name="receipt" tone="white" />} title="Document" meta="PDF, Word, Excel, text" last onPress={() => pickDocument().then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
         </Panel>
+      </Sheet>
+
+      <Sheet open={leaving} onClose={() => setLeaving(false)}>
+        <Text style={[t.row, { fontSize: 18 }]}>Can't make it?</Text>
+        <Meta>That's okay. Your lead sees the place open again.</Meta>
+        <Field label="A word for your lead (optional)" value={word} onChangeText={setWord} placeholder="e.g. Work came up, sorry!" />
+        <Panel style={{ backgroundColor: c.wash, marginTop: 10 }}>
+          <Row left={<IconCircle name="heart" tone="white" />} title="Help another way" meta="See what else is open" onPress={() => { setLeaving(false); router.push(project ? `/project/${project.id}` : "/home"); }} />
+          <Row left={<IconCircle name="back" tone="white" />} title="Let it go" meta="Your place goes back to open" last onPress={async () => {
+            setLeaving(false);
+            const next = pl.shift ? act.leavePlace(task, me) : act.release(task);
+            if (word.trim()) next.note = [...(task.note ?? []), { author: { reference: me }, time: new Date().toISOString(), text: `Can't make it: ${word.trim()}` }];
+            await run(next, "That's okay, thanks for telling us."); setWord(""); }} />
+        </Panel>
+      </Sheet>
+
+      <Sheet open={!!arrive} onClose={() => setArrive(null)}>
+        <Text style={[t.row, { fontSize: 18 }]}>When and where to arrive</Text>
+        <Field label="Time" value={arrive?.at ?? ""} onChangeText={(v) => setArrive((a) => ({ ...(a ?? { note: "" }), at: v }))} placeholder="e.g. 2027-03-06 04:30" />
+        <Field label="Where, and what to bring" value={arrive?.note ?? ""} onChangeText={(v) => setArrive((a) => ({ ...(a ?? { at: "" }), note: v }))} placeholder="e.g. Gate 2. Bring water and a cap." multiline />
+        <Buttons><Primary label="Save" onPress={() => { const at = arrive?.at.trim() ? new Date(arrive.at.trim().replace(" ", "T")) : null;
+          if (arrive?.at.trim() && (!at || isNaN(at.getTime()))) { setMsg("That time didn't read right. Try 2027-03-06 04:30."); return; }
+          run(bix.next(task, { restriction: { ...(task.restriction ?? {}), arrival: { ...(at ? { at: at.toISOString() } : {}), ...(arrive?.note.trim() ? { note: arrive.note.trim() } : {}) } } })); setArrive(null); }} /></Buttons>
       </Sheet>
 
       <Sheet open={asking} onClose={() => setAsking(false)}>

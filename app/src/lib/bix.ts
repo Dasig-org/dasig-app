@@ -10,7 +10,7 @@ export const now = () => new Date().toISOString();
 
 /** Plain words for errors people can act on; technical ones become a calm retry message. */
 export function friendly(m: string): string {
-  if (/^invalid \/|must NOT have|must be equal|must match/.test(m)) return "Something didn't save. Please try again; if it keeps happening, tell your coordinator.";
+  if (/^invalid \/|must NOT have|must be equal|must match/.test(m)) return "This didn't save: the server didn't accept part of it. Update Dasig, or try again.";
   if (/stale change|someone else got there first/.test(m)) return "Someone changed this just now. We've reloaded it.";
   if (/HTTP 5\d\d/.test(m)) return "Something went wrong on the hub. Please try again.";
   return m;
