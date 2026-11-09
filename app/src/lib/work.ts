@@ -33,6 +33,9 @@ export const skillsOf = (p?: R | null): string[] =>
   ((p?.skill as { code: string }[] | undefined)?.map((x) => x.code)) ?? ((p?.extension ?? []).find((x: any) => x.url === "bayanihan:skills")?.value as string[] | undefined) ?? [];
 export const skillCodings = (codes: string[]) => codes.map((code) => ({ system: "bayanihan:skill", code }));
 
+/** Places on a piece of work, and how many are left (BIX Task.slots). */
+export const places = (t: R) => { const n = (t.slots as number) ?? 1; const on = active(t).length; return { n, on, left: t.status === "ready" ? Math.max(0, n - on) : 0, shift: n > 1 }; };
+
 /** A free-text place on a group or project ("Mactan Expo"). */
 export const placeOf = (r?: R | null): string | undefined => (r?.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value;
 
@@ -50,6 +53,14 @@ export const act = {
   toggle: (t: R, i: number, me: string) =>
     bix.next(t, { checklist: (t.checklist ?? []).map((c: any, j: number) => (j === i ? { ...c, done: !c.done, ...(c.done ? {} : { doneBy: { reference: me } }) } : c)) }),
   accept: (t: R) => bix.next(t, { status: "ready", intent: "plan" }),
+  /** Take one open place on a shift (BIX Task.slots > 1). The team stays owner; full when every place is taken. */
+  takePlace: (t: R, me: string) => {
+    const on = [...active(t).filter((p) => p.person.reference !== me), { person: { reference: me }, role: "helper", status: "active" }];
+    return bix.next(t, { participant: on, status: on.length >= ((t.slots as number) ?? 1) ? "accepted" : "ready" });
+  },
+  /** Give a place back; the shift opens again. */
+  leavePlace: (t: R, me: string) => bix.next(t, { participant: active(t).filter((p) => p.person.reference !== me), status: "ready" }),
+  setSlots: (t: R, n: number) => bix.next(t, { slots: n > 1 ? n : undefined }),
 };
 
 /** Suggested teams by kind of project (onboarding step 6). The group renames, removes or adds. */

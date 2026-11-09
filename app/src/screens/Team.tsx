@@ -1,3 +1,4 @@
+import { short } from "@/lib/dates";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Platform, Share, Text, View } from "react-native";
@@ -8,7 +9,7 @@ import { bix, type R } from "@/lib/bix";
 import { appUrl } from "@/lib/env";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { act, shortRef, stateLabel, teamIcon } from "@/lib/work";
+import { act, shortRef, stateLabel, teamIcon, places } from "@/lib/work";
 import { Avatar, Buttons, Check, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { InviteOptions, linkOpts, type InviteOpts } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
@@ -137,8 +138,8 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
       <Eyebrow right={`${work.filter((x) => x.status === "completed").length} of ${work.length} done`}>Our work</Eyebrow>
       <Panel>
         {work.map((x, i) => <Row key={x.id} last={i === work.length - 1} left={<IconCircle name={x.status === "completed" ? "check" : "pen"} tone={x.status === "completed" ? "grey" : "sand"} />} title={x.title}
-          meta={[shortRef(x), x.owner?.reference?.startsWith("Person/") ? name(x.owner.reference) : null].filter(Boolean).join(" · ")}
-          right={<Pill tone={stateLabel(x, me).tone}>{stateLabel(x, me).label}</Pill>} onPress={() => router.push(`/task/${x.id}`)} />)}
+          meta={[lead ? shortRef(x) : null, x.due ? `due ${short(x.due)}` : null, ((x.participant ?? []) as any[]).filter((p) => p.status === "active").map((p) => name(p.person.reference)).join(", ") || null].filter(Boolean).join(" · ")}
+          right={<Pill tone={places(x).shift && x.status === "ready" ? "neutral" : stateLabel(x, me).tone}>{places(x).shift && x.status === "ready" ? `${places(x).left} of ${places(x).n} left` : stateLabel(x, me).label}</Pill>} onPress={() => router.push(`/task/${x.id}`)} />)}
         {work.length ? null : <Row title="Nothing yet" meta={lead ? "Add the first thing to do below" : "Suggest something below"} last />}
       </Panel>
       </> : null}

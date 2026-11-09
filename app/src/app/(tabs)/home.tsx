@@ -8,7 +8,7 @@ import { Platform } from "react-native";
 import { dasigAccountAvailable, dasigLinked, startDasigSignIn } from "@/lib/dasig-account";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { act, personName, teamIcon } from "@/lib/work";
+import { act, personName, places, teamIcon } from "@/lib/work";
 import { ContextPill, Logo } from "@/ui/Context";
 import { ZeroHome } from "@/ui/ZeroHome";
 import { CoordinatorHome } from "@/ui/CoordinatorHome";
@@ -74,7 +74,7 @@ export default function Home() {
   const open = tasks.filter((x) => x.status === "ready" && (x.audience === "open" || x.audience === "organization" || myTeamRefs.has(x.team?.reference)))
     .sort((a, b) => (a.due ?? "9999").localeCompare(b.due ?? "9999"));
   const done = tasks.filter((x) => x.status === "completed" && going(x).some((p: any) => p.person.reference === me));
-  const answer = async (x: R, yes: boolean) => { try { await bix.commit(yes ? act.claim(x, me) : act.release(x)); } catch {} reload(); };
+  const answer = async (x: R, yes: boolean) => { try { await bix.commit(yes ? (places(x).shift ? act.takePlace(x, me) : act.claim(x, me)) : act.release(x)); } catch {} reload(); };
   // Where a task comes from: the group only in the personal context, where it isn't already in the pill (UX_GAPS A5, A6).
   const from = (x: R) => [s.current ? null : groupOf(x)?.name, projOf(x)?.title, teamOf(x)?.name].filter(Boolean).join(" · ");
   const icon = (x: R) => <IconCircle name={teamIcon(teamOf(x)?.name ?? "")} size={44} tone="white" />;
@@ -115,7 +115,7 @@ export default function Home() {
             <Text style={[t.row, { marginTop: 9, marginHorizontal: 2 }]} numberOfLines={1}>{x.title}</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3, marginHorizontal: 2 }}>
               {f.length ? <Faces names={f.map((y) => y.name)} photos={f.map((y) => y.photo)} /> : null}
-              <Text style={[t.meta, { flex: 1 }]} numberOfLines={1}>{f.length ? `${f.length} going` : x.goodFirstStep ? "A good first step" : from(x) || "Be the first one in"}</Text></View>
+              <Text style={[t.meta, { flex: 1 }]} numberOfLines={1}>{places(x).shift ? `${places(x).left} of ${places(x).n} places left` : f.length ? `${f.length} going` : x.goodFirstStep ? "A good first step" : from(x) || "Be the first one in"}</Text></View>
           </Pressable>; })}
       </ScrollView>
         : <Sand><IconCircle name="heart" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>Nothing open right now</Text><Meta>{s.groups.length ? "Your groups will post work here." : "Join a group to see their work."}</Meta></View></Sand>}
