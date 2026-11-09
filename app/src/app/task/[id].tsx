@@ -50,6 +50,16 @@ export default function Task() {
     const org = orgRef ? await bix.get("Organization", orgRef.split("/")[1]!).catch(() => null) : null;
     return { task, team, people, signed, siblings, can, project, org };
   }, [id]);
+  const { data: before } = useLoad(async () => {
+    const project = data?.project, team = data?.team;
+    if (!asking || !project?.organization) return [];
+    const inis = (await bix.search("Initiative", { organization: project.organization.reference })).filter((x) => x.id !== project.id);
+    const olds = (await Promise.all(inis.slice(0, 6).map((x) => bix.search("Task", { partOf: `Initiative/${x.id}` })))).flat().filter((x) => x.status === "completed");
+    const sameTeam = (await Promise.all(inis.slice(0, 6).map((x) => bix.search("Team", { initiative: `Initiative/${x.id}` })))).flat().filter((x) => x.name === team?.name).map((x) => `Team/${x.id}`);
+    const refs = [...new Set(olds.filter((x) => sameTeam.includes(x.team?.reference)).flatMap((x) => ((x.participant ?? []) as any[]).filter((y) => y.status === "active").map((y) => y.person.reference)))]
+      .filter((r) => r !== me && !(team?.participant ?? []).some((p: any) => p.person.reference === r));
+    const ppl = await peopleFor(refs, 8); return refs.filter((r) => ppl[r]).map((r) => ({ ref: r, p: ppl[r]! }));
+  }, [asking, data?.project?.id]);
   if (error) return <Screen back><Notice>{error}</Notice></Screen>;
   if (!data) return <Screen back><Skeleton /></Screen>;
   const { task, team, people, signed, siblings, can, project, org } = data;
@@ -86,15 +96,6 @@ export default function Task() {
     } finally { setBusy(false); reload(); }
   };
   const pl = places(task);
-  const { data: before } = useLoad(async () => {
-    if (!asking || !project?.organization) return [];
-    const inis = (await bix.search("Initiative", { organization: project.organization.reference })).filter((x) => x.id !== project.id);
-    const olds = (await Promise.all(inis.slice(0, 6).map((x) => bix.search("Task", { partOf: `Initiative/${x.id}` })))).flat().filter((x) => x.status === "completed");
-    const sameTeam = (await Promise.all(inis.slice(0, 6).map((x) => bix.search("Team", { initiative: `Initiative/${x.id}` })))).flat().filter((x) => x.name === team?.name).map((x) => `Team/${x.id}`);
-    const refs = [...new Set(olds.filter((x) => sameTeam.includes(x.team?.reference)).flatMap((x) => ((x.participant ?? []) as any[]).filter((y) => y.status === "active").map((y) => y.person.reference)))]
-      .filter((r) => r !== me && !(team?.participant ?? []).some((p: any) => p.person.reference === r));
-    const ppl = await peopleFor(refs, 8); return refs.filter((r) => ppl[r]).map((r) => ({ ref: r, p: ppl[r]! }));
-  }, [asking, project?.id]);
   const backup = async () => { try { await bix.commit(bix.create("Offer", { offeredBy: { reference: me }, partOf: { reference: `Task/${task.id}` }, category: { system: "bayanihan:category", code: "time", display: "Backup" },
     status: "available", description: `Backup for ${task.title}` })); setMsg("You're a backup. If a place opens, you'll be asked first."); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };
   const sl = pl.shift && task.status === "ready" ? { label: `${pl.left} of ${pl.n} places left`, tone: "neutral" as const } : pl.shift && task.status === "accepted" ? { label: onIt ? "You're on it" : "Full", tone: (onIt ? "state" : "ok") as "state" | "ok" } : stateLabel(task, me);

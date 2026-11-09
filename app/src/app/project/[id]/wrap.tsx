@@ -17,6 +17,7 @@ export default function Wrap() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [thanking, setThanking] = useState(false);
   const { data, reload } = useLoad(async () => {
     const [p, teams, tasks, needs] = await Promise.all([bix.get("Initiative", id), bix.search("Team", { initiative: `Initiative/${id}` }), bix.search("Task", { partOf: `Initiative/${id}` }), bix.search("Need", { initiative: `Initiative/${id}` })]);
     const live = tasks.filter((x) => x.status !== "draft");
@@ -54,7 +55,6 @@ export default function Wrap() {
       setMsg("Saved. Next time, start a project from these teams.");
     } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
   };
-  const [thanking, setThanking] = useState(false);
   const finish = async () => { try { await bix.commit(bix.next(p, { status: "completed", period: { ...(p.period ?? {}), end: new Date().toISOString() } })); reload(); } catch (e) { setMsg(String(e instanceof Error ? e.message : e)); } };
   const tile = (big: string, small: string) => <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14 }}><Text style={[t.title, { fontSize: 22 }]}>{big}</Text><Meta>{small}</Meta></View>;
   return (
