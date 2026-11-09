@@ -114,6 +114,7 @@ export function CoordinatorHome() {
             <Pill>{`${openWork.reduce((n, x) => n + openPlaces(x), 0)} open`}</Pill></View>
           <View style={{ height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden", marginTop: 12 }}><View style={{ width: `${work.length ? (done / work.length) * 100 : 0}%`, height: 8, backgroundColor: c.accent }} /></View>
           <Meta>{`${done} of ${work.length} done`}</Meta>
+          {event.period?.start && Math.abs(Date.parse(event.period.start) - Date.now()) < DAY ? <Buttons><Primary label="Event day: check people in" onPress={() => router.push(`/project/${event.id}/day` as never)} /></Buttons> : null}
           <Buttons>{openWork.length ? <Primary label="Share open slots" onPress={() => { setSkip(new Set()); setSharing(event); }} /> : null}<Outline flex label="Open" onPress={() => router.push(`/project/${event.id}`)} /></Buttons>
         </View>
       </View> : <View style={{ marginTop: 14 }}><Panel><Row left={<IconCircle name="plus" />} title="Set up your next event" meta="Teams, leads and the work, in one sitting" onPress={() => router.push("/new-project")} last /></Panel></View>}

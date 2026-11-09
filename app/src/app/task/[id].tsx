@@ -124,8 +124,13 @@ export default function Task() {
           <Row left={<IconCircle name="pin" />} title={a?.at ? `Be there ${new Date(a.at).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}` : project?.period?.start ? short(project.period.start) : "Time to be confirmed"} meta={a?.note ?? placeOf(project) ?? undefined} />
           {ld ? <Row left={<Avatar name={name(ld.person.reference)} photo={people[ld.person.reference]?.photo} />} title={`Your lead is ${name(ld.person.reference)}`} meta={team?.name} last /> : <Row left={<IconCircle name="users" />} title={team?.name ?? "Your team"} meta="No lead yet" last />}
         </Panel></>; })() : null}
-      {actions}
       {msg ? <Notice>{msg}</Notice> : null}
+      {/* I'm here (sketch V6): on the day, the person records their own arrival (BIX participant.attended). */}
+      {(() => { const mineP = parts.find((x: any) => x.person.reference === me) as any; const day = task.restriction?.arrival?.at ?? task.due ?? project?.period?.start;
+        if (!mineP || !open || !day || new Date(day).toDateString() !== new Date().toDateString()) return null;
+        return mineP.attended ? <View style={{ marginTop: 12 }}><Notice>{`You're checked in, ${new Date(mineP.attended.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}.`}</Notice></View>
+          : <Buttons><Primary label="I'm here" busy={busy} onPress={() => run(bix.next(task, { participant: (task.participant ?? []).map((x: any) => (x.person.reference === me ? { ...x, attended: { at: new Date().toISOString(), by: { reference: me } } } : x)) }), "Checked in. Your lead can see you've arrived.")} /></Buttons>; })()}
+      {actions}
       <Eyebrow right={(task.checklist ?? []).length ? `${(task.checklist ?? []).filter((x: any) => x.done).length} of ${(task.checklist ?? []).length}` : undefined}>Smaller steps</Eyebrow>
       <Panel>
         {(task.checklist ?? []).map((x: any, i: number) => <Row key={i} left={<Check on={!!x.done} onPress={onIt || isLead ? () => run(act.toggle(task, i, me)) : undefined} />} title={x.text} />)}
