@@ -9,6 +9,7 @@ import { Avatar, Buttons, Chips, Eyebrow, Field, Notice, Primary, Screen, Title 
 import { Icon } from "@/ui/Icon";
 import { c } from "@/ui/theme";
 
+const FREE = ["Weekday evenings", "Saturdays", "Sundays", "Mornings", "Any time"];
 const SKILLS = ["Writing", "Design", "Photos & video", "Teaching", "Driving", "First aid", "Logistics", "Tech", "Events", "Fundraising"];
 
 /** Your profile: nickname, optional full name, photo, a line about you, skills, and how you're credited. */
@@ -20,6 +21,7 @@ export default function Profile() {
   const [full, setFull] = useState((p?.extension ?? []).find((x: any) => x.url === "bayanihan:full-name")?.value ?? "");
   const [about, setAbout] = useState(p?.description ?? "");
   const [skills, setSkills] = useState<string[]>(skillsOf(p));
+  const [free, setFree] = useState<string[]>(((p?.extension ?? []).find((x: any) => x.url === "bayanihan:availability")?.value as string[]) ?? []);
   const [credit, setCredit] = useState<"nickname" | "full" | "anonymous">(p?.credit ?? "nickname");
   const [photo, setPhoto] = useState<any>(p?.photo ?? null);
   const [uri, setUri] = useState<string | null>(null);
@@ -30,7 +32,8 @@ export default function Profile() {
     if (!p) return;
     setBusy(true); setErr(null);
     try {
-      const ext = [...(p.extension ?? []).filter((x: any) => !["bayanihan:full-name", "bayanihan:skills", "bayanihan:profile-done"].includes(x.url)),
+      const ext = [...(p.extension ?? []).filter((x: any) => !["bayanihan:full-name", "bayanihan:skills", "bayanihan:profile-done", "bayanihan:availability"].includes(x.url)),
+        ...(free.length ? [{ url: "bayanihan:availability", value: free }] : []),
         ...(full.trim() ? [{ url: "bayanihan:full-name", value: full.trim() }] : []), { url: "bayanihan:profile-done", value: true }];
       await bix.commit(bix.next(p, { name: { text: nick.trim() || "Friend", use: "nickname" }, credit, skill: skills.length ? skillCodings(skills) : undefined, description: about.trim() || undefined, photo: photo ?? undefined, extension: ext }));
       await s.refresh();
@@ -50,6 +53,11 @@ export default function Profile() {
       <Eyebrow>What you can help with</Eyebrow>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         {SKILLS.map((k) => { const on = skills.includes(k); return <Pressable key={k} onPress={() => setSkills(on ? skills.filter((x) => x !== k) : [...skills, k])} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
+          style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 999, backgroundColor: on ? c.accent : c.white, justifyContent: "center" }}><Text style={{ fontWeight: "600", color: on ? c.white : c.ink }}>{k}</Text></Pressable>; })}
+      </View>
+      <Eyebrow>When you're usually free</Eyebrow>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {FREE.map((k) => { const on = free.includes(k); return <Pressable key={k} onPress={() => setFree(on ? free.filter((x) => x !== k) : [...free, k])} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
           style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 999, backgroundColor: on ? c.accent : c.white, justifyContent: "center" }}><Text style={{ fontWeight: "600", color: on ? c.white : c.ink }}>{k}</Text></Pressable>; })}
       </View>
       <Eyebrow>How should groups credit you?</Eyebrow>

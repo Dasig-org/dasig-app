@@ -84,6 +84,7 @@ export default function Org() {
       </Panel>
       {officer ? <><Eyebrow>Settings</Eyebrow><Panel>
         <Row left={<IconCircle name={VISIBILITY.find((x) => x.value === visibilityOf(org))!.icon} />} title="Who can see this group" meta={label(visibilityOf(org)) + (visibilityOf(org) === "public" && s.connection?.kind !== "ecosystem" ? " · listed once the group is on the Dasig Ecosystem" : "")} onPress={() => setPrivacy(true)} />
+        <Row left={<IconCircle name="repeat" />} title="Hand over to the next officer" meta="At the end of your term" onPress={() => router.push(`/org/${id}/handover` as never)} />
         <Row left={<IconCircle name="lock" />} title="Links and safety" meta="See and turn off invite links" onPress={() => router.push("/links" as never)} />
         <Row left={<IconCircle name="download" />} title="Download your group's records" meta="Everything, in BIX" onPress={() => router.push(`/org/${id}/export` as never)} last />
       </Panel></> : null}

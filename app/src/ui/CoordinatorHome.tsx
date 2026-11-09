@@ -58,6 +58,7 @@ export function CoordinatorHome() {
   const { data, error, reload } = useLoad(() => load(orgId), [orgId]);
   const [sharing, setSharing] = useState<R | null>(null);
   const [skip, setSkip] = useState<Set<string>>(new Set());
+  const [remind, setRemind] = useState<string | null>(null);
   const name = (r?: string) => personName(r ? data?.people[r] : undefined);
   const teamOf = (x: R) => data?.teams.find((tm) => `Team/${tm.id}` === x.team?.reference);
   const ofProject = (p: R) => (data?.tasks ?? []).filter((x) => x.partOf?.reference === `Initiative/${p.id}` && x.status !== "draft" && x.status !== "cancelled");
@@ -119,6 +120,10 @@ export function CoordinatorHome() {
         </View>
       </View> : <View style={{ marginTop: 14 }}><Panel><Row left={<IconCircle name="plus" />} title="Set up your next event" meta="Teams, leads and the work, in one sitting" onPress={() => router.push("/new-project")} last /></Panel></View>}
 
+      {/* Reminders without push (E15): two days before, write each team's reminder for the chat. */}
+      {event?.period?.start && Date.parse(event.period.start) > Date.now() && Date.parse(event.period.start) - Date.now() < 3 * DAY ? <View style={{ marginTop: 14 }}>
+        <Panel><Row left={<IconCircle name="send" />} title={`${event.title} is ${inDays(event.period.start)}`} meta="Remind each team who's on what" right={<Pill>Remind</Pill>}
+          onPress={() => setRemind((data?.teams ?? []).find((tm) => tm.initiative?.reference === `Initiative/${event.id}`)?.id ?? null)} last /></Panel></View> : null}
       {risk ? <><Eyebrow right={`${risk}`}>At risk this week</Eyebrow><Panel>
         {soonOpen.map((x) => <Row key={x.id} left={<IconCircle name={teamIcon(teamOf(x)?.name ?? "")} tone="grey" />} title={x.title}
           meta={[teamOf(x)?.name, x.due ? `due ${short(x.due)}` : null, active(x).length ? `${openPlaces(x)} still needed` : "nobody yet"].filter(Boolean).join(" · ")} right={<Pill>Ask</Pill>} onPress={() => router.push(`/task/${x.id}`)} />)}
@@ -142,6 +147,21 @@ export function CoordinatorHome() {
         <Row left={<IconCircle name="users" />} title="People" meta="Invite, roles, teams" onPress={() => router.push(`/org/${orgId}/people` as never)} />
         <Row left={<IconCircle name="building" />} title="Group profile" onPress={() => router.push(`/org/${orgId}` as never)} last />
       </Panel>
+
+      <Sheet open={!!remind} onClose={() => setRemind(null)}>
+        {remind && event ? (() => { const tms = (data?.teams ?? []).filter((tm) => tm.initiative?.reference === `Initiative/${event.id}`); const tm = tms.find((x) => x.id === remind)!;
+          const mineW = work.filter((x) => x.team?.reference === `Team/${tm.id}` && x.status !== "completed");
+          const arr = mineW.find((x) => x.restriction?.arrival)?.restriction?.arrival;
+          const text = `Hi ${tm.name} team! ${event.title} is ${inDays(event.period!.start!)}${arr?.at ? `, be there ${new Date(arr.at).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}` : ""}.${arr?.note ? ` ${arr.note}` : ""}\n${mineW.map((x) => `• ${x.title}: ${active(x).map((p: any) => name(p.person.reference)).join(", ") || "still open"}`).join("\n")}\nCan't make it? Tap your task to say so → ${appUrl()}/project/${event.id}`;
+          return <>
+            <Text style={[t.row, { fontSize: 18 }]}>Remind the teams</Text>
+            <Meta>One message per team, for the chat you already use.</Meta>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>{tms.map((x) => <Pressable key={x.id} onPress={() => setRemind(x.id)} style={{ minHeight: 36, paddingHorizontal: 14, borderRadius: radius.pill, justifyContent: "center", backgroundColor: x.id === remind ? c.accent : c.wash }}>
+              <Text style={{ fontWeight: "600", color: x.id === remind ? c.white : c.ink }}>{x.name}</Text></Pressable>)}</View>
+            <View style={{ backgroundColor: c.sand, borderRadius: radius.inner, padding: 14, marginTop: 10 }}><Text style={[t.body, { fontSize: 13.5 }]}>{text}</Text></View>
+            <Buttons><Primary label="Share" onPress={() => Share.share({ message: text }).catch(() => {})} /></Buttons>
+          </>; })() : null}
+      </Sheet>
 
       <Sheet open={!!sharing} onClose={() => setSharing(null)}>
         {sharing ? <>

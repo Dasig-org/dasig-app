@@ -9,7 +9,7 @@ import { Alert, Platform, Text, View } from "react-native";
 import { bix, BixError, type R } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { act, placeOf, places, stateLabel } from "@/lib/work";
+import { act, peopleFor, personName, placeOf, places, stateLabel } from "@/lib/work";
 import { Logo } from "@/ui/Context";
 import { History } from "@/ui/History";
 import { Body, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton} from "@/ui/kit";
@@ -86,6 +86,15 @@ export default function Task() {
     } finally { setBusy(false); reload(); }
   };
   const pl = places(task);
+  const { data: before } = useLoad(async () => {
+    if (!asking || !project?.organization) return [];
+    const inis = (await bix.search("Initiative", { organization: project.organization.reference })).filter((x) => x.id !== project.id);
+    const olds = (await Promise.all(inis.slice(0, 6).map((x) => bix.search("Task", { partOf: `Initiative/${x.id}` })))).flat().filter((x) => x.status === "completed");
+    const sameTeam = (await Promise.all(inis.slice(0, 6).map((x) => bix.search("Team", { initiative: `Initiative/${x.id}` })))).flat().filter((x) => x.name === team?.name).map((x) => `Team/${x.id}`);
+    const refs = [...new Set(olds.filter((x) => sameTeam.includes(x.team?.reference)).flatMap((x) => ((x.participant ?? []) as any[]).filter((y) => y.status === "active").map((y) => y.person.reference)))]
+      .filter((r) => r !== me && !(team?.participant ?? []).some((p: any) => p.person.reference === r));
+    const ppl = await peopleFor(refs, 8); return refs.filter((r) => ppl[r]).map((r) => ({ ref: r, p: ppl[r]! }));
+  }, [asking, project?.id]);
   const backup = async () => { try { await bix.commit(bix.create("Offer", { offeredBy: { reference: me }, partOf: { reference: `Task/${task.id}` }, category: { system: "bayanihan:category", code: "time", display: "Backup" },
     status: "available", description: `Backup for ${task.title}` })); setMsg("You're a backup. If a place opens, you'll be asked first."); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };
   const sl = pl.shift && task.status === "ready" ? { label: `${pl.left} of ${pl.n} places left`, tone: "neutral" as const } : pl.shift && task.status === "accepted" ? { label: onIt ? "You're on it" : "Full", tone: (onIt ? "state" : "ok") as "state" | "ok" } : stateLabel(task, me);
@@ -232,6 +241,9 @@ export default function Task() {
             <Row key={p.person.reference} left={<Avatar name={name(p.person.reference)} photo={people[p.person.reference]?.photo} />} title={name(p.person.reference)} meta={p.role}
               onPress={() => { setAsking(false); run(act.ask(task, p.person.reference), `Asked ${name(p.person.reference)}.`); }} />)}
         </Panel>
+        {(before ?? []).length ? <><Eyebrow>{`Helped ${team?.name ?? "this team"} before`}</Eyebrow><Panel style={{ backgroundColor: c.wash }}>
+          {before!.map((x, i, all) => <Row key={x.ref} left={<Avatar name={personName(x.p)} photo={x.p.photo} />} title={personName(x.p)} meta="Asked back" last={i === all.length - 1}
+            onPress={() => { setAsking(false); run(act.ask(task, x.ref), `Asked ${personName(x.p)}.`); }} />)}</Panel></> : null}
         <View style={{ marginTop: 12 }}><LinkText onPress={() => setAsking(false)}>Not now</LinkText></View>
       </Sheet>
     </Screen>
