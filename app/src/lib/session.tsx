@@ -153,6 +153,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setPerson(null); setGroups([]); setCurrent(null); await refresh();
   };
 
+  useEffect(() => { import("./files").then((m) => m.setUploadGroup(current?.id ?? null)).catch(() => {}); }, [current?.id]);
   const profileDone = !!(person?.extension ?? []).find((x: any) => x.url === "bayanihan:profile-done");
   const isLead = !!current && groups.some((g) => g.org.id === current.id && ["officer", "core-member"].includes(g.role.code?.code));
   return <Ctx.Provider value={{ ready, person, profileDone, isLead, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, joinEcosystem, googleEcosystem, refresh, signOut }}>{children}</Ctx.Provider>;
