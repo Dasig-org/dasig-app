@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { fileUri } from "@/lib/files";
 import * as Haptics from "expo-haptics";
-import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View, type TextInputProps, type ViewStyle } from "react-native";
+import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View, type TextInputProps, type ViewStyle, PanResponder } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Icon, type IconName } from "./Icon";
@@ -165,6 +165,13 @@ export function Sheet({ open, onClose, children }: { open: boolean; onClose: () 
     Animated.timing(fade, { toValue: 0, duration: 160, useNativeDriver: true }),
     Animated.timing(y, { toValue: 600, duration: 200, easing: Easing.in(Easing.quad), useNativeDriver: true }),
   ]).start(() => onClose());
+  // Swipe down to close: drag the handle or the top of the sheet; past 100 px (or a quick flick) it closes, else it springs back.
+  const drag = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+    onPanResponderMove: (_, g) => { if (g.dy > 0) y.setValue(g.dy); },
+    onPanResponderRelease: (_, g) => { if (g.dy > 100 || g.vy > 1.2) close(); else Animated.spring(y, { toValue: 0, damping: 22, stiffness: 260, useNativeDriver: true }).start(); },
+    onPanResponderTerminate: () => Animated.spring(y, { toValue: 0, useNativeDriver: true }).start(),
+  })).current;
   return <Modal visible={open} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={close}>
     <Animated.View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(15,23,42,.38)", opacity: fade }}>
       <Pressable accessibilityLabel="Close" onPress={close} style={{ flex: 1 }} />
@@ -173,7 +180,8 @@ export function Sheet({ open, onClose, children }: { open: boolean; onClose: () 
       <Animated.View style={{ transform: [{ translateY: y }], backgroundColor: c.white, borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingHorizontal: 22, paddingTop: 12,
         paddingBottom: inset.bottom + 22, maxWidth: 560, width: "100%", alignSelf: "center", maxHeight: "92%",
         shadowColor: "#0F172A", shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: -6 }, elevation: 24 }}>
-        <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: c.s300, alignSelf: "center", marginBottom: 16 }} />
+        <View {...drag.panHandlers} accessibilityLabel="Drag down to close" style={{ paddingTop: 4, paddingBottom: 14, marginTop: -8, marginHorizontal: -22 }}>
+          <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: c.s300, alignSelf: "center" }} /></View>
         <OnSheet.Provider value={true}><ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>{children}</ScrollView></OnSheet.Provider>
       </Animated.View>
     </KeyboardAvoidingView>

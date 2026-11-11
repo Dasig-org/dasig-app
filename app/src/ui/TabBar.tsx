@@ -58,7 +58,8 @@ const st = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(15,23,42,0.06)",
     ...(Platform.OS === "web" ? { boxShadow: "0px 8px 24px rgba(15, 23, 42, 0.10)" } as object : { shadowColor: "#0F172A", shadowOpacity: 0.1, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8 }) },
   button: { flex: 1, height: TAB_BAR_HEIGHT, alignItems: "center", justifyContent: "center" },
-  item: { alignItems: "center", justifyContent: "center", gap: 2, height: 52, minWidth: 62, paddingHorizontal: 10, borderRadius: 999 },
+  // Android draws borderRadius 999 on a stretched View as square; use half the height and clip (2026-11-12).
+  item: { alignItems: "center", justifyContent: "center", gap: 2, height: 52, minWidth: 62, paddingHorizontal: 12, borderRadius: 26, overflow: "hidden" },
   itemOn: { backgroundColor: "rgba(15,23,42,0.06)" },
   label: { fontSize: 11 },
   ring: { borderRadius: 16, borderWidth: 2, borderColor: c.ink, padding: 1 },
