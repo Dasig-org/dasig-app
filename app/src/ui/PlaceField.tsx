@@ -10,6 +10,7 @@ import { c, radius, type as t } from "./theme";
  * The text is saved as bayanihan:place-text (as before) and the chosen place's code as bayanihan:psgc.
  * Places come from the PSA's PSGC via the open-source barangay project (MIT); see the server's PSGC_NOTICE.md.
  */
+const KIND: Record<string, string> = { city: "City", province: "Province", municipality: "Town", barangay: "Barangay", submunicipality: "District" };
 export type PlaceValue = { text: string; code?: string };
 export const placeExtensions = (v: PlaceValue) => [
   ...(v.text.trim() ? [{ url: "bayanihan:place-text", value: v.text.trim() }] : []),
@@ -17,7 +18,7 @@ export const placeExtensions = (v: PlaceValue) => [
 ];
 
 export function PlaceField({ label, value, onChange, placeholder }: { label: string; value: PlaceValue; onChange: (v: PlaceValue) => void; placeholder?: string }) {
-  const [hits, setHits] = useState<{ code: string; name: string; label: string }[]>([]);
+  const [hits, setHits] = useState<{ code: string; name: string; kind: string; label: string }[]>([]);
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const q = value.text.trim();
@@ -35,7 +36,7 @@ export function PlaceField({ label, value, onChange, placeholder }: { label: str
       onChangeText={(text) => onChange({ text })} />
     {open && hits.length ? <View style={{ backgroundColor: c.white, borderRadius: radius.inner, marginTop: 6, paddingVertical: 4 }}>
       {hits.map((p) => <Pressable key={p.code} onPress={() => { onChange({ text: p.label, code: p.code }); setHits([]); setOpen(false); }} accessibilityRole="button"
-        style={{ paddingVertical: 10, paddingHorizontal: 14 }}><Text style={t.row}>{p.name}</Text><Meta>{p.label.split(", ").slice(1).join(", ")}</Meta></Pressable>)}
+        style={{ paddingVertical: 10, paddingHorizontal: 14 }}><Text style={t.row}>{p.name}</Text><Meta>{[KIND[p.kind] ?? "", ...p.label.split(", ").slice(1)].filter(Boolean).join(" · ")}</Meta></Pressable>)}
     </View> : null}
     {value.code ? <Meta>{"  ✓ A place in the Philippines' official list (PSGC)"}</Meta> : null}
   </View>;
