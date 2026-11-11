@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppState, Text, View } from "react-native";
+import { friendly } from "@/lib/bix";
 import { clearRefused, flush, onPending, onRefused, type Refusal } from "@/lib/outbox";
 import { Icon } from "./Icon";
 import { c, radius } from "./theme";
@@ -23,7 +24,7 @@ export function SyncBar() {
       <Icon name="pending" color={c.slate} />
       <Text style={{ flex: 1, fontSize: 13, color: c.slate }}>
         {n ? `${n} change${n === 1 ? "" : "s"} waiting to sync.` : ""}
-        {refused.length ? ` ${refused.length} couldn't be saved: ${refused[0]!.current?.owner ? "someone got there first" : refused[0]!.reasons[0]}.` : ""}
+        {refused.length ? ` ${refused.length} couldn't be saved: ${refused[0]!.current?.owner ? "someone got there first" : friendly(refused[0]!.reasons[0] ?? "")}.` : ""}
       </Text>
       {refused.length ? <Text onPress={clearRefused} style={{ fontSize: 13, fontWeight: "600", color: c.ink, textDecorationLine: "underline" }}>OK</Text> : null}
     </View>
