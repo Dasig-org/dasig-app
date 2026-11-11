@@ -74,11 +74,12 @@ export const TOPICS: Record<string, Topic> = {
     sections: [
       { h: "What it will do", rows: [
         { icon: "check", title: "Break down the work", meta: "Suggest the smaller steps a task needs, and what has to happen first" },
-        { icon: "users", title: "Suggest who to ask", meta: "From your roster, spreading the work instead of asking the same person" },
-        { icon: "send", title: "Turn messages into drafts", meta: "Offers and can't-make-its from the group chat, in Filipino and English" },
-        { icon: "book", title: "Draft the report", meta: "From confirmed work, for a lead to check" },
+        { icon: "flag", title: "Review the plan", meta: "Point out a step that's really several, a missing step, or work with the wrong team" },
+        { icon: "users", title: "Find who to ask", meta: "Dasig lists who could help from your roster; Bayani says why" },
+                { icon: "book", title: "Draft the report", meta: "From confirmed work, for a lead to check" },
+        { icon: "spark", title: "You choose where it helps", meta: "An officer turns on only the areas your group wants. Everything is off until then" },
       ] },
-      { h: "How it stays safe", p: "Bayani never changes a record on its own. Every suggestion is a BIX draft that Bayanihan Core checks and a person accepts. It runs on the phone, needs no data plan, and pilot groups decide whether their messages help it learn." },
+      { h: "How it stays safe", p: "Bayani never changes a record on its own. Every suggestion is a BIX draft that Bayanihan Core checks and a person accepts. It runs on the phone, needs no data plan, and pilot groups decide whether their projects help it learn." },
     ],
   },
   dasig: {
