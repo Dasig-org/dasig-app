@@ -9,6 +9,7 @@ import { ContextPill, Logo } from "@/ui/Context";
 import { IconCircle, Meta, Panel, Row, RoundButton, Screen } from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { c, radius, type as t } from "@/ui/theme";
+import { InstallGuide } from "@/ui/InstallGuide";
 
 /*
  * Home before someone has a group or any work (zero state). Follows design/home-sketches.html: photos carry the meaning,
@@ -59,6 +60,7 @@ export function ZeroHome() {
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill />
         <RoundButton icon="search" label="Find groups and projects" onPress={() => router.push("/nearby")} /></View>
 
+      <InstallGuide />
       {/* Welcome: one photo, one line of what Dasig is, one next step. */}
       <View style={{ marginTop: 14, height: 220, borderRadius: radius.panel, overflow: "hidden", backgroundColor: c.ink }}>
         <Image source={PHOTO.hero} resizeMode="cover" style={{ width: "100%", height: "100%" }} />

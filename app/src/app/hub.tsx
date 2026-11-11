@@ -1,3 +1,5 @@
+import { Redirect } from "expo-router";
+import { can } from "@/lib/capabilities";
 import { useEffect, useState } from "react";
 import { Platform, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
@@ -8,6 +10,8 @@ import { c, radius, type as t } from "@/ui/theme";
 
 /** Make this phone the group's hub (spec: Hubs). Other phones join its hotspot and scan the QR. */
 export default function Hub() {
+  // Phones only: a browser can't be or reach a hub (lib/capabilities).
+  if (!can.hub) return <Redirect href={"/home" as never} />;
   const s = useSession();
   const [addr, setAddr] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);

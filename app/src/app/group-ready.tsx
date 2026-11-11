@@ -1,3 +1,4 @@
+import { can } from "@/lib/capabilities";
 import { router, useLocalSearchParams } from "expo-router";
 import { View } from "react-native";
 import { useSession } from "@/lib/session";
@@ -17,7 +18,7 @@ export default function GroupReady() {
         <Row left={<IconCircle name="pen" />} title="Finish your group's profile" meta="Logo, about, causes, how you're run" onPress={() => router.push(`/org/${org}` as never)} last />
       </Panel>
       <Eyebrow>Later</Eyebrow>
-      <Body>Everything stays on your phones. When your people are together, make this phone the group's hub. You can connect to the Dasig Ecosystem any time.</Body>
+      <Body>{can.hub ? "Everything stays on your phones. When your people are together, make this phone the group's hub. You can connect to the Dasig Ecosystem any time." : "Your group is on the Dasig Ecosystem. Everyone can join from any phone or browser, and you can download all of its records any time."}</Body>
       <Row title="Go to This week" onPress={() => router.replace("/home")} last />
     </Screen>
   );

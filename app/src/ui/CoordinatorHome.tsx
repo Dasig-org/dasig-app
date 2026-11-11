@@ -9,6 +9,7 @@ import { useLoad } from "@/lib/use";
 import { peopleFor, personName, teamIcon } from "@/lib/work";
 import { ContextPill } from "./Context";
 import { GroupQuest } from "./GroupQuest";
+import { InstallGuide } from "./InstallGuide";
 import { Avatar, Buttons, Check, Eyebrow, Faces, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Screen, Sheet, Tip, usePhoto } from "./kit";
 import { c, radius, type as t } from "./theme";
 
@@ -109,6 +110,7 @@ export function CoordinatorHome() {
       <Text style={[t.title, { marginTop: 14 }]}>{`Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}, ${personName(s.person).split(/\s+/)[0]}`}</Text>
       <Text style={t.body}>{event ? (event.period?.start ? `${event.title} ${Date.parse(event.period.start) < new Date().setHours(0, 0, 0, 0) ? "was" : "is"} ${inDays(event.period.start)}.` : `${event.title} has no date yet.`) : "Plan your next event."}</Text>
       {error ? <Notice>{error}</Notice> : null}
+      <InstallGuide />
 
       {/* A new group's first steps, until they're all done (coordinator zero state). */}
       {data ? <GroupQuest org={s.current!} people={data.roles.length} events={data.projects.length + data.past.length}

@@ -1,3 +1,4 @@
+import { can } from "@/lib/capabilities";
 import { router } from "expo-router";
 import { Text, View } from "react-native";
 import { Body, Eyebrow, IconCircle, Panel, Row, Screen, Tip, Title } from "@/ui/kit";
@@ -9,7 +10,7 @@ export default function Volunteer() {
     <Screen back>
       <Title sub="Groups bring volunteers in three ways. Pick the one that fits you.">Joining as a volunteer</Title>
       <Panel>
-        <Row left={<IconCircle name="camera" />} title="A coordinator shows you a code" meta="At a meeting or event: join their phone's hotspot, then scan" onPress={() => router.push("/scan" as never)} />
+        {can.hub ? <Row left={<IconCircle name="camera" />} title="A coordinator shows you a code" meta="At a meeting or event: join their phone's hotspot, then scan" onPress={() => router.push("/scan" as never)} /> : null}
         <Row left={<IconCircle name="link" />} title="Someone sent you a link" meta="Open it on this phone, or paste it here" onPress={() => router.push("/scan?paste=1" as never)} />
         <Row left={<IconCircle name="pin" />} title="Find groups near you" meta="Needs internet and the Dasig Ecosystem" onPress={() => router.push("/nearby")} last />
       </Panel>

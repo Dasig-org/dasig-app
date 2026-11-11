@@ -11,6 +11,7 @@ import { useLoad } from "@/lib/use";
 import { act, personName, places, teamIcon } from "@/lib/work";
 import { ContextPill, Logo } from "@/ui/Context";
 import { ZeroHome } from "@/ui/ZeroHome";
+import { InstallGuide } from "@/ui/InstallGuide";
 import { CoordinatorHome } from "@/ui/CoordinatorHome";
 import { Buttons, Eyebrow, Faces, Hero, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Tip, usePhoto } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
@@ -92,6 +93,7 @@ export default function Home() {
         <RoundButton icon="search" label="Find groups and projects" onPress={() => router.push("/nearby")} /></View>
       <Text style={[t.title, { marginTop: 14, marginBottom: 2 }]}>{`${hello()}, ${personName(s.person)}`}</Text>
       {error ? <Notice>{error}</Notice> : null}
+      <InstallGuide />
       <Tip id="volunteer-home" title="Find something to do">Tap “I'm in” to take it.</Tip>
       {keepAccount ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="lock" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>Keep your account</Text>
         <Meta>Add your Dasig account so you can sign in on any phone or browser. Your work stays yours.</Meta>

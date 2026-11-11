@@ -69,6 +69,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => { refresh().catch(() => {}).finally(() => setReady(true)); }, [refresh]);
+  // Web: ask the browser to keep this app's storage (the device key and anything waiting to sync), so it isn't cleared.
+  useEffect(() => { if (typeof navigator !== "undefined" && (navigator as any).storage?.persist) (navigator as any).storage.persist().catch(() => {}); }, []);
 
   const startWithNickname = async (nickname: string) => {
     const c = await getConnection();
