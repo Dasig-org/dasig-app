@@ -105,7 +105,10 @@ export default function Task() {
   const hrs = (h: number) => (h < 1 ? `${Math.round(h * 60)} min` : `${Math.round(h * 10) / 10} h`);
   const finish = async (value: number | null, source: "planned" | "stated" | "measured") => {
     setFinishing(false);
-    const next = act.done(task);
+    // A shift still open for more people is "ready"; close it first (ready → accepted), then mark it done.
+    let base = task;
+    if (task.status === "ready") { try { base = (await bix.commit(bix.next(task, { status: "accepted" })))[0] ?? task; } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); return; } }
+    const next = act.done(base);
     if (value !== null) next.participant = (next.participant ?? []).map((x: any) => (x.person.reference === me && x.status === "active" ? { ...x, hours: { value, source } } : x));
     await run(next, "Done. Thank you!"); setGiven("");
   };
@@ -116,9 +119,9 @@ export default function Task() {
   if (waitingOn.length && ["ready", "requested"].includes(task.status)) actions = <View style={{ marginTop: 14 }}><Sand><IconCircle name="pending" tone="white" />
     <View style={{ flex: 1 }}><Text style={t.row}>{`Waiting on ${waitingOn[0]!.title}`}</Text><Meta>You can prepare now. It can be taken once that's done.</Meta></View></Sand></View>;
   // A shift (Task.slots > 1): "I'm in" takes a place; full shifts take backups (BIX 2026-11-09).
-  else if (pl.shift && (task.status === "ready" || task.status === "accepted") && onIt) actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => (onIt ? setFinishing(true) : run(act.done(task)))} /> : null}<Outline flex label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
+  else if (pl.shift && (task.status === "ready" || task.status === "accepted") && onIt) actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => (onIt ? setFinishing(true) : finish(null, "stated"))} /> : null}<Outline flex label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if (pl.shift && task.status === "ready") actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.takePlace(task, me), "You're in.")} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
-  else if (pl.shift && task.status === "accepted") actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => (onIt ? setFinishing(true) : run(act.done(task)))} /> : <Primary label="Be a backup" onPress={backup} />}</Buttons>;
+  else if (pl.shift && task.status === "accepted") actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => (onIt ? setFinishing(true) : finish(null, "stated"))} /> : <Primary label="Be a backup" onPress={backup} />}</Buttons>;
   else if (task.status === "ready") actions = <Buttons><Primary label="I'll take it" busy={busy} onPress={() => run(act.claim(task, me))} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
   else if (task.status === "requested" && mine) actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.claim(task, me))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if ((task.status === "accepted" || task.status === "in-progress") && (mine || isLead)) actions = <Buttons><Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
