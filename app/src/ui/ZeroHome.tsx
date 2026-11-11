@@ -64,12 +64,19 @@ export function ZeroHome() {
         <Image source={PHOTO.hero} resizeMode="cover" style={{ width: "100%", height: "100%" }} />
         <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 140, backgroundImage: "linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.72) 100%)" } as never} />
         <View style={{ position: "absolute", left: 18, right: 18, bottom: 18 }}>
-          <Text style={{ fontSize: 26, fontWeight: "700", letterSpacing: -0.5, color: c.white }}>{`Salamat, ${first}.`}</Text>
+          <Text style={{ fontSize: 26, fontWeight: "700", letterSpacing: -0.5, color: c.white }}>{s.groups.length ? `Welcome back, ${first}.` : `Salamat, ${first}.`}</Text>
           <Text style={{ fontSize: 15, lineHeight: 21, color: c.white, marginTop: 4 }}>Dasig helps groups do good work together, and keeps a record of what you helped with.</Text>
         </View>
       </View>
 
-      <Text style={[t.eyebrow, { marginTop: 20, marginBottom: 8, marginHorizontal: 4 }]}>How do you want to start?</Text>
+      {/* Already in a group (e.g. just started one): lead with the groups, then what else they can do. */}
+      {s.groups.length ? <>
+        <Text style={[t.eyebrow, { marginTop: 20, marginBottom: 8, marginHorizontal: 4 }]}>Your groups</Text>
+        <Panel>{s.groups.map((g, i) => <Row key={g.org.id} left={<Logo name={g.org.name} image={g.org.image} size={44} />} title={g.org.name}
+          meta={g.role.code?.code === "officer" ? "You run it · open to plan events and invite people" : "Open to see its work"}
+          onPress={() => { s.setCurrent(g.org); router.push("/home"); }} last={i === s.groups.length - 1} />)}</Panel>
+      </> : null}
+      <Text style={[t.eyebrow, { marginTop: 20, marginBottom: 8, marginHorizontal: 4 }]}>{s.groups.length ? "Also on Dasig" : "How do you want to start?"}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ gap: 12, paddingHorizontal: 18 }}>
         <Choice photo={PHOTO.help} chip={found?.groups.length ? `${found.groups.length} group${found.groups.length === 1 ? "" : "s"} listed` : "Volunteer"} title="I want to help out" meta="Find a group or project and say “I'm in”" onPress={() => router.push("/nearby")} />
         <Choice photo={PHOTO.run} chip="3 short steps" title="I run a group" meta="Set up your group, a project and its teams" onPress={() => router.push("/start-group")} />

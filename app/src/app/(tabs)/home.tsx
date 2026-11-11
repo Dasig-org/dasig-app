@@ -83,7 +83,7 @@ export default function Home() {
   if (s.isLead && s.current) return <CoordinatorHome />;
 
   // Zero state: no group and no work yet. A starter home, never "nothing here" (design/home-sketches.html).
-  if (data && !s.groups.length && !asked.length && !mine.length && !done.length && !open.length) return <ZeroHome />;
+  if (data && !asked.length && !mine.length && !done.length && !open.length) return <ZeroHome />;
   const storyPhotos = done.flatMap((x) => imagesOf(x).length ? imagesOf(x).slice(0, 1) : [projOf(x)?.image]).filter((a) => a?.hash).slice(-4).reverse();
   const since = done.map((x) => x.executionPeriod?.end).filter(Boolean).sort()[0];
   return (

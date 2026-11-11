@@ -8,6 +8,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { peopleFor, personName, teamIcon } from "@/lib/work";
 import { ContextPill } from "./Context";
+import { GroupQuest } from "./GroupQuest";
 import { Avatar, Buttons, Check, Eyebrow, Faces, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Screen, Sheet, Tip, usePhoto } from "./kit";
 import { c, radius, type as t } from "./theme";
 
@@ -37,6 +38,7 @@ async function load(orgId: string) {
     Promise.all(projects.map((p) => bix.search("Task", { partOf: `Initiative/${p.id}` }))).then((x) => x.flat()),
     Promise.all(projects.map((p) => bix.search("Need", { initiative: `Initiative/${p.id}` }))).then((x) => x.flat()),
   ]);
+  const roles = (await bix.search("Role", { organization: `Organization/${orgId}` }).catch(() => [] as R[])).filter((r) => r.status === "active");
   const reports = await bix.search("Report", { owedBy: `Organization/${orgId}` }).catch(() => [] as R[]);
   const offers = (await Promise.all(needs.slice(0, 10).map((n) => bix.search("Offer", { matchedTo: `Need/${n.id}` }).catch(() => [])))).flat();
   const refs = [...tasks.flatMap((x) => active(x).map((p: any) => p.person.reference)), ...teams.flatMap((tm) => ((tm.participant ?? []) as any[]).map((p) => p.person.reference)),
@@ -44,7 +46,7 @@ async function load(orgId: string) {
   // The event that just happened (within 14 days) and has no report sent yet.
   const past = (await bix.search("Initiative", { organization: `Organization/${orgId}` })).filter((p) => p.status !== "cancelled" && p.period?.start && Date.parse(p.period.start) < Date.now() - 12 * 3600000 && Date.now() - Date.parse(p.period.start) < 14 * 86400000
     && !reports.some((r) => (r.scope?.initiative ?? []).some((x: any) => x.reference === `Initiative/${p.id}`)));
-  return { projects, teams, tasks, needs, offers, past, people: await peopleFor(refs, 40) };
+  return { projects, teams, tasks, needs, offers, past, roles, people: await peopleFor(refs, 40) };
 }
 
 function Cover({ image, h, chip }: { image?: R["image"]; h: number; chip: string }) {
@@ -108,6 +110,9 @@ export function CoordinatorHome() {
       <Text style={t.body}>{event ? (event.period?.start ? `${event.title} ${Date.parse(event.period.start) < new Date().setHours(0, 0, 0, 0) ? "was" : "is"} ${inDays(event.period.start)}.` : `${event.title} has no date yet.`) : "Plan your next event."}</Text>
       {error ? <Notice>{error}</Notice> : null}
 
+      {/* A new group's first steps, until they're all done (coordinator zero state). */}
+      {data ? <GroupQuest org={s.current!} people={data.roles.length} events={data.projects.length + data.past.length}
+        volunteerIn={(data.tasks ?? []).some((x) => active(x).some((p: any) => p.person.reference !== `Person/${s.person?.id}`))} /> : null}
       {/* The day after (report sketch R1): the report is ready to check, until it's sent. */}
       {data?.past[0] ? <View style={{ marginTop: 14, borderRadius: radius.panel, overflow: "hidden", backgroundColor: c.white }}>
         <Cover image={data.past[0].image} h={110} chip="Report · ready to check" />
@@ -128,7 +133,7 @@ export function CoordinatorHome() {
           {event.period?.start && Math.abs(Date.parse(event.period.start) - Date.now()) < DAY ? <Buttons><Primary label="Event day: check people in" onPress={() => router.push(`/project/${event.id}/day` as never)} /></Buttons> : null}
           <Buttons>{openWork.length ? <Primary label="Share open slots" onPress={() => { setSkip(new Set()); setSharing(event); }} /> : null}<Outline flex label="Open" onPress={() => router.push(`/project/${event.id}`)} /></Buttons>
         </View>
-      </View> : <View style={{ marginTop: 14 }}><Panel><Row left={<IconCircle name="plus" />} title="Set up your next event" meta="Teams, leads and the work, in one sitting" onPress={() => router.push("/new-project")} last /></Panel></View>}
+      </View> : null}
 
       {/* Reminders without push (E15): two days before, write each team's reminder for the chat. */}
       {event?.period?.start && Date.parse(event.period.start) > Date.now() && Date.parse(event.period.start) - Date.now() < 3 * DAY ? <View style={{ marginTop: 14 }}>
