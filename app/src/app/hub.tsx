@@ -2,7 +2,7 @@ import { Redirect } from "expo-router";
 import { can } from "@/lib/capabilities";
 import { useEffect, useState } from "react";
 import { Platform, Text, View } from "react-native";
-import QRCode from "react-native-qrcode-svg";
+import { QR as QRCode } from "@/ui/QR";
 import { useSession } from "@/lib/session";
 import { pairUrl } from "@/lib/pairing";
 import { Body, Buttons, Eyebrow, IconCircle, Meta, Notice, Outline, Panel, Primary, Row, Screen, Title } from "@/ui/kit";

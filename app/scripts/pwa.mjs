@@ -39,6 +39,7 @@ self.addEventListener("fetch", (e) => {
 
 let html = readFileSync(join(dist, "index.html"), "utf8");
 const head = `
+    <link rel="preconnect" href="https://ecosystem.dasig.org" crossorigin />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

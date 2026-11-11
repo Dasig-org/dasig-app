@@ -2,7 +2,7 @@ import { short } from "@/lib/dates";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Platform, Share, Text, View } from "react-native";
-import QRCode from "react-native-qrcode-svg";
+import { QR as QRCode } from "@/ui/QR";
 import { pairUrl } from "@/lib/pairing";
 import { getConnection } from "@/lib/connection";
 import { bix, type R } from "@/lib/bix";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Image, Pressable, ScrollView, Share, Text, View } from "react-native";
-import { taskHours } from "@bayanihan/core";
+import { taskHours } from "@bayanihan/core/figures";
 import { bix, type R } from "@/lib/bix";
 import { short } from "@/lib/dates";
 import { appUrl } from "@/lib/env";

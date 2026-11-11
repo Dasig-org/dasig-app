@@ -1,4 +1,4 @@
-import { generatePersonKey, keyIdFor, signChallenge } from "@bayanihan/core";
+import { generatePersonKey, keyIdFor, signChallenge } from "@bayanihan/core/sign";
 
 /**
  * A person's keys on this phone, newest last. The newest signs everything new. Older keys stay so servers that still

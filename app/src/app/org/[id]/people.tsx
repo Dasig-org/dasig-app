@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { Platform, Share, Text, View } from "react-native";
-import QRCode from "react-native-qrcode-svg";
+import { QR as QRCode } from "@/ui/QR";
 import { bix, now, type R } from "@/lib/bix";
 import { getConnection } from "@/lib/connection";
 import { appUrl } from "@/lib/env";

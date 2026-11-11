@@ -1,5 +1,6 @@
 import { env } from "./env";
-import { supabase } from "./supabase";
+/** Supabase is only for the local-development "cloud" connection; loaded on first use, never in the web bundle. */
+const sb = async () => (await import("./supabase")).supabase;
 import { getConnection } from "./connection";
 import { missed, reached } from "./reach";
 
@@ -28,7 +29,7 @@ export async function send(method: string, path: string, body?: BodyInit | null,
     }
     return r;
   }
-  const { data } = await supabase.auth.getSession();
+  const { data } = await (await sb()).auth.getSession();
   if (data.session) headers.authorization = `Bearer ${data.session.access_token}`;
   return remote(env.bixUrl + path);
 }

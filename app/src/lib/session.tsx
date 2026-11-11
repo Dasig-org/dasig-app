@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { supabase } from "./supabase";
+/** Supabase is only for the local-development "cloud" connection; loaded on first use, never in the web bundle. */
+const sb = async () => (await import("./supabase")).supabase;
 import { bix, type R } from "./bix";
 import { getConnection, setConnection, type Connection } from "./connection";
 
@@ -44,7 +45,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     const c = await getConnection();
     setConn(c);
-    const signedIn = c.kind === "cloud" ? !!(await supabase.auth.getSession()).data.session : !!c.token;
+    const signedIn = c.kind === "cloud" ? !!(await (await sb()).auth.getSession()).data.session : !!c.token;
     if (!signedIn) { setPerson(null); setGroups([]); return; }
     let me = await bix.me();
     // Make sure this phone's own key is on the person's record (once per phone; quietly retried next time if offline).
@@ -76,7 +77,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const c = await getConnection();
     const name = nickname.trim() || "Friend";
     if (c.kind === "cloud") {
-      if (!(await supabase.auth.getSession()).data.session) { const { error } = await supabase.auth.signInAnonymously(); if (error) throw error; }
+      if (!(await (await sb()).auth.getSession()).data.session) { const { error } = await (await sb()).auth.signInAnonymously(); if (error) throw error; }
       await bix.me(name);
     } else if (c.kind === "phone" && !c.token) {
       const { localEngine } = await import("@/local/engine");
@@ -149,7 +150,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // On the Ecosystem, end the session on the server too; the account (Dasig or Google) is how you get back in.
     if (c.kind === "ecosystem" && c.token) await fetch(`${c.url}/$signout`, { method: "POST", headers: { authorization: `Bearer ${c.token}` } }).catch(() => {});
     await AsyncStorage.removeItem("dasig.account.linked");
-    if (c.kind === "cloud") await supabase.auth.signOut();
+    if (c.kind === "cloud") await (await sb()).auth.signOut();
     else if (c.kind === "ecosystem" && Platform.OS === "web") await setConnection({ kind: "ecosystem", url: c.url, token: "" });
     else await setConnection(c.kind === "hub" || c.kind === "ecosystem" ? { kind: "phone", token: await AsyncStorageGet() } : { kind: "phone" });
     setPerson(null); setGroups([]); setCurrent(null); await refresh();

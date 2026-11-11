@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Redirect } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { Image, Text, View } from "react-native";
+import { Image, Platform, Text, View } from "react-native";
 import { useSession } from "@/lib/session";
 import { c, type as t } from "@/ui/theme";
 
@@ -11,7 +11,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function Boot() {
   const s = useSession();
   const [held, setHeld] = useState(true);
-  useEffect(() => { SplashScreen.hideAsync().catch(() => {}); const t = setTimeout(() => setHeld(false), 900); return () => clearTimeout(t); }, []);
+  useEffect(() => { SplashScreen.hideAsync().catch(() => {}); /* phones show the mark briefly; the web goes straight in */ const t = setTimeout(() => setHeld(false), Platform.OS === "web" ? 0 : 900); return () => clearTimeout(t); }, []);
   if (!s.ready || held) return (
     <View accessibilityLabel="Dasig is starting" style={{ flex: 1, backgroundColor: c.sand, alignItems: "center", justifyContent: "center" }}>
       <Image source={require("../../assets/brand/emblem.png")} style={{ width: 96, height: 96 }} accessibilityLabel="Dasig" />

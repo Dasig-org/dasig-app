@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Platform, Text, View } from "react-native";
 import { dasigAccountAvailable, dasigLinked, startDasigSignIn } from "@/lib/dasig-account";
-import { personHours } from "@bayanihan/core";
+import { personHours } from "@bayanihan/core/figures";
 import { bix } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";

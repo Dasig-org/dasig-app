@@ -4,7 +4,7 @@ import { Image, ScrollView, Share, Text, View } from "react-native";
 import { appUrl } from "@/lib/env";
 import { personName } from "@/lib/work";
 import { Sheet, usePhoto } from "@/ui/kit";
-import { taskHours } from "@bayanihan/core";
+import { taskHours } from "@bayanihan/core/figures";
 import { bix, ref } from "@/lib/bix";
 import { DAY } from "@/lib/dates";
 import { useLoad } from "@/lib/use";
