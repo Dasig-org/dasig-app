@@ -1,3 +1,4 @@
+import { PlaceField, placeExtensions, type PlaceValue } from "@/ui/PlaceField";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Image, Pressable, Share, Text, View } from "react-native";
@@ -31,7 +32,8 @@ export default function NewEvent() {
   const [about, setAbout] = useState("");
   const [kind, setKind] = useState<Kind | null>(null);
   const [when, setWhen] = useState("");
-  const [place, setPlace] = useState("");
+  const [where, setWhere] = useState<PlaceValue>({ text: "" });
+  const place = where.text;
   const [cover, setCover] = useState<Attachment | null>(null);
   const [teams, setTeams] = useState<TeamDraft[]>([]);
   const [picking, setPicking] = useState<number | null>(null);
@@ -68,7 +70,7 @@ export default function NewEvent() {
       const ini = bix.create("Initiative", { title: title.trim(), kind: "project", status: "active", organization: { reference: `Organization/${orgId}` }, ...visibilityFields(null, atMost(groupVis, groupVis)),
         category: [{ system: "bayanihan:event-kind", code: kind.code, display: kind.label }],
         ...(date ? { period: { start: date.toISOString() } } : {}), ...(about.trim() ? { description: about.trim() } : {}), ...(cover ? { image: cover } : {}),
-        ...(place.trim() ? { extension: [{ url: "bayanihan:place-text", value: place.trim() }] } : {}) });
+        ...(place.trim() ? { extension: placeExtensions(where) } : {}) });
       const kept = teams.filter((x) => x.keep);
       const teamRecs = kept.map((x) => bix.create("Team", { name: x.name, organization: { reference: `Organization/${orgId}` }, initiative: ref(ini), kind: "initiative", status: "active",
         access: x.name === "Communications" ? "initiative" : "own-tasks", participant: x.lead ? [{ person: { reference: x.lead }, role: "lead", status: "active" }] : [] }));
@@ -121,7 +123,7 @@ export default function NewEvent() {
       {head(2, "When and where?", "You can change these later. Task dates count from the event's date.")}
       <Field label="When" value={when} onChangeText={setWhen} placeholder="e.g. 2027-03-06 05:00" />
       {when.trim() && !date ? <Notice>That date didn't read right. Try 2027-03-06 05:00.</Notice> : null}
-      <Field label="Where" value={place} onChangeText={setPlace} placeholder="e.g. IT Park, Cebu City" />
+      <PlaceField label="Where" value={where} onChange={setWhere} placeholder="e.g. IT Park, Cebu City" />
       <Field label="What it's about" value={about} onChangeText={setAbout} multiline placeholder="What it is, who it's for. Volunteers read this first." />
       <Text style={[t.eyebrow, { marginTop: 18, marginBottom: 8, marginHorizontal: 4 }]}>Cover picture</Text>
       <Pressable onPress={async () => { const a = await pickPhoto(false).catch(() => null); if (a) setCover(a); }} style={{ height: coverUri ? 150 : 56, borderRadius: radius.panel, overflow: "hidden", backgroundColor: c.sand, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 10 }}>

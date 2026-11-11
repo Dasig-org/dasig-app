@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PlaceField, placeExtensions, type PlaceValue } from "@/ui/PlaceField";
 import { router } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
 import { bix, ref } from "@/lib/bix";
@@ -26,7 +27,8 @@ export default function StartGroup() {
   const [name, setName] = useState("");
   const [kind, setKind] = useState<(typeof KINDS)[number]["value"]>("community");
   const [about, setAbout] = useState("");
-  const [place, setPlace] = useState("");
+  const [where, setWhere] = useState<PlaceValue>({ text: "" });
+  const place = where.text;
   const [causes, setCauses] = useState<string[]>([]);
   const [logo, setLogo] = useState<Attachment | null>(null);
   const [logoUri, setLogoUri] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export default function StartGroup() {
       const org = bix.create("Organization", {
         name: name.trim(), kind, ...visibilityFields(null, vis), ...(about.trim() ? { description: about.trim() } : {}), ...(logo ? { image: logo } : {}),
         cause: causes.map((code) => ({ system: "bayanihan:cause", code, display: CAUSES.find((x) => x.code === code)?.label })),
-        ...(place.trim() ? { extension: [{ url: "bayanihan:place-text", value: place.trim() }] } : {}),
+        ...(place.trim() ? { extension: placeExtensions(where) } : {}),
       });
       await bix.commit(org);
       // The server made you its officer. Now the starting structure: positions with seats and terms.
@@ -116,7 +118,7 @@ export default function StartGroup() {
       <Meta>Step 2 of 3</Meta>
       <Title sub="All optional. It's what volunteers read about you.">{`What does ${name.trim()} do?`}</Title>
       <Field label="What you do" value={about} onChangeText={setAbout} placeholder="One or two lines" multiline />
-      <Field label="Where (optional)" value={place} onChangeText={setPlace} placeholder="e.g. Lapu-Lapu City, Cebu" />
+      <PlaceField label="Where (optional)" value={where} onChange={setWhere} placeholder="e.g. Lapu-Lapu City, Cebu" />
       <Eyebrow>Causes (optional)</Eyebrow>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         {CAUSES.map((x) => { const on = causes.includes(x.code); return <Pressable key={x.code} onPress={() => setCauses(on ? causes.filter((y) => y !== x.code) : [...causes, x.code])} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
