@@ -1,17 +1,16 @@
 /**
- * The bottom bar, drawn to match Dasig Fundraising's docked bar (`apps/mobile/src/components/TabBar.tsx`
- * in the dasig repo): white, edge to edge, 58px, a hairline on top, five equal slots with no labels.
- * The centre "+" is an action, drawn in ink; the active destination is ink with a heavier stroke;
- * Me shows the person's own face. The bar never changes shape between roles.
+ * The bottom bar (2026-11-11): a floating, fully rounded light pill, after Netflix's bar, in Dasig's colours. Five
+ * equal slots, each an icon over a short label; the active one sits in a soft pill of its own. Me shows the person's
+ * face. It floats on the page's wash with a soft shadow; the bar never changes shape between roles.
  */
-import { Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 import { Avatar } from "./kit";
 import { c } from "./theme";
 
 export type TabKey = "home" | "nearby" | "add" | "groups" | "story";
-export const TAB_BAR_HEIGHT = 58;
+export const TAB_BAR_HEIGHT = 64;
 
 function Glyph({ name, color, strokeWidth }: { name: TabKey; color: string; strokeWidth: number }) {
   const p = { stroke: color, strokeWidth, fill: "none", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -32,15 +31,19 @@ const ITEMS: { key: TabKey; label: string }[] = [
 export function TabBar({ active, onSelect, me }: { active: TabKey; onSelect: (k: TabKey) => void; me: { name: string; photo?: any } }) {
   const inset = useSafeAreaInsets();
   return (
-    <View style={[st.wrap, { paddingBottom: inset.bottom }]}>
+    <View style={[st.wrap, { paddingBottom: Math.max(inset.bottom, 10) }]}>
       <View style={st.dock} accessibilityRole="tablist">
         {ITEMS.map((i) => {
           const on = i.key === active, action = i.key === "add";
+          const tint = on ? c.ink : c.s500;
           return (
             <Pressable key={i.key} onPress={() => onSelect(i.key)} style={st.button} accessibilityRole={action ? "button" : "tab"} accessibilityLabel={i.label}
-              accessibilityState={action ? undefined : { selected: on }} android_ripple={{ color: "rgba(15,23,42,0.06)", borderless: true, radius: 28 }}>
-              {i.key === "story" && me.photo ? <View style={on ? st.ring : st.noRing}><Avatar name={me.name} photo={me.photo} size={28} /></View>
-                : <Glyph name={i.key} color={action || on ? c.ink : c.s400} strokeWidth={action ? 2.2 : on ? 2.3 : 1.8} />}
+              accessibilityState={action ? undefined : { selected: on }}>
+              <View style={[st.item, on && st.itemOn]}>
+                {i.key === "story" && me.photo ? <View style={on ? st.ring : st.noRing}><Avatar name={me.name} photo={me.photo} size={24} /></View>
+                  : <Glyph name={i.key} color={tint} strokeWidth={on ? 2.1 : 1.7} />}
+                <Text numberOfLines={1} style={[st.label, { color: tint, fontWeight: on ? "700" : "500" }]}>{i.label}</Text>
+              </View>
             </Pressable>
           );
         })}
@@ -50,9 +53,14 @@ export function TabBar({ active, onSelect, me }: { active: TabKey; onSelect: (k:
 }
 
 const st = StyleSheet.create({
-  wrap: { backgroundColor: c.white },
-  dock: { flexDirection: "row", alignItems: "center", height: TAB_BAR_HEIGHT, borderTopWidth: 1, borderTopColor: c.s200 },
+  wrap: { backgroundColor: c.wash, paddingHorizontal: 14, paddingTop: 6 },
+  dock: { flexDirection: "row", alignItems: "center", height: TAB_BAR_HEIGHT, borderRadius: 999, backgroundColor: c.white, paddingHorizontal: 6,
+    borderWidth: 1, borderColor: "rgba(15,23,42,0.06)",
+    ...(Platform.OS === "web" ? { boxShadow: "0px 8px 24px rgba(15, 23, 42, 0.10)" } as object : { shadowColor: "#0F172A", shadowOpacity: 0.1, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8 }) },
   button: { flex: 1, height: TAB_BAR_HEIGHT, alignItems: "center", justifyContent: "center" },
-  ring: { borderRadius: 18, borderWidth: 2, borderColor: c.ink, padding: 1 },
+  item: { alignItems: "center", justifyContent: "center", gap: 2, height: 52, minWidth: 62, paddingHorizontal: 10, borderRadius: 999 },
+  itemOn: { backgroundColor: "rgba(15,23,42,0.06)" },
+  label: { fontSize: 11 },
+  ring: { borderRadius: 16, borderWidth: 2, borderColor: c.ink, padding: 1 },
   noRing: { padding: 3 },
 });
