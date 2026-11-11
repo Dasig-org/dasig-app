@@ -12,7 +12,7 @@ import { useLoad } from "@/lib/use";
 import { act, peopleFor, personName, placeOf, places, stateLabel } from "@/lib/work";
 import { Logo } from "@/ui/Context";
 import { History } from "@/ui/History";
-import { Body, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton} from "@/ui/kit";
+import { Body, Buttons, Chips, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton} from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { atMost, visibilityOf } from "@/ui/Privacy";
 import { c, radius, type as t } from "@/ui/theme";
@@ -34,6 +34,8 @@ export default function Task() {
   const [naming, setNaming] = useState<string | null>(null);
   const [arrive, setArrive] = useState<{ at: string; note: string } | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  const [given, setGiven] = useState("");
   const [word, setWord] = useState("");
   useEffect(() => onSynced(() => setMsg(null)), []);
   const { data, error, reload } = useLoad(async () => {
@@ -96,6 +98,17 @@ export default function Task() {
     } finally { setBusy(false); reload(); }
   };
   const pl = places(task);
+  // Planned and given time (BIX 2026-11-11): the estimate, and a measured default from a check-in.
+  const estH = task.estimate ? (task.estimate.unit === "min" ? task.estimate.value / 60 : task.estimate.value) / (task.estimate.per === "task" ? Math.max(1, parts.length) : 1) : null;
+  const myPart = parts.find((x: any) => x.person.reference === me) as any;
+  const measured = myPart?.attended ? Math.round(((Date.now() - Date.parse(myPart.attended.at)) / 3600000) * 2) / 2 : null;
+  const hrs = (h: number) => (h < 1 ? `${Math.round(h * 60)} min` : `${Math.round(h * 10) / 10} h`);
+  const finish = async (value: number | null, source: "planned" | "stated" | "measured") => {
+    setFinishing(false);
+    const next = act.done(task);
+    if (value !== null) next.participant = (next.participant ?? []).map((x: any) => (x.person.reference === me && x.status === "active" ? { ...x, hours: { value, source } } : x));
+    await run(next, "Done. Thank you!"); setGiven("");
+  };
   const backup = async () => { try { await bix.commit(bix.create("Offer", { offeredBy: { reference: me }, partOf: { reference: `Task/${task.id}` }, category: { system: "bayanihan:category", code: "time", display: "Backup" },
     status: "available", description: `Backup for ${task.title}` })); setMsg("You're a backup. If a place opens, you'll be asked first."); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };
   const sl = pl.shift && task.status === "ready" ? { label: `${pl.left} of ${pl.n} places left`, tone: "neutral" as const } : pl.shift && task.status === "accepted" ? { label: onIt ? "You're on it" : "Full", tone: (onIt ? "state" : "ok") as "state" | "ok" } : stateLabel(task, me);
@@ -103,9 +116,9 @@ export default function Task() {
   if (waitingOn.length && ["ready", "requested"].includes(task.status)) actions = <View style={{ marginTop: 14 }}><Sand><IconCircle name="pending" tone="white" />
     <View style={{ flex: 1 }}><Text style={t.row}>{`Waiting on ${waitingOn[0]!.title}`}</Text><Meta>You can prepare now. It can be taken once that's done.</Meta></View></Sand></View>;
   // A shift (Task.slots > 1): "I'm in" takes a place; full shifts take backups (BIX 2026-11-09).
-  else if (pl.shift && (task.status === "ready" || task.status === "accepted") && onIt) actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /> : null}<Outline flex label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
+  else if (pl.shift && (task.status === "ready" || task.status === "accepted") && onIt) actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => (onIt ? setFinishing(true) : run(act.done(task)))} /> : null}<Outline flex label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if (pl.shift && task.status === "ready") actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.takePlace(task, me), "You're in.")} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
-  else if (pl.shift && task.status === "accepted") actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /> : <Primary label="Be a backup" onPress={backup} />}</Buttons>;
+  else if (pl.shift && task.status === "accepted") actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => (onIt ? setFinishing(true) : run(act.done(task)))} /> : <Primary label="Be a backup" onPress={backup} />}</Buttons>;
   else if (task.status === "ready") actions = <Buttons><Primary label="I'll take it" busy={busy} onPress={() => run(act.claim(task, me))} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
   else if (task.status === "requested" && mine) actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.claim(task, me))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if ((task.status === "accepted" || task.status === "in-progress") && (mine || isLead)) actions = <Buttons><Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
@@ -116,7 +129,7 @@ export default function Task() {
     <Screen back>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={task.status === "completed" ? "check" : "pen"} size={56} tone="white" />
         <View style={{ flex: 1 }}><Meta>{team?.name ?? ""}</Meta><Text style={[t.title, { fontSize: 24 }]}>{task.title}</Text></View></View>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}><Pill tone={sl.tone}>{sl.label}</Pill>{task.due ? <Pill tone="ok">{`Due ${short(task.due)}`}</Pill> : null}{task.milestone ? <Pill tone="ok">Gate</Pill> : null}{task.goodFirstStep ? <Pill tone="ok">Good first step</Pill> : null}</View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}><Pill tone={sl.tone}>{sl.label}</Pill>{task.due ? <Pill tone="ok">{`Due ${short(task.due)}`}</Pill> : null}{estH ? <Pill tone="ok">{`About ${hrs(estH)}`}</Pill> : null}{task.milestone ? <Pill tone="ok">Gate</Pill> : null}{task.goodFirstStep ? <Pill tone="ok">Good first step</Pill> : null}</View>
       {naming !== null ? <><Field value={naming} onChangeText={setNaming} placeholder="What needs doing" autoFocus /><Buttons><Primary label="Save" disabled={!naming.trim()} onPress={() => { run(bix.next(task, { title: naming.trim() })); setNaming(null); }} /><Outline label="Cancel" onPress={() => setNaming(null)} /></Buttons></> : null}
       {desc !== null ? <><Field value={desc} onChangeText={setDesc} multiline placeholder="What it's for and who it helps, when and where, what to bring or know" /><Buttons><Primary label="Save" onPress={() => { run(bix.next(task, { description: desc.trim() || undefined })); setDesc(null); }} /><Outline label="Cancel" onPress={() => setDesc(null)} /></Buttons></>
         : task.description ? <View style={{ marginTop: 10 }}><Body>{task.description}</Body></View>
@@ -179,6 +192,8 @@ export default function Task() {
         <Row left={<IconCircle name="cal" />} title="Due date" meta={task.due ? short(task.due) : "None yet"} onPress={() => { setTuning(false); setTimeout(() => setPlanning(true), 260); }} />
         <Row left={<IconCircle name="pin" />} title="When and where to arrive" meta={task.restriction?.arrival?.note ?? (task.restriction?.arrival?.at ? new Date(task.restriction.arrival.at).toLocaleString() : "Call time and meeting point")}
           onPress={() => { setTuning(false); setTimeout(() => setArrive({ at: task.restriction?.arrival?.at ? new Date(task.restriction.arrival.at).toISOString().slice(0, 16).replace("T", " ") : "", note: task.restriction?.arrival?.note ?? "" }), 260); }} />
+        <Row left={<IconCircle name="clock" />} title="About how long" meta={estH ? `${hrs(task.estimate.unit === "min" ? task.estimate.value / 60 : task.estimate.value)} ${task.estimate.per === "task" ? "in all" : "each"}` : "Helps volunteers decide; counts as their hours if they agree"}
+          right={<View style={{ flexDirection: "row", gap: 6 }}>{[1, 2, 4].map((h) => <Outline key={h} label={`${h} h`} onPress={() => run(bix.next(task, { estimate: { value: h, unit: "h", per: "person" } }))} />)}</View>} />
         <Row left={<IconCircle name="users" />} title="People needed" meta={pl.n > 1 ? `${pl.n} places · ${pl.on} taken` : "One person"}
           right={<View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}><Outline label="−" onPress={() => { if (pl.n > Math.max(1, pl.on)) run(act.setSlots(task, pl.n - 1)); }} /><Text style={t.row}>{pl.n}</Text><Outline label="+" onPress={() => run(act.setSlots(task, pl.n + 1))} /></View>} />
         <Row left={<IconCircle name="building" />} title="Others wait on this" meta="Make it a gate on the project page" right={<Check on={!!task.milestone} onPress={() => run(bix.next(task, { milestone: !task.milestone }))} />} />
@@ -209,6 +224,18 @@ export default function Task() {
           <Row left={<IconCircle name="smile" tone="white" />} title="Photo that shows children" meta="Never leaves the group" onPress={() => pickPhoto(true).then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
           <Row left={<IconCircle name="receipt" tone="white" />} title="Document" meta="PDF, Word, Excel, text" last onPress={() => pickDocument().then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
         </Panel>
+      </Sheet>
+
+      <Sheet open={finishing} onClose={() => setFinishing(false)}>
+        <Text style={[t.row, { fontSize: 18 }]}>About how long did you give?</Text>
+        <Meta>Your hours count in your story and the group's report.</Meta>
+        <View style={{ marginTop: 12, gap: 8 }}>
+          {measured ? <Primary label={`${hrs(measured)} since you checked in`} onPress={() => finish(measured, "measured")} /> : null}
+          {estH ? <Primary label={`${hrs(estH)}, as planned`} onPress={() => finish(estH, "planned")} /> : null}
+        </View>
+        <Chips options={[0.5, 1, 2, 3, 4].map((h) => ({ value: String(h), label: hrs(h) }))} value={given} onChange={(v) => finish(Number(v), "stated")} />
+        <Field value={given} onChangeText={setGiven} keyboardType="numeric" placeholder="Or type hours, e.g. 1.5" onSubmitEditing={() => { const n = Number(given); if (n > 0) finish(n, "stated"); }} returnKeyType="done" />
+        <View style={{ marginTop: 10 }}><LinkText onPress={() => finish(null, "stated")}>Skip, don't count hours</LinkText></View>
       </Sheet>
 
       <Sheet open={leaving} onClose={() => setLeaving(false)}>

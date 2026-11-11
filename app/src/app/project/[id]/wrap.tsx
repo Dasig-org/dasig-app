@@ -4,6 +4,7 @@ import { Image, ScrollView, Share, Text, View } from "react-native";
 import { appUrl } from "@/lib/env";
 import { personName } from "@/lib/work";
 import { Sheet, usePhoto } from "@/ui/kit";
+import { taskHours } from "@bayanihan/core";
 import { bix, ref } from "@/lib/bix";
 import { DAY } from "@/lib/dates";
 import { useLoad } from "@/lib/use";
@@ -28,8 +29,7 @@ export default function Wrap() {
   const { p, teams, tasks, folks, needs } = data;
   const done = tasks.filter((x) => x.status === "completed").length;
   const people = new Set(tasks.flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)));
-  const span = (e?: { start?: string; end?: string }) => (e?.start && e?.end ? (Date.parse(e.end) - Date.parse(e.start)) / 3600000 : 0);
-  const hours = Math.round(tasks.filter((x) => x.status === "completed").reduce((h, x) => h + ((x.participant ?? []) as any[]).filter((y) => y.status === "active").reduce((a, y) => a + span(y.period ?? x.executionPeriod), 0), 0) * 10) / 10;
+  const hours = Math.round(tasks.filter((x) => x.status === "completed").reduce((h, x) => h + taskHours(x), 0) * 10) / 10;
   const photos = tasks.flatMap((x) => ((x.output ?? []) as any[]).flatMap((o) => o.attachment ?? [])).filter((a: any) => a.contentType?.startsWith("image/") && !a.showsMinors).slice(0, 8);
   const met = needs.filter((n) => n.status === "met" || n.status === "partially-met");
   // Credits by team, named the way each person chose (Person.credit); anonymous people are counted, not named.

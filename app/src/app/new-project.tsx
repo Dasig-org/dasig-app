@@ -79,7 +79,7 @@ export default function NewEvent() {
       const tasks = kept.flatMap((x, i) => { const ws = x.work.filter((w) => w.keep); const ids = ws.map(() => crypto.randomUUID());
         return ws.map((w, k) => { const gate = ws.findIndex((g) => g.gate && g.before > w.before);
           return bix.create("Task", { id: ids[k], ...(gate >= 0 && gate !== k ? { dependsOn: [{ reference: `Task/${ids[gate]}` }] } : {}), intent: "plan", status: "ready", title: w.title, partOf: ref(ini),
-        owner: ref(teamRecs[i]!), team: ref(teamRecs[i]!), audience: "team", ...(w.people && w.people > 1 ? { slots: w.people } : {}), ...(w.gate ? { milestone: true } : {}),
+        owner: ref(teamRecs[i]!), team: ref(teamRecs[i]!), audience: "team", ...(w.people && w.people > 1 ? { slots: w.people } : {}), ...(w.hours ? { estimate: { value: w.hours, unit: "h", per: "person" } } : {}), ...(w.gate ? { milestone: true } : {}),
         ...(date ? { due: new Date(date.getTime() - w.before * DAY).toISOString() } : {}) }); }); });
       if (tasks.length) await bix.commit(...tasks);
       setMade(ini);
@@ -160,7 +160,7 @@ export default function NewEvent() {
         <Text style={[t.eyebrow, { marginTop: 14, marginBottom: 6, marginHorizontal: 4 }]}>{`${x.name}${x.lead ? ` · ${nameOf(x.lead)}` : ""}`}</Text>
         <Panel>
           {x.work.map((w, wi) => <Row key={wi} left={<Check on={w.keep} onPress={() => setTeams((ts) => ts.map((y, j) => (j === ti ? { ...y, work: y.work.map((z, k) => (k === wi ? { ...z, keep: !z.keep } : z)) } : y)))} />}
-            title={w.title} meta={[relative(w.before), w.people && w.people > 1 ? `${w.people} people` : null, w.gate ? "others wait on this" : null].filter(Boolean).join(" · ")} />)}
+            title={w.title} meta={[relative(w.before), w.people && w.people > 1 ? `${w.people} people` : null, w.hours ? `about ${w.hours} h each` : null, w.gate ? "others wait on this" : null].filter(Boolean).join(" · ")} />)}
           <View style={{ paddingVertical: 8 }}><Field value={picking === -1 - ti ? paste : ""} onFocus={() => setPicking(-1 - ti)} onChangeText={setPaste} multiline={false}
             placeholder="Add a task, or paste several lines" onSubmitEditing={() => addPasted(ti)} returnKeyType="done" style={{ backgroundColor: c.wash }} /></View>
         </Panel>

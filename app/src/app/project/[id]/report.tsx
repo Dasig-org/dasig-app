@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Image, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { taskHours } from "@bayanihan/core";
 import { bix, type R } from "@/lib/bix";
 import { short } from "@/lib/dates";
 import { appUrl } from "@/lib/env";
@@ -16,7 +17,6 @@ import { c, radius, type as t } from "@/ui/theme";
  * who it's for; sending creates the Report as submitted (signed by the group) and shares it.
  */
 type A = { hash: string; contentType: string; showsMinors?: boolean; title?: string };
-const span = (e?: { start?: string; end?: string }) => (e?.start && e?.end ? (Date.parse(e.end) - Date.parse(e.start)) / 3600000 : 0);
 const AUDIENCES = [
   { code: "district", label: "The district or chapter", shows: "Figures, what each team did, partners" },
   { code: "sponsor", label: "A sponsor or partner", shows: "Their contribution first, and photos" },
@@ -54,7 +54,7 @@ export default function ReportScreen() {
   const { p, teams, tasks, needs, folks, reports } = data;
   const done = tasks.filter((x) => x.status === "completed");
   const people = new Set(done.flatMap((x) => ((x.participant ?? []) as any[]).filter((y) => y.status === "active").map((y) => y.person.reference)));
-  const hours = Math.round(done.reduce((h, x) => h + ((x.participant ?? []) as any[]).filter((y) => y.status === "active").reduce((a, y) => a + span(y.period ?? x.executionPeriod), 0), 0) * 10) / 10;
+  const hours = Math.round(done.reduce((h, x) => h + taskHours(x), 0) * 10) / 10;
   const servedOut = done.flatMap((x) => ((x.output ?? []) as any[]).filter((o) => o.code?.code === "people-served").map((o) => ({ task: x, value: Number(o.value) })))[0];
   const notDone = tasks.filter((x) => x.status !== "completed");
   const met = needs.filter((n) => n.status === "met" || n.status === "partially-met");

@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Platform, Text, View } from "react-native";
 import { dasigAccountAvailable, dasigLinked, startDasigSignIn } from "@/lib/dasig-account";
+import { personHours } from "@bayanihan/core";
 import { bix } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
@@ -17,7 +18,8 @@ export default function Story() {
   const { data } = useLoad(async () => {
     if (!me) return null;
     const done = (await bix.search("Task", { participant: me })).filter((x) => x.status === "completed");
-    const hours = done.reduce((h, x) => h + (x.executionPeriod?.start && x.executionPeriod?.end ? (Date.parse(x.executionPeriod.end) - Date.parse(x.executionPeriod.start)) / 3600000 : 0), 0);
+    // Hours by the BIX counting order (own period, own hours, the shift, the estimate), only this person's share.
+    const hours = done.reduce((h, x) => { const mine = ((x.participant ?? []) as any[]).find((y) => y.status === "active" && y.person.reference === me); return h + (mine ? personHours(x, mine) : 0); }, 0);
     // Check each item's signature for real, rather than saying "signed" on trust.
     const checks: Record<string, { allValid: boolean; when?: string; by?: string }> = {};
     await Promise.all(done.slice(0, 8).map(async (x) => { try { const v = await bix.verify("Task", x.id); checks[x.id] = { allValid: v.allValid, when: v.signatures.at(-1)?.when, by: v.signatures.at(-1)?.signedBy }; } catch {} }));
