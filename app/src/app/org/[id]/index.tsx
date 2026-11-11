@@ -13,6 +13,7 @@ import { directoryOpen, networkOpen } from "@/lib/network";
 import { useWhere } from "@/ui/Where";
 import { label, VISIBILITY, VisibilityChoice, visibilityFields, visibilityOf } from "@/ui/Privacy";
 import { CopyToEcosystem } from "@/ui/CopyToEcosystem";
+import { setupExt, withSetup } from "@/ui/GroupQuest";
 import { c, type as t } from "@/ui/theme";
 
 /** A group's page: its profile (editable by officers), people, how it's run, projects, links and safety. */
@@ -88,6 +89,7 @@ export default function Org() {
         {storage?.allowance ? (() => { const mb = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)} GB` : `${Math.round(n / 1e6)} MB`); const pct = Math.min(100, (100 * (storage.used ?? 0)) / storage.allowance);
           return <Row left={<IconCircle name="cloud" />} title="Storage on the Dasig Ecosystem" meta={`${mb(storage.used ?? 0)} of ${mb(storage.allowance)}${pct >= 80 ? " · nearly full. Photos already here stay" : " · free for every group"}`}
             right={<View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${pct}%`, height: 8, backgroundColor: c.accent }} /></View>} />; })() : null}
+        {setupExt(org).hidden ? <Row left={<IconCircle name="check" />} title="Show the setup checklist" meta="Back on your group's home" onPress={() => save({ extension: withSetup(org, { hidden: false }) })} /> : null}
         <Row left={<IconCircle name="repeat" />} title="Hand over to the next officer" meta="At the end of your term" onPress={() => router.push(`/org/${id}/handover` as never)} />
         <Row left={<IconCircle name="lock" />} title="Links and safety" meta="See and turn off invite links" onPress={() => router.push("/links" as never)} />
         <Row left={<IconCircle name="download" />} title="Download your group's records" meta="Everything, in BIX" onPress={() => router.push(`/org/${id}/export` as never)} last />

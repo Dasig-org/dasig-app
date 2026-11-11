@@ -65,7 +65,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const gs: Group[] = [];
     for (const role of roles) { try { gs.push({ role, org: await bix.get("Organization", role.organization.reference.split("/")[1]) }); } catch {} }
     setGroups(gs);
-    setCurrent((cur) => (cur && gs.some((g) => g.org.id === cur.id) ? cur : gs[0]?.org ?? null));
+    setCurrent((cur) => (cur ? gs.find((g) => g.org.id === cur.id)?.org ?? gs[0]?.org ?? null : gs[0]?.org ?? null)); // fresh record, not a stale copy
   }, []);
 
   useEffect(() => { refresh().catch(() => {}).finally(() => setReady(true)); }, [refresh]);
