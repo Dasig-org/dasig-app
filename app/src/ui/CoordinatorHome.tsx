@@ -26,7 +26,7 @@ const countdown = (iso?: string) => {
   const day = new Date(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
   return d < 0 ? day : d === 0 ? `${day} · today` : d === 1 ? `${day} · tomorrow` : `${day} · ${d} days`;
 };
-const inDays = (iso: string) => { const d = Math.round((new Date(iso).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / DAY); return d <= 0 ? "today" : d === 1 ? "tomorrow" : `in ${d} days`; };
+const inDays = (iso: string) => { const d = Math.round((new Date(iso).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / DAY); return d === 0 ? "today" : d === 1 ? "tomorrow" : d === -1 ? "yesterday" : d < 0 ? `${-d} days ago` : `in ${d} days`; };
 const ago = (iso: string) => { const h = Math.round((Date.now() - Date.parse(iso)) / 3600000); return h < 1 ? "Just now" : h < 24 ? `${h} h ago` : h < 48 ? "Yesterday" : short(iso); };
 
 async function load(orgId: string) {
@@ -37,10 +37,14 @@ async function load(orgId: string) {
     Promise.all(projects.map((p) => bix.search("Task", { partOf: `Initiative/${p.id}` }))).then((x) => x.flat()),
     Promise.all(projects.map((p) => bix.search("Need", { initiative: `Initiative/${p.id}` }))).then((x) => x.flat()),
   ]);
+  const reports = await bix.search("Report", { owedBy: `Organization/${orgId}` }).catch(() => [] as R[]);
   const offers = (await Promise.all(needs.slice(0, 10).map((n) => bix.search("Offer", { matchedTo: `Need/${n.id}` }).catch(() => [])))).flat();
   const refs = [...tasks.flatMap((x) => active(x).map((p: any) => p.person.reference)), ...teams.flatMap((tm) => ((tm.participant ?? []) as any[]).map((p) => p.person.reference)),
     ...tasks.filter((x) => x.status === "requested").map((x) => x.owner?.reference).filter(Boolean)];
-  return { projects, teams, tasks, needs, offers, people: await peopleFor(refs, 40) };
+  // The event that just happened (within 14 days) and has no report sent yet.
+  const past = (await bix.search("Initiative", { organization: `Organization/${orgId}` })).filter((p) => p.status !== "cancelled" && p.period?.start && Date.parse(p.period.start) < Date.now() - 12 * 3600000 && Date.now() - Date.parse(p.period.start) < 14 * 86400000
+    && !reports.some((r) => (r.scope?.initiative ?? []).some((x: any) => x.reference === `Initiative/${p.id}`)));
+  return { projects, teams, tasks, needs, offers, past, people: await peopleFor(refs, 40) };
 }
 
 function Cover({ image, h, chip }: { image?: R["image"]; h: number; chip: string }) {
@@ -101,9 +105,15 @@ export function CoordinatorHome() {
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill />
         <RoundButton icon="plus" label="New event" onPress={() => router.push("/new-project")} /></View>
       <Text style={[t.title, { marginTop: 14 }]}>{`Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}, ${personName(s.person).split(/\s+/)[0]}`}</Text>
-      <Text style={t.body}>{event ? (event.period?.start ? `${event.title} is ${inDays(event.period.start)}.` : `${event.title} has no date yet.`) : "Plan your next event."}</Text>
+      <Text style={t.body}>{event ? (event.period?.start ? `${event.title} ${Date.parse(event.period.start) < new Date().setHours(0, 0, 0, 0) ? "was" : "is"} ${inDays(event.period.start)}.` : `${event.title} has no date yet.`) : "Plan your next event."}</Text>
       {error ? <Notice>{error}</Notice> : null}
 
+      {/* The day after (report sketch R1): the report is ready to check, until it's sent. */}
+      {data?.past[0] ? <View style={{ marginTop: 14, borderRadius: radius.panel, overflow: "hidden", backgroundColor: c.white }}>
+        <Cover image={data.past[0].image} h={110} chip="Report · ready to check" />
+        <View style={{ padding: 16 }}><Text style={[t.title, { fontSize: 20 }]}>{`How ${data.past[0].title} went`}</Text><Meta>Written from what your teams did. Takes 2 minutes to check.</Meta>
+          <Buttons><Primary label="Check and send" onPress={() => router.push(`/project/${data.past[0]!.id}/report` as never)} /></Buttons></View>
+      </View> : null}
       {event ? <View style={{ marginTop: 14, borderRadius: radius.panel, overflow: "hidden", backgroundColor: c.white }}>
         <Pressable onPress={() => router.push(`/project/${event.id}`)}><Cover image={event.image} h={150} chip={countdown(event.period?.start)} /></Pressable>
         <View style={{ padding: 16 }}>

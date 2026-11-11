@@ -36,7 +36,6 @@ export default function Wrap() {
   const credits = teams.map((tm) => ({ team: tm.name, names: [...new Set(tasks.filter((x) => x.team?.reference === `Team/${tm.id}` && x.status === "completed")
     .flatMap((x) => ((x.participant ?? []) as any[]).filter((y) => y.status === "active").map((y) => y.person.reference)))].map((r) => folks[r]).filter((q) => q && q.credit !== "anonymous").map((q) => personName(q)) })).filter((x) => x.names.length);
   const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
-  const report = `${p.title}: how it went\n${n(people.size, "volunteer", "volunteers")} gave ${hours} hours. ${done} of ${tasks.length} things done.${met.length ? `\nNeeds met: ${met.map((x) => x.category?.display ?? "supplies").join(", ")}.` : ""}\nEvery task is signed by the group: ${appUrl()}/project/${id}`;
   const thanks = `Salamat sa lahat! ${n(people.size, "volunteer", "volunteers")} gave ${hours} hours for ${p.title}.\n${credits.map((c) => `${c.team}: ${c.names.join(", ")}`).join("\n")}`;
   const anchor = p.period?.start ? new Date(p.period.start).getTime() : null;
   const save = async () => {
@@ -67,7 +66,7 @@ export default function Wrap() {
         meta={x.quantity?.value ? `${x.received?.value ?? 0} of ${x.quantity.value} ${x.quantity.unit ?? ""}` : undefined} last={i === met.length - 1} />)}</Panel></> : null}
       <Eyebrow>Send it</Eyebrow>
       <Panel>
-        <Row left={<IconCircle name="share" />} title="Share the report" meta="Counts and a link to the signed work" onPress={() => Share.share({ message: report }).catch(() => {})} />
+        <Row left={<IconCircle name="share" />} title="Check and send the report" meta="Figures, summary, photos by milestone, who it's for" onPress={() => router.push(`/project/${id}/report` as never)} />
         <Row left={<IconCircle name="heart" />} title="Thank everyone" meta="Writes the thank-you post, with credits by team" onPress={() => setThanking(true)} />
         <Row left={<IconCircle name="users" />} title="See the credits" onPress={() => router.push(`/project/${id}/credits` as never)} />
         <Row left={<IconCircle name="repeat" />} title="Save for next year" meta={`${teams.length} teams and their work, dated from the event`} onPress={save} last />
