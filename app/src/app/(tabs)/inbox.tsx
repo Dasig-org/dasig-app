@@ -20,7 +20,7 @@ export default function Inbox() {
   const run = async (x: Item, f?: () => Promise<unknown>) => { if (!f) return; setBusy(x.id); setMsg(null); try { await f(); await reload(); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } finally { setBusy(null); } };
   return (
     <Screen onRefresh={reload}>
-      <Title sub={data ? (data.length ? `${data.length} thing${data.length === 1 ? "" : "s"} for you` : undefined) : undefined}>Inbox</Title>
+      <Title sub={data ? (data.length ? `${data.length} thing${data.length === 1 ? "" : "s"} for you, from all your groups` : "From all your groups") : undefined}>Inbox</Title>
       {error ? <Notice>{error}</Notice> : null}{msg ? <Notice>{msg}</Notice> : null}
       {!data ? <Skeleton /> : !data.length ? <View style={{ marginTop: 12 }}><Panel><Row left={<IconCircle name="check" />} title="Nothing needs you right now"
         meta={s.groups.length ? "Asks, people asking to join, offers and reports will show here." : "When a group asks you something, it shows here."} last /></Panel></View>

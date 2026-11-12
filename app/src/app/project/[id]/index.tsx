@@ -90,6 +90,7 @@ export default function Project() {
       {openVotes.map((d) => <View key={d.id} style={{ marginTop: 12 }}><Panel><Row left={<IconCircle name="flag" />} title={d.question} meta="Vote open" right={<Pill tone="state">Vote</Pill>} onPress={() => router.push(`/vote/${d.id}` as never)} last /></Panel></View>)}
 
       <Eyebrow right={`${teams.length}`}>Teams</Eyebrow>
+      {lead && teams.length ? <View style={{ marginBottom: 8 }}><Panel><Row left={<IconCircle name="pen" />} title="Edit the plan" meta="Add work to every team in one list" onPress={() => router.push(`/project/${p.id}/plan` as never)} last /></Panel></View> : null}
       <Panel>
         {teams.map((x, i) => {
           const mine = tasks.filter((k) => k.team?.reference === `Team/${x.id}` && k.status !== "draft" && k.status !== "cancelled");
