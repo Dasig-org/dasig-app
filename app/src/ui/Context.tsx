@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
 import { useSession } from "@/lib/session";
 import { personName } from "@/lib/work";
-import { Avatar, Panel, Row, Sheet, LinkText, usePhoto } from "./kit";
+import { Avatar, IconCircle, LinkText, Panel, Row, Sheet, usePhoto } from "./kit";
 import { Icon } from "./Icon";
 import { c, radius, type as t } from "./theme";
 
@@ -36,7 +36,11 @@ export function ContextPill() {
         {s.groups.map((g, i) => <Row key={g.org.id} left={<Logo name={g.org.name} size={40} image={g.org.image} />} title={g.org.name} meta={roleWords(g.role.code?.code)} last={i === s.groups.length - 1}
           right={s.current?.id === g.org.id ? <Icon name="check" color={c.accent} /> : undefined} onPress={() => { s.setCurrent(g.org); setOpen(false); }} />)}
       </Panel>
-      <View style={{ marginTop: 14, marginLeft: 4 }}><LinkText onPress={() => { setOpen(false); router.push("/start-group"); }}>＋ Start a group</LinkText></View>
+      {s.current ? <><Text style={[t.eyebrow, { marginTop: 18, marginBottom: 8, marginLeft: 4 }]}>{s.current.name}</Text>
+        <Panel style={{ backgroundColor: c.wash }}><Row left={<IconCircle name="building" tone="white" />} title="Group page and settings" meta="Profile, causes, place, who can find you, how you're run" last
+          onPress={() => { setOpen(false); router.push(`/org/${s.current!.id}` as never); }} /></Panel></> : null}
+      <View style={{ marginTop: 14, marginLeft: 4, flexDirection: "row", gap: 18 }}><LinkText onPress={() => { setOpen(false); router.push("/groups" as never); }}>All your groups</LinkText>
+        <LinkText onPress={() => { setOpen(false); router.push("/start-group"); }}>＋ Start a group</LinkText></View>
     </Sheet>
   </>;
 }

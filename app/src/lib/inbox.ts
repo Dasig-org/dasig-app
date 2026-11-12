@@ -29,7 +29,8 @@ export async function loadInbox(me: string, groups: Group[]): Promise<Item[]> {
     const live = projects.filter((p) => p.status !== "completed" && p.status !== "cancelled");
     for (const r of roles.filter((x) => x.status === "requested"))
       items.push({ id: `join-${r.id}`, kind: "join", title: "Wants to join", meta: g.org.name, who: { reference: r.person.reference } as never, go: `/org/${g.org.id}/people`, at: at(r),
-        yes: () => bix.commit(bix.next(r, { status: "active", period: { start: now() } })), yesLabel: "Accept" });
+        yes: () => bix.commit(bix.next(r, { status: "active", period: { start: now() } })), yesLabel: "Accept",
+        no: () => bix.commit(bix.next(r, { status: "ended", period: { start: now(), end: now() } })), noLabel: "Decline" });
     const [teams, tasks, needs] = await Promise.all([
       Promise.all(live.map((p) => bix.search("Team", { initiative: `Initiative/${p.id}` }))).then((x) => x.flat()),
       Promise.all(live.map((p) => bix.search("Task", { partOf: `Initiative/${p.id}` }))).then((x) => x.flat()),

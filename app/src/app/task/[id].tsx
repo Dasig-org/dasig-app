@@ -128,6 +128,14 @@ export default function Task() {
   else if (task.status === "ready") actions = <Buttons><Primary label="I'll take it" busy={busy} onPress={() => run(act.claim(task, me))} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
   else if (task.status === "requested" && mine) actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.claim(task, me))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if ((task.status === "accepted" || task.status === "in-progress") && (mine || isLead)) actions = <Buttons><Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
+  // Reopen (BIX 2026-11-12): a lead brings back done, failed or cancelled work. The earlier completion and its proof
+  // stay in History; it counts again when it's done again.
+  else if (!open && isLead) actions = <Buttons><Outline flex label="Reopen" onPress={() => {
+    const people = parts.some((x: any) => x.status === "active") || task.owner?.reference?.startsWith("Person/");
+    const go = () => run({ ...bix.next(task, { status: task.status !== "cancelled" && people ? "in-progress" : "ready" }), verification: undefined }, "Reopened. It counts again when it's done.");
+    if (Platform.OS === "web") { if (typeof window === "undefined" || window.confirm("Reopen this task?\n\nThe earlier result stays in History. It stops counting until it's done again.")) go(); return; }
+    Alert.alert("Reopen this task?", "The earlier result stays in History. It stops counting until it's done again.", [{ text: "Keep it closed", style: "cancel" }, { text: "Reopen", onPress: go }]);
+  }} /></Buttons>;
   else if ((task.status === "accepted" || task.status === "in-progress") && !onIt) actions = <Buttons><Outline flex label="I'll help" onPress={() => run(act.helpOut(task, me))} /></Buttons>;
   else if (task.status === "draft" && isLead) actions = <Buttons><Primary label="Accept this idea" onPress={() => run(act.accept(task))} /></Buttons>;
 

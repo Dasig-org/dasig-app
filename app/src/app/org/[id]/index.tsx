@@ -1,3 +1,4 @@
+import { PlaceField, placeExtensions, type PlaceValue } from "@/ui/PlaceField";
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Image, Platform, Pressable, Text, View } from "react-native";
@@ -37,7 +38,10 @@ export default function Org() {
   const { data: storage } = useLoad(async () => (s.connection?.kind === "ecosystem" ? bix.storage(id).catch(() => null) : null), [id]);
   useEffect(() => { if (data?.org.image) fileUri(data.org.image).then(setLogoUri).catch(() => {}); }, [data?.org.image?.hash]);
   const [name, setName] = useState(""); const [about, setAbout] = useState("");
-  useEffect(() => { if (data) { setName(data.org.name); setAbout(data.org.description ?? ""); } }, [data?.org.meta.version]);
+  const [placeV, setPlaceV] = useState<PlaceValue>({ text: "" }); const [causes, setCauses] = useState<string[]>([]);
+  useEffect(() => { if (data) { const ex = (data.org.extension ?? []) as { url: string; value: string }[];
+    setName(data.org.name); setAbout(data.org.description ?? ""); setCauses((data.org.cause ?? []).map((x: any) => x.code));
+    setPlaceV({ text: ex.find((x) => x.url === "bayanihan:place-text")?.value ?? "", code: ex.find((x) => x.url === "bayanihan:psgc")?.value }); } }, [data?.org.meta.version]);
   if (!data) return <Screen back><Skeleton /></Screen>;
   const { org, roles, requests, projects, contacts } = data;
   const place = (org.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value as string | undefined;
@@ -55,7 +59,18 @@ export default function Org() {
       {editing ? <>
         <Field label="Name" value={name} onChangeText={setName} />
         <Field label="What you do" value={about} onChangeText={setAbout} multiline />
-        <Buttons><Primary label="Save" onPress={() => save({ name: name.trim(), description: about.trim() || undefined })} /><Outline label="Cancel" onPress={() => setEditing(false)} /></Buttons>
+        <PlaceField label="Where" value={placeV} onChange={setPlaceV} placeholder="e.g. Lapu-Lapu City, Cebu" />
+        <Eyebrow>Causes</Eyebrow>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {CAUSES.map((x) => { const on = causes.includes(x.code); return <Pressable key={x.code} onPress={() => setCauses(on ? causes.filter((y) => y !== x.code) : [...causes, x.code])} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
+            style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 999, backgroundColor: on ? c.accent : c.white, justifyContent: "center" }}><Text style={{ fontWeight: "600", color: on ? c.white : c.ink }}>{x.label}</Text></Pressable>; })}
+        </View>
+        <Buttons><Primary label="Save" onPress={() => {
+          // Keep every other extension (setup checklist state, etc.); replace only the place ones.
+          const other = ((org.extension ?? []) as { url: string }[]).filter((x) => x.url !== "bayanihan:place-text" && x.url !== "bayanihan:psgc");
+          const ext = [...other, ...(placeV.text.trim() ? placeExtensions(placeV) : [])];
+          save({ name: name.trim(), description: about.trim() || undefined, cause: causes.map((code) => ({ system: "bayanihan:cause", code, display: CAUSES.find((x) => x.code === code)?.label })), extension: ext.length ? ext : undefined });
+        }} /><Outline label="Cancel" onPress={() => setEditing(false)} /></Buttons>
       </> : <>
         {/* About (UX_GAPS A4): what the group does, where, its causes, and who to contact. Task and project pages link here. */}
         <Eyebrow>About</Eyebrow>

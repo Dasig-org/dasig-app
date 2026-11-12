@@ -10,7 +10,7 @@ import { pairUrl } from "@/lib/pairing";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { teamIcon } from "@/lib/work";
-import { Avatar, Buttons, Check, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, Title } from "@/ui/kit";
+import { Avatar, Buttons, LinkText, Check, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, Title } from "@/ui/kit";
 import { InviteOptions, linkOpts, type InviteOpts } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
 
@@ -78,7 +78,8 @@ export default function People({ orgId }: { orgId?: string } = {}) {
       {msg ? <Notice>{msg}</Notice> : null}
       {requests.length && manage ? <><Eyebrow right={`${requests.length}`}>Asking to join</Eyebrow><Panel>
         {requests.map((r, i) => <Row key={r.id} left={<Avatar name={name(r)} photo={data?.people[r.person.reference]?.photo} />} title={name(r)} meta="Wants to join as a volunteer" last={i === requests.length - 1}
-          right={<View style={{ flexDirection: "row", gap: 6 }}><Outline label="Accept" onPress={() => act(() => bix.commit(bix.next(r, { status: "active", period: { start: now() } })))} /></View>} />)}
+          right={<View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}><LinkText onPress={() => act(() => bix.commit(bix.next(r, { status: "ended", period: { start: now(), end: now() } })))}>Decline</LinkText>
+            <Outline label="Accept" onPress={() => act(() => bix.commit(bix.next(r, { status: "active", period: { start: now() } })))} /></View>} />)}
       </Panel></> : null}
       {/* BIX "Core team and volunteers": two kinds of people, though everyone here volunteers. */}
       {list("Core team", [...byRole(["officer"]), ...byRole(["core-member"]), ...byRole(["member"])])}
