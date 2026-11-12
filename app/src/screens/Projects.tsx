@@ -6,11 +6,11 @@ import { ContextPill } from "@/ui/Context";
 import { Eyebrow, IconCircle, Notice, Panel, Row, Screen, Title } from "@/ui/kit";
 import { View } from "react-native";
 
-export default function Projects() {
+export default function Projects({ tab }: { tab?: boolean } = {}) {
   const s = useSession();
   const { data, error } = useLoad(async () => (s.current ? bix.search("Initiative", { organization: `Organization/${s.current.id}` }) : s.person ? bix.search("Initiative", { person: `Person/${s.person.id}` }) : []), [s.current?.id]);
   return (
-    <Screen back>
+    <Screen back={!tab}>
       <ContextPill /><View style={{ height: 14 }} />
       <Title>Projects</Title>
       {error ? <Notice>{error}</Notice> : null}

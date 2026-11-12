@@ -53,6 +53,7 @@ export default function Story() {
       <Panel>
         <Row left={<IconCircle name="pen" />} title="Your profile" meta="Name, photo, skills, credit name" onPress={() => router.push("/profile" as never)} />
         <Row left={<IconCircle name="download" />} title="Your data" meta="Download, choose what shows, delete" onPress={() => router.push("/your-data" as never)} />
+        <Row left={<IconCircle name="swap" />} title="Your bar" meta="Choose what's on the bottom bar" onPress={() => router.push("/your-bar" as never)} />
         <Row left={<IconCircle name="lock" />} title="What you've agreed to" onPress={() => router.push("/consent" as never)} last />
       </Panel>
       {/* Account: who you're signed in as, how you get back in, sign out (docs/auth/DASIG_ACCOUNTS.md). */}

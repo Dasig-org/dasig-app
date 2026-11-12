@@ -106,7 +106,7 @@ export function CoordinatorHome() {
   return (
     <Screen onRefresh={reload}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill />
-        <RoundButton icon="plus" label="New event" onPress={() => router.push("/new-project")} /></View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Your story and settings" onPress={() => router.push("/story")}><Avatar name={personName(s.person)} size={40} photo={s.person?.photo} /></Pressable></View>
       <Text style={[t.title, { marginTop: 14 }]}>{`Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}, ${personName(s.person).split(/\s+/)[0]}`}</Text>
       <Text style={t.body}>{event ? (event.period?.start ? `${event.title} ${Date.parse(event.period.start) < new Date().setHours(0, 0, 0, 0) ? "was" : "is"} ${inDays(event.period.start)}.` : `${event.title} has no date yet.`) : "Plan your next event."}</Text>
       {error ? <Notice>{error}</Notice> : null}

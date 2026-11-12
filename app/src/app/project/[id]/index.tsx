@@ -1,3 +1,4 @@
+import { AddSheet } from "@/ui/AddSheet";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Image, Platform, Pressable, Share, Text, View } from "react-native";
@@ -17,6 +18,7 @@ import { c, type as t } from "@/ui/theme";
 
 /** The project page (sketch: running-sketches #1, page anatomy §1b). */
 export default function Project() {
+  const [addOpen, setAddOpen] = useState(false);
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useSession();
   const [msg, setMsg] = useState<string | null>(null);
@@ -63,7 +65,9 @@ export default function Project() {
   };
   const removeFile = (a: any) => run(bix.next(p, { attachment: (p.attachment ?? []).filter((x: any) => x.hash !== a.hash) }), "File removed.");
   return (
-    <Screen onRefresh={reload} back right={can.edit ? <RoundButton icon="pen" label="Edit project" onPress={edit} /> : undefined}>
+    <Screen onRefresh={reload} back right={<View style={{ flexDirection: "row", gap: 8 }}>{can.edit ? <RoundButton icon="pen" label="Edit project" onPress={edit} /> : null}
+      {lead ? <RoundButton icon="plus" label="Add" onPress={() => setAddOpen(true)} /> : null}</View>}>
+      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} ctx={{ kind: "project", project: p, lead }} />
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>{logo ? <Image source={{ uri: logo }} style={{ width: 56, height: 56, borderRadius: 16 }} /> : <IconCircle name="flag" size={56} tone="white" />}
         <View style={{ flex: 1 }}><Text style={[t.title, { fontSize: 24 }]}>{p.title}</Text>
           <Meta>{[p.period?.start ? short(p.period.start) : null, placeOf(p), p.status === "completed" ? "Done" : p.status === "cancelled" ? "Cancelled" : null].filter(Boolean).join(" · ")}</Meta></View></View>

@@ -1,3 +1,4 @@
+import { AddSheet } from "@/ui/AddSheet";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { parseDate, quick, short } from "@/lib/dates";
@@ -12,7 +13,7 @@ import { useLoad } from "@/lib/use";
 import { act, peopleFor, personName, placeOf, places, stateLabel } from "@/lib/work";
 import { Logo } from "@/ui/Context";
 import { History } from "@/ui/History";
-import { Body, Buttons, Chips, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton} from "@/ui/kit";
+import { Body, Buttons, Chips, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton, RoundButton } from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { atMost, visibilityOf } from "@/ui/Privacy";
 import { c, radius, type as t } from "@/ui/theme";
@@ -37,6 +38,8 @@ export default function Task() {
   const [finishing, setFinishing] = useState(false);
   const [given, setGiven] = useState("");
   const [word, setWord] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [stepFocus, setStepFocus] = useState(0);
   useEffect(() => onSynced(() => setMsg(null)), []);
   const { data, error, reload } = useLoad(async () => {
     const task = await bix.get("Task", id);
@@ -129,7 +132,8 @@ export default function Task() {
   else if (task.status === "draft" && isLead) actions = <Buttons><Primary label="Accept this idea" onPress={() => run(act.accept(task))} /></Buttons>;
 
   return (
-    <Screen back>
+    <Screen back right={(onIt || isLead) && task.status !== "completed" ? <RoundButton icon="plus" label="Add" onPress={() => setAddOpen(true)} /> : undefined}>
+      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} ctx={{ kind: "task", task, lead: isLead, onIt, on: (w) => { if (w === "step") setStepFocus((n) => n + 1); else if (w === "photo") setAdding(true); else if (w === "ask") setAsking(true); else setTuning(true); } }} />
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={task.status === "completed" ? "check" : "pen"} size={56} tone="white" />
         <View style={{ flex: 1 }}><Meta>{team?.name ?? ""}</Meta><Text style={[t.title, { fontSize: 24 }]}>{task.title}</Text></View></View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}><Pill tone={sl.tone}>{sl.label}</Pill>{task.due ? <Pill tone="ok">{`Due ${short(task.due)}`}</Pill> : null}{estH ? <Pill tone="ok">{`About ${hrs(estH)}`}</Pill> : null}{task.milestone ? <Pill tone="ok">Gate</Pill> : null}{task.goodFirstStep ? <Pill tone="ok">Good first step</Pill> : null}</View>
@@ -160,7 +164,7 @@ export default function Task() {
       <Eyebrow right={(task.checklist ?? []).length ? `${(task.checklist ?? []).filter((x: any) => x.done).length} of ${(task.checklist ?? []).length}` : undefined}>Smaller steps</Eyebrow>
       <Panel>
         {(task.checklist ?? []).map((x: any, i: number) => <Row key={i} left={<Check on={!!x.done} onPress={onIt || isLead ? () => run(act.toggle(task, i, me)) : undefined} />} title={x.text} />)}
-        {(onIt || isLead) && task.status !== "completed" ? <View style={{ paddingVertical: 8 }}><Field value={item} onChangeText={setItem} placeholder="Break this into smaller steps" style={{ backgroundColor: c.wash }}
+        {(onIt || isLead) && task.status !== "completed" ? <View style={{ paddingVertical: 8 }}><Field key={`step${stepFocus}`} autoFocus={stepFocus > 0} value={item} onChangeText={setItem} placeholder="Break this into smaller steps" style={{ backgroundColor: c.wash }}
           onSubmitEditing={() => { if (item.trim()) { run(bix.next(task, { checklist: [...(task.checklist ?? []), { text: item.trim(), done: false }] })); setItem(""); } }} returnKeyType="done" /></View>
           : (task.checklist ?? []).length ? null : <Row title="No smaller steps yet" meta="The lead can break this down" last />}
       </Panel>

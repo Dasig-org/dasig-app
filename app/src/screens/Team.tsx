@@ -1,3 +1,4 @@
+import { AddSheet } from "@/ui/AddSheet";
 import { short } from "@/lib/dates";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
@@ -21,6 +22,7 @@ import { c, type as t } from "@/ui/theme";
  * "people": lead, members, volunteers and the invite.
  */
 export default function Team({ view = "work" }: { view?: "work" | "people" }) {
+  const [addOpen, setAddOpen] = useState(false);
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useSession();
   const me = s.person ? `Person/${s.person.id}` : "";
@@ -125,7 +127,8 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
       {lead ? <Meta>{"\nTick to keep this team's work to itself, or to let its volunteers see the whole project."}</Meta> : null}
   </>);
   return (
-    <Screen onRefresh={reload} back right={<RoundButton icon="userplus" label="Invite people" onPress={() => makeInvite()} />}
+    <Screen onRefresh={reload} back right={<View style={{ flexDirection: "row", gap: 8 }}><RoundButton icon="userplus" label="Invite people" onPress={() => makeInvite()} />
+      {lead ? <RoundButton icon="plus" label="Add" onPress={() => setAddOpen(true)} /> : null}</View>}
       dock={view === "work" ? <Field value={title} onChangeText={setTitle} placeholder={lead ? "Add something to do" : "Suggest something to do"} onSubmitEditing={add} submitBehavior="submit" returnKeyType="done" /> : undefined}>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={teamIcon(team.name)} size={56} tone="white" />
         <View style={{ flex: 1 }}><Meta>{view === "people" ? "People" : leadsIt ? "You lead it" : s.isLead ? "Your group's team" : "Team"}</Meta><Text style={[t.title, { fontSize: 24 }]}>{team.name}</Text></View></View>

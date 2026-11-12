@@ -19,8 +19,9 @@ const VOLUNTEER_ROLES = [{ value: "volunteer-regular", label: "Regular volunteer
 const ROLES = [...CORE_ROLES, ...VOLUNTEER_ROLES] as const;
 
 /** People: everyone in the group, their role and position; invite, add by nickname, approve requests, change roles, add to teams. */
-export default function People() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function People({ orgId }: { orgId?: string } = {}) {
+  const params = useLocalSearchParams<{ id: string }>();
+  const id = orgId ?? params.id;
   const s = useSession();
   const [msg, setMsg] = useState<string | null>(null);
   const [inviting, setInviting] = useState<{ text: string; qr?: string } | null>(null);
@@ -67,7 +68,7 @@ export default function People() {
   </Panel></> : null;
 
   return (
-    <Screen onRefresh={reload} back>
+    <Screen onRefresh={reload} back={!orgId}>
       <Title sub={s.current?.name}>People</Title>
       <Tip id="people" title="Core team and volunteers">The core team runs the group. Volunteers help with parts of it and see their own teams' work.</Tip>
       {manage ? <Buttons><Primary label="Invite people" onPress={() => invite()} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}
