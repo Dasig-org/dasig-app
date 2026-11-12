@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { Image, Platform, Pressable, ScrollView, Text, View } from "react-native";
-import { dasigLinked } from "@/lib/dasig-account";
+import { useAccount } from "@/lib/account";
 import { networkUrl } from "@/lib/env";
 import { useSession } from "@/lib/session";
 import { personName, skillsOf } from "@/lib/work";
@@ -39,14 +39,14 @@ type Listed = { id: string; name?: string; title?: string; image?: { hash?: stri
 
 export function ZeroHome() {
   const s = useSession();
-  const [linked, setLinked] = useState(false);
+  const acct = useAccount();
+  const linked = acct.loaded && !acct.guest;
   const [found, setFound] = useState<{ groups: Listed[]; projects: Listed[] } | null>(null);
-  useEffect(() => { dasigLinked().then(setLinked).catch(() => {}); }, []);
   useEffect(() => { fetch(`${networkUrl}/$directory?count=12`).then((r) => r.json()).then(setFound).catch(() => setFound(null)); }, []);
   const p = s.person;
   const skills = skillsOf(p);
   const steps = [
-    { done: linked || Platform.OS !== "web", title: "Keep your account", meta: "Sign in on any phone or browser", go: "/story" },
+    { done: linked, title: "Keep your work", meta: "Add Google, email or Dasig.org to get back in anywhere", go: "/account?add=1" },
     { done: !!p?.photo, title: "Add a photo", meta: "So your group knows who's coming", go: "/profile" },
     { done: skills.length > 0, title: "What you can help with", meta: "Writing, driving, first aid…", go: "/profile" },
     { done: s.groups.length > 0, title: "Join or start a group", meta: "Where the work happens", go: "/nearby" },

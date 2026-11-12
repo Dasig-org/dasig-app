@@ -86,7 +86,7 @@ export default function Org() {
       </>}
       {msg ? <Notice>{msg}</Notice> : null}
       <Eyebrow>Your group's home</Eyebrow>
-      <Panel><Row left={<IconCircle name={where.icon} />} last={!(officer && networkOpen && s.connection?.kind !== "ecosystem")} title={where.text} meta={s.connection?.kind === "ecosystem" ? "On the Bayanihan Network" : networkOpen ? "Connect to the Bayanihan Network to work from anywhere" : "Bayanihan Network: coming in 2027"} onPress={() => router.push("/network" as never)} />
+      <Panel><Row left={<IconCircle name={where.icon} />} last={!(officer && networkOpen && s.connection?.kind !== "ecosystem")} title={where.text} meta={s.connection?.kind === "ecosystem" ? "Saved on the Bayanihan Network" : networkOpen ? "On your phones. Copy it to the Bayanihan Network to work from anywhere" : "On your phones"} onPress={() => router.push("/network" as never)} />
         {officer && networkOpen && s.connection?.kind !== "ecosystem" ? <Row left={<IconCircle name="cloud" />} title="Copy this group to the Bayanihan Network" meta="Work from anywhere; this phone keeps its copy" onPress={() => setCopying(true)} last /> : null}</Panel>
       <CopyToEcosystem org={org} open={copying} onClose={() => { setCopying(false); reload(); }} />
       <Eyebrow right={`${roles.length}`}>People</Eyebrow>

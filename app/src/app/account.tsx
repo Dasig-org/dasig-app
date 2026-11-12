@@ -5,7 +5,7 @@ import { useAccount } from "@/lib/account";
 import { dasigAccountAvailable, startDasigSignIn } from "@/lib/dasig-account";
 import { useSession } from "@/lib/session";
 import { linkGoogle, METHOD_LABEL, removeMethod, signOutDevice } from "@/lib/signin";
-import { Buttons, Eyebrow, LinkText, Notice, Outline, Panel, Primary, Row, Sand, Screen, Sheet, Skeleton, Title } from "@/ui/kit";
+import { Buttons, Eyebrow, IconCircle, LinkText, Notice, Outline, Panel, Primary, Row, Sand, Screen, Sheet, Skeleton, Title } from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { MethodIcon } from "@/ui/SignIn";
 import { SignInMethods } from "@/ui/SignInMethods";
@@ -63,7 +63,7 @@ export default function AccountScreen() {
       {!a.guest ? <Pressable accessibilityRole="button" onPress={() => setAdding(true)} style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, marginTop: 10, borderRadius: radius.panel, backgroundColor: c.sand }}>
         <Icon name="plus" size={22} color={c.accent} /><Text style={[t.row, { fontSize: 14 }]}>Add a way to sign in</Text></Pressable> : null}
       {devices.length ? <><Eyebrow>Signed in on</Eyebrow>
-        <Panel>{devices.map((d, i) => <Row key={d.id} left={<MethodIcon via={d.via ?? "nickname"} size={40} />} title={d.current ? `${d.name ?? "This device"} · this one` : d.name ?? "A phone or browser"}
+        <Panel>{devices.map((d, i) => <Row key={d.id} left={<IconCircle name={/android|iphone|ipad|phone/i.test(d.name ?? "") ? "phone" : "laptop"} />} title={d.current ? `${d.name ?? "This device"} · this one` : d.name ?? "A phone or browser"}
           meta={`${d.via ? `${METHOD_LABEL[d.via] ?? d.via} · ` : ""}since ${since(d.since)}`} last={i === devices.length - 1}
           right={d.current ? undefined : <LinkText onPress={() => run(() => signOutDevice(d.id), "Signed out there.")}>Sign out</LinkText>} />)}</Panel></> : null}
       <Buttons><Outline flex label="Sign out" onPress={() => setLeaving(true)} /></Buttons>

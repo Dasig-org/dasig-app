@@ -1,3 +1,4 @@
+import { networkUrl } from "@/lib/env";
 import { router } from "expo-router";
 import { Image, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
@@ -5,7 +6,6 @@ import { short } from "@/lib/dates";
 import { appUrl } from "@/lib/env";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
-import { dasigAccountAvailable, dasigLinked, startDasigSignIn } from "@/lib/dasig-account";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, personName, places, teamIcon } from "@/lib/work";
@@ -54,12 +54,19 @@ async function load(me: string, orgId: string | null) {
   return { projects, teams, tasks, people };
 }
 
+const NEAR = require("../../../assets/images/zero/cleanup.jpg");
+
 export default function Home() {
   const s = useSession();
   const me = s.person ? `Person/${s.person.id}` : "";
   const { data, error, reload } = useLoad(() => (me ? load(me, s.current?.id ?? null) : Promise.resolve(null)), [me, s.current?.id]);
-  const [linked, setLinked] = useState(true);
-  useEffect(() => { dasigLinked().then(setLinked).catch(() => {}); }, [me]);
+  const led = (data?.teams ?? []).filter((tm: any) => (tm.participant ?? []).some((p: any) => p.person.reference === me && p.role === "lead" && p.status === "active"))
+    .map((team: any) => ({ team, work: (data?.tasks ?? []).filter((x: any) => x.team?.reference === `Team/${team.id}` && ["ready", "requested", "accepted", "in-progress"].includes(x.status) && !x.basedOn)
+      .sort((a: any, b: any) => (a.due ?? "9999").localeCompare(b.due ?? "9999")) }))
+    .filter((x: any) => x.work.length);
+  // Near you (navigation sketch 2): how many groups chose to be found on the network.
+  const [near, setNear] = useState(0);
+  useEffect(() => { fetch(`${networkUrl.replace(/\/$/, "")}/$directory`).then((r) => r.json()).then((d) => setNear((d.groups ?? []).length)).catch(() => {}); }, []);
   // A nickname on the web lives in this browser only: offer a Dasig account once they've joined or taken something.
   const tasks = data?.tasks ?? [];
   const projOf = (x: R) => (data?.projects ?? []).find((y) => `Initiative/${y.id}` === x.partOf?.reference);
@@ -95,6 +102,15 @@ export default function Home() {
       {error ? <Notice>{error}</Notice> : null}
       <InstallGuide />
       <Tip id="volunteer-home" title="Find something to do">Tap “I'm in” to take it.</Tip>
+      {/* A team lead's week (navigation sketch 3): their team's open work first, soonest due. */}
+      {led.map(({ team, work }) => <View key={team.id}>
+        <Eyebrow right={`${work.length}`}>{`${team.name} · you lead`}</Eyebrow>
+        <Panel>
+          {work.slice(0, 4).map((x) => <Row key={x.id} left={<IconCircle name={x.owner?.reference?.startsWith("Person/") ? "check" : "pending"} tone={x.owner?.reference?.startsWith("Person/") ? "sand" : "grey"} />}
+            title={x.title} meta={[x.due ? short(x.due) : null, x.owner?.reference?.startsWith("Person/") ? personName(data?.people[x.owner.reference]) : "nobody yet"].filter(Boolean).join(" · ")} onPress={() => router.push(`/task/${x.id}`)} />)}
+          <Row left={<IconCircle name="users" />} title="Open the team" meta={work.length > 4 ? `and ${work.length - 4} more` : undefined} onPress={() => router.push(`/team/${team.id}` as never)} last />
+        </Panel>
+      </View>)}
       <KeepYourWork />
 
       {asked.map((x) => { const asker = x.requester?.reference ?? (x.note ?? [])[0]?.author?.reference;
@@ -127,7 +143,10 @@ export default function Home() {
         <Meta>{mine.length ? `${mine.length} thing${mine.length === 1 ? "" : "s"} in progress` : done.length ? "Thanked and recorded" : "Every step you take is kept, and it's yours"}</Meta>
         {storyPhotos.length ? <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>{storyPhotos.map((a, i) => <Photo key={a?.hash ?? i} image={a} w={78} h={78} />)}</View> : null}
       </View>
-      <View style={{ marginTop: 14 }}><Panel><Row left={<IconCircle name="pin" />} title="Groups working near you" meta="Find groups and projects to join" onPress={() => router.push("/nearby")} last /></Panel></View>
+      <Eyebrow>Near you</Eyebrow>
+      <Pressable accessibilityRole="button" accessibilityLabel="Groups and projects near you" onPress={() => router.push("/nearby")}>
+        <Photo image={null} w="100%" h={130} r={radius.panel} chip={near ? `${near} group${near === 1 ? "" : "s"} nearby` : "Find groups nearby"} fallback={<Image source={NEAR} style={{ width: "100%", height: 130, borderRadius: radius.panel }} />} />
+      </Pressable>
     </Screen>
   );
 }
