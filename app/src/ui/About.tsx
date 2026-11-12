@@ -61,7 +61,7 @@ export const TOPICS: Record<string, Topic> = {
       { h: "What's in it", rows: [
         { icon: "book", title: "BIX", meta: "The open standard for civic work records" },
         { icon: "check", title: "Bayanihan Core", meta: "The rules engine: lifecycles, permissions, signatures, counting votes" },
-        { icon: "building", title: "Bayanihan Server", meta: "Stores BIX records and runs on a phone, a hub or online, like the Dasig Ecosystem" },
+        { icon: "building", title: "Bayanihan Server", meta: "Stores BIX records and runs on a phone, a hub or online, like the Bayanihan Network" },
       ] },
       { h: "Why open", p: "Records of community work should belong to the volunteers and groups who did it, not to any one company. Open foundations mean a group can keep its history, run its own server, or build its own tools, and still work with everyone else." },
       { h: "Licences", p: "These are the licences we've chosen. They take effect when the code is published with the first release." },
@@ -87,7 +87,7 @@ export const TOPICS: Record<string, Topic> = {
     line: "The app you're using: groups, teams, tasks and the record of who helped, on one phone or many.",
     web: { label: "Get started on bayanihan.dasig.org", path: "/docs" },
     sections: [
-      { h: "Made by Dasig Inc.", p: "Dasig Inc. makes this app and runs the Dasig Ecosystem. It also runs Dasig Fundraising on dasig.org; raising money stays there, and coordinating the work lives here." },
+      { h: "Made by Dasig Inc.", p: "Dasig Inc. makes this app and runs the Bayanihan Network. It also runs Dasig Fundraising on dasig.org; raising money stays there, and coordinating the work lives here." },
       { h: "Open, with a protected name", p: "The app's code is being released as open source. \u201cDasig\u201d and the hands emblem are trademarks of Dasig Inc., the way Firefox is Mozilla's: anyone can use the code, but only Dasig Inc. ships it as Dasig." },
       { h: "Where to read more", rows: [
         { icon: "users", title: "Volunteering with Dasig", meta: "bayanihan.dasig.org/docs/volunteering" },

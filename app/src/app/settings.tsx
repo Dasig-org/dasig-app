@@ -1,62 +1,51 @@
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, Platform, Text, View } from "react-native";
-import { dasigAccountAvailable, dasigLinked, startDasigSignIn } from "@/lib/dasig-account";
-import { bix } from "@/lib/bix";
+import { Pressable, Text, View } from "react-native";
+import { useAccount } from "@/lib/account";
 import { useSession } from "@/lib/session";
-import { personName, shortRef } from "@/lib/work";
-import { Avatar, Body, Buttons, Eyebrow, IconCircle, LinkText, Meta, Notice, Outline, Panel, Primary, Row, Screen, Sheet } from "@/ui/kit";
-import { openSite } from "@/ui/About";
+import { personName } from "@/lib/work";
+import { Avatar, Buttons, Eyebrow, IconCircle, Panel, Primary, Row, Sand, Screen } from "@/ui/kit";
+import { Icon } from "@/ui/Icon";
 import { PushToggle } from "@/ui/PushToggle";
 import { c, radius, type as t } from "@/ui/theme";
 
-/** Settings (from Me): profile, your bar, data and consent, account, where records live, help, About. */
+/*
+ * Settings (design/account-sketches.html 8, 11): who you are and how you signed in, first; then this app, your data,
+ * and the rest. Where records live is under "Working offline", for the few groups that need it.
+ */
 export default function Settings() {
   const s = useSession();
-  const me = s.person ? `Person/${s.person.id}` : "";
-  const [linked, setLinked] = useState(false);
-  useEffect(() => { dasigLinked().then(setLinked).catch(() => {}); }, [me]);
-  const k = s.connection?.kind;
-  const web = Platform.OS === "web";
-  const out = async (then: "start" | "dasig") => { await s.signOut(); if (then === "dasig") await startDasigSignIn("/home").catch(() => {}); else router.replace("/start" as never); };
-  const signOut = () => {
-    const warn = web && !linked ? "You signed in with a nickname only, so you can't get back into this account after signing out. Add your Dasig account first to keep it." : "You can sign back in with your Dasig account.";
-    if (web) { if (typeof window === "undefined" || window.confirm(`Sign out?\n\n${warn}`)) out("start"); return; }
-    Alert.alert("Sign out?", warn, [{ text: "Stay signed in", style: "cancel" }, { text: "Sign out", style: "destructive", onPress: () => out("start") }]);
-  };
+  const a = useAccount();
+  const web = typeof document !== "undefined";
+  const meta = a.how ?? (a.loaded ? `Nickname only · this ${web ? "browser" : "phone"}` : " ");
   return (
     <Screen back>
       <Text style={t.title}>Settings</Text>
-      <Eyebrow>You</Eyebrow>
+      <Pressable accessibilityRole="button" accessibilityLabel="Your account" onPress={() => router.push("/account" as never)}
+        style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, marginTop: 12 }}>
+        <Avatar name={personName(s.person)} photo={s.person?.photo} size={44} />
+        <View style={{ flex: 1 }}><Text style={t.row}>{personName(s.person)}</Text><Text style={[t.meta, { marginTop: 2 }]} numberOfLines={1}>{meta}</Text></View>
+        <Icon name="chevron" size={14} color={c.s400} />
+      </Pressable>
+      {a.guest ? <View style={{ marginTop: 10 }}><Sand><View style={{ flex: 1 }}>
+        <Text style={t.row}>Keep your work</Text>
+        <Text style={[t.meta, { marginTop: 4 }]}>{`Add Google, email or Dasig.org. If you lose this ${web ? "browser" : "phone"}, it's how you get back in.`}</Text>
+        <Buttons><Primary label="Add a way to sign in" onPress={() => router.push("/account?add=1" as never)} /></Buttons>
+      </View></Sand></View> : null}
+      <Eyebrow>This app</Eyebrow>
       <Panel>
-        <Row left={<IconCircle name="pen" />} title="Your profile" meta="Name, photo, skills, credit name" onPress={() => router.push("/profile" as never)} />
-        <Row left={<IconCircle name="download" />} title="Your data" meta="Download, choose what shows, delete" onPress={() => router.push("/your-data" as never)} />
-        <Row left={<IconCircle name="users" />} title="Your groups" meta="Group pages, settings, joining and leaving" onPress={() => router.push("/groups" as never)} />
         <PushToggle />
-        <Row left={<IconCircle name="swap" />} title="Your bar" meta="Choose what's on the bottom bar" onPress={() => router.push("/your-bar" as never)} />
+        <Row left={<IconCircle name="swap" />} title="Your bar" meta="What's on the bottom bar" onPress={() => router.push("/your-bar" as never)} />
+        <Row left={<IconCircle name="users" />} title="Your groups" meta="Pages, settings, joining and leaving" onPress={() => router.push("/groups" as never)} last />
+      </Panel>
+      <Eyebrow>Your data</Eyebrow>
+      <Panel>
+        <Row left={<IconCircle name="download" />} title="Your data" meta="Download, choose what shows, delete" onPress={() => router.push("/your-data" as never)} />
         <Row left={<IconCircle name="lock" />} title="What you've agreed to" onPress={() => router.push("/consent" as never)} last />
       </Panel>
-      {/* Account: who you're signed in as, how you get back in, sign out (docs/auth/DASIG_ACCOUNTS.md). */}
-      <Eyebrow>Account</Eyebrow>
+      <Eyebrow>More</Eyebrow>
       <Panel>
-        <Row left={<IconCircle name={linked ? "check" : "lock"} />} title={linked ? "Your Dasig account" : "Nickname only"}
-          meta={linked ? "Sign in with it on any phone or browser" : web ? "Only on this browser. Add a Dasig account to keep it" : k === "ecosystem" ? "On the Dasig Ecosystem from this phone" : "On this phone"} last={!(dasigAccountAvailable && !linked) && !(k === "ecosystem" || k === "cloud")} />
-        {dasigAccountAvailable && !linked ? <Row left={<IconCircle name="userplus" />} title="Add your Dasig account" meta="Google or an email code, the same account as dasig.org" onPress={() => { startDasigSignIn("/story").catch(() => {}); }} /> : null}
-        {dasigAccountAvailable && (k === "ecosystem" || k === "cloud") ? <Row left={<IconCircle name="swap" />} title="Sign in as someone else" meta="With a different Dasig account" onPress={() => out("dasig")} /> : null}
-        {k === "ecosystem" || k === "cloud" ? <Row left={<IconCircle name="back" />} title="Sign out" onPress={signOut} last /> : null}
-      </Panel>
-      <Eyebrow>Where your records live</Eyebrow>
-      <Panel>
-        <Row left={<IconCircle name={s.connection?.kind === "hub" ? "link" : s.connection?.kind === "cloud" ? "building" : "lock"} />}
-          title={k === "hub" ? "Your group's hub" : k === "ecosystem" ? "The Dasig Ecosystem" : k === "cloud" ? "Online server" : "On this phone"} meta="What needs the internet, and what doesn't" onPress={() => router.push("/network" as never)} />
-        <Row left={<IconCircle name="pending" />} title="Sync" meta="What's waiting to be saved" onPress={() => router.push("/sync" as never)} />
-        {!web && (k === "phone" || k === "hub") ? <Row left={<IconCircle name="cloud" />} title="Use the Dasig Ecosystem" meta="Work from anywhere; iPhone teammates can join" onPress={() => router.push("/network" as never)} /> : null}
-        {s.connection?.kind === "phone" ? <Row left={<IconCircle name="users" />} title="Make this phone your group's hub" meta="Others join over its hotspot" onPress={() => router.push("/hub" as never)} /> : null}
-        {s.connection?.kind === "hub" ? <Row left={<IconCircle name="back" />} title="Use this phone on its own" meta="Your own records stay on this phone" onPress={() => s.useThisPhone()} /> : null}
-        <Row left={<IconCircle name="spark" />} title="How Dasig works" meta="Short guides" onPress={() => router.push("/help" as never)} last />
-      </Panel>
-      <Eyebrow>About</Eyebrow>
-      <Panel>
+        <Row left={<IconCircle name="wifioff" />} title="Working offline" meta={s.connection?.kind === "ecosystem" ? "Saved on the Bayanihan Network" : s.connection?.kind === "hub" ? "Your group's hub" : "On this phone only"} onPress={() => router.push("/offline" as never)} />
+        <Row left={<IconCircle name="spark" />} title="How Dasig works" meta="Short guides" onPress={() => router.push("/help" as never)} />
         <Row left={<IconCircle name="book" />} title="BIX, Bayanihan and Bayani" meta="Open source from Dasig Inc., and why we share it" onPress={() => router.push("/about" as never)} last />
       </Panel>
     </Screen>

@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 
 /**
- * What this build can do (workspace/docs/pwa/PWA_PLAN.md). The web app and the PWA work against the Dasig Ecosystem
+ * What this build can do (workspace/docs/pwa/PWA_PLAN.md). The web app and the PWA work against the Bayanihan Network
  * only: a browser can't host a group, find phones on the network, or reach a hub over plain http from an https page.
  * Screens hide what isn't possible here instead of showing it greyed out.
  */

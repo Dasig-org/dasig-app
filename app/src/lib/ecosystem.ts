@@ -1,9 +1,10 @@
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getConnection, setConnection } from "./connection";
 import { copyKeys, signAs } from "./keys";
 
 /**
- * Joining the Dasig Ecosystem, and staying joined. A phone token stops working after a while (the server sets the age);
+ * Joining the Bayanihan Network, and staying joined. A phone token stops working after a while (the server sets the age);
  * the phone gets a new one by signing a fresh challenge with its own key. No password, no codes.
  */
 const ME = "dasig.ecosystem.person";
@@ -11,13 +12,13 @@ type Me = { id: string; name: unknown; credit?: string; description?: string; pu
 
 export async function joinWithKey(url: string, me: Me): Promise<{ token: string; person: any }> {
   const ch = (await fetch(`${url}/$challenge`).then((r) => r.json()).catch(() => null)) as { challenge?: string; audience?: string } | null;
-  if (!ch?.challenge || !ch.audience) throw new Error("Couldn't reach the Dasig Ecosystem. Check your internet and try again.");
+  if (!ch?.challenge || !ch.audience) throw new Error("Couldn't reach the Bayanihan Network. Check your internet and try again.");
   const person = { resourceType: "Person", id: me.id, meta: { version: 1 }, name: me.name, credit: me.credit ?? "nickname", ...(me.description ? { description: me.description } : {}), publicKey: me.publicKey };
   const res = await fetch(`${url}/$join`, { method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ person, challenge: ch.challenge, proof: await signAs(me.id, ch.challenge, ch.audience, me.publicKey as never) }) }).catch(() => null);
-  if (!res) throw new Error("Couldn't reach the Dasig Ecosystem. Check your internet and try again.");
-  const out = await res.json().catch(() => ({ error: `the Ecosystem didn't answer (${res.status})` }));
-  if (!res.ok) throw new Error(String(out.error ?? "Couldn't join the Dasig Ecosystem."));
+  if (!res) throw new Error("Couldn't reach the Bayanihan Network. Check your internet and try again.");
+  const out = await res.json().catch(() => ({ error: `the Bayanihan Network didn't answer (${res.status})` }));
+  if (!res.ok) throw new Error(String(out.error ?? "Couldn't join the Bayanihan Network."));
   await AsyncStorage.setItem(ME, JSON.stringify(me));
   return out;
 }
@@ -38,7 +39,7 @@ export function renewToken(): Promise<string | null> {
 }
 
 const TOKEN = "dasig.ecosystem.token";
-/** A working Ecosystem token for this person without switching the phone to the Ecosystem. */
+/** A working Ecosystem token for this person without switching the phone to the Bayanihan Network. */
 export async function ecosystemToken(url: string, me: Me): Promise<string> {
   const c = await getConnection();
   if (c.kind === "ecosystem" && c.url === url) return c.token;
@@ -67,27 +68,44 @@ export function filesIn(x: unknown, out = new Map<string, any>()): Map<string, a
 const GOOGLE = "dasig.ecosystem.google";
 export const googleLinked = async () => !!(await AsyncStorage.getItem(GOOGLE));
 /**
- * Sign in with Google on the Ecosystem. Signed in already: links Google to you, so you can get back in later.
+ * Sign in with Google on the Bayanihan Network. Signed in already: links Google to you, so you can get back in later.
  * A new or wiped phone: Google vouches for the person you were, and this phone's key is added to them.
  */
-export async function googleSignIn(url: string, me: Me | null): Promise<{ token: string; person: any }> {
-  const { googleIdToken } = await import("./google");
-  const g = await googleIdToken();
-  if (!g) throw new Error("Google sign-in was cancelled.");
+/**
+ * Sign in to the network with a proven sign-in method (Google, email code, Dasig.org): `path` is the server's route and
+ * `extra` what it needs (an ID token, or an email and code). A phone that already has a Person proves its key, so the
+ * server keeps that Person; with `link`, the method joins the account that's signed in and nothing else changes.
+ */
+export async function networkSignIn(url: string, me: Me | null, path: string, extra: Record<string, unknown>, link = false): Promise<{ token?: string; person?: any; via?: string; linked?: boolean }> {
   const c = await getConnection();
   const headers: Record<string, string> = { "content-type": "application/json", ...(c.kind === "ecosystem" && c.url === url ? { authorization: `Bearer ${c.token}` } : {}) };
-  let body: Record<string, unknown> = { idToken: g.idToken };
-  if (me) {
+  let body: Record<string, unknown> = { ...extra, ...(link ? { link: true } : {}), deviceName: deviceLabel() };
+  if (me && !link) {
     const ch = (await fetch(`${url}/$challenge`).then((r) => r.json()).catch(() => null)) as { challenge?: string; audience?: string } | null;
     if (ch?.challenge && ch.audience) body = { ...body, person: { resourceType: "Person", id: me.id, meta: { version: 1 }, name: me.name, credit: me.credit ?? "nickname", publicKey: me.publicKey },
       challenge: ch.challenge, proof: await signAs(me.id, ch.challenge, ch.audience, me.publicKey as never) };
   }
-  const res = await fetch(`${url}/$google`, { method: "POST", headers, body: JSON.stringify(body) }).catch(() => null);
-  if (!res) throw new Error("Couldn't reach the Dasig Ecosystem. Check your internet and try again.");
-  const out = await res.json().catch(() => ({ error: `the Ecosystem didn't answer (${res.status})` }));
-  if (!res.ok) throw new Error(String(out.error ?? "Google sign-in didn't work."));
+  const res = await fetch(`${url}${path}`, { method: "POST", headers, body: JSON.stringify(body) }).catch(() => null);
+  if (!res) throw new Error("Couldn't reach the Bayanihan Network. Check your internet and try again.");
+  const out = await res.json().catch(() => ({ error: `the Bayanihan Network didn't answer (${res.status})` }));
+  if (!res.ok) throw new Error(String(out.error ?? "That sign-in didn't work."));
+  if (link) return out;
   if (me && out.person.id !== me.id) await copyKeys(me.id, out.person.id);
   await AsyncStorage.setItem(ME, JSON.stringify({ id: out.person.id, name: out.person.name, credit: out.person.credit, publicKey: (out.person.publicKey ?? []).filter((x: any) => x.status === "active") }));
+  return out;
+}
+/** What Settings shows for this phone or browser in "Signed in on". */
+export function deviceLabel(): string | undefined {
+  if (Platform.OS === "android") return "Android phone";
+  if (Platform.OS === "ios") return "iPhone";
+  return undefined; // the server reads the browser's own description
+}
+
+export async function googleSignIn(url: string, me: Me | null, link = false): Promise<{ token?: string; person?: any }> {
+  const { googleIdToken } = await import("./google");
+  const g = await googleIdToken();
+  if (!g) throw new Error("Google sign-in was cancelled.");
+  const out = await networkSignIn(url, me, "/$google", { idToken: g.idToken }, link);
   await AsyncStorage.setItem(GOOGLE, g.email ?? "linked");
   return out;
 }

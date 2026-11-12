@@ -7,14 +7,14 @@ import { networkUrl } from "./env";
  * - "phone": Bayanihan Server inside this app (standalone, and the hub when hub mode is on)
  * - "hub": another phone's hub, paired by QR
  * - "cloud": an online Bayanihan Server reached through Supabase sign-in (local web development, EXPO_PUBLIC_WEB_CONNECTION=cloud)
- * - "ecosystem": the Dasig Ecosystem (or any hosted Bayanihan Server), joined with this phone's own key
+ * - "ecosystem": the Bayanihan Network (or any hosted Bayanihan Server), joined with this phone's own key
  */
 export type Connection = { kind: "phone"; token?: string } | { kind: "hub"; url: string; token: string; name?: string } | { kind: "cloud" } | { kind: "ecosystem"; url: string; token: string };
 const KEY = "dasig.connection.v1";
 let current: Connection | null = null;
 const listeners = new Set<(c: Connection) => void>();
 
-/** The web app (and the PWA) works against the Dasig Ecosystem: a browser can't host a group or reach a hub (docs/pwa/PWA_PLAN.md). */
+/** The web app (and the PWA) works against the Bayanihan Network: a browser can't host a group or reach a hub (docs/pwa/PWA_PLAN.md). */
 const webDefault = (): Connection => (process.env.EXPO_PUBLIC_WEB_CONNECTION === "cloud" ? { kind: "cloud" } : { kind: "ecosystem", url: networkUrl.replace(/\/$/, ""), token: "" });
 
 export async function getConnection(): Promise<Connection> {

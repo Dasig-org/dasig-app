@@ -31,13 +31,13 @@ export function useWhere(): { icon: IconName; text: string; warn: boolean; detai
   if (kind === "phone") return r.hosting
     ? { icon: "wifi", text: "This phone is the hub", warn: false, detail: "Your group's records are kept on this phone. Paired phones save here." }
     : { icon: "phone", text: "Saved on this phone", warn: false, detail: "Everything is kept on this phone. Nothing needs the internet." };
-  const place = kind === "hub" ? "Hub" : kind === "ecosystem" ? "Ecosystem" : "Online";
+  const place = kind === "hub" ? "Hub" : kind === "ecosystem" ? "Bayanihan Network" : "Online";
   const down = r.lastFail !== null && (r.lastOk === null || r.lastFail > r.lastOk);
   if (down) return { icon: "wifioff", warn: true, text: `${place} not reachable · from ${ago(r.lastOk)}${w}`,
     detail: kind === "hub" ? "Join the hub phone's Wi-Fi or hotspot. What you add is kept here and sent when you're back." : "You're offline. What you add is kept here and sent when you're back." };
   const fresh = r.lastOk !== null && Date.now() - r.lastOk < 120000;
   return { icon: kind === "hub" ? "wifi" : "cloud", warn: !!waiting, text: fresh && !waiting ? `${place} · up to date` : `${place} · updated ${ago(r.lastOk)}${w}`,
-    detail: kind === "hub" ? `Saved on ${(s.connection as { name?: string }).name ?? "your group's hub"} and copied to this phone.` : kind === "ecosystem" ? "Saved on the Dasig Ecosystem, Dasig's online Bayanihan Server, and backed up." : "Saved on the online Bayanihan Server." };
+    detail: kind === "hub" ? `Saved on ${(s.connection as { name?: string }).name ?? "your group's hub"} and copied to this phone.` : kind === "ecosystem" ? "Saved on the Bayanihan Network, the online Bayanihan Server Dasig runs, and backed up." : "Saved on the online Bayanihan Server." };
 }
 
 /** The small "where is this saved" mark at the top of every screen: an icon, with words only when something is wrong. Tap for Sync. */

@@ -11,6 +11,7 @@ import { useLoad } from "@/lib/use";
 import { act, personName, places, teamIcon } from "@/lib/work";
 import { ContextPill, Logo } from "@/ui/Context";
 import { ZeroHome } from "@/ui/ZeroHome";
+import { KeepYourWork } from "@/ui/KeepYourWork";
 import { InstallGuide } from "@/ui/InstallGuide";
 import { CoordinatorHome } from "@/ui/CoordinatorHome";
 import { Buttons, Eyebrow, Faces, Hero, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Tip, usePhoto } from "@/ui/kit";
@@ -60,7 +61,6 @@ export default function Home() {
   const [linked, setLinked] = useState(true);
   useEffect(() => { dasigLinked().then(setLinked).catch(() => {}); }, [me]);
   // A nickname on the web lives in this browser only: offer a Dasig account once they've joined or taken something.
-  const keepAccount = Platform.OS === "web" && dasigAccountAvailable && !linked && s.groups.length > 0;
   const tasks = data?.tasks ?? [];
   const projOf = (x: R) => (data?.projects ?? []).find((y) => `Initiative/${y.id}` === x.partOf?.reference);
   const teamOf = (x: R) => (data?.teams ?? []).find((y) => `Team/${y.id}` === x.team?.reference);
@@ -95,9 +95,7 @@ export default function Home() {
       {error ? <Notice>{error}</Notice> : null}
       <InstallGuide />
       <Tip id="volunteer-home" title="Find something to do">Tap “I'm in” to take it.</Tip>
-      {keepAccount ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="lock" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>Keep your account</Text>
-        <Meta>Add your Dasig account so you can sign in on any phone or browser. Your work stays yours.</Meta>
-        <View style={{ marginTop: 6 }}><LinkText onPress={() => { startDasigSignIn("/home").catch(() => {}); }}>Add a Dasig account</LinkText></View></View></Sand></View> : null}
+      <KeepYourWork />
 
       {asked.map((x) => { const asker = x.requester?.reference ?? (x.note ?? [])[0]?.author?.reference;
         return <View key={x.id}><Eyebrow>{asker && data?.people[asker] ? `${personName(data.people[asker])} asked you` : "Asked of you"}</Eyebrow>

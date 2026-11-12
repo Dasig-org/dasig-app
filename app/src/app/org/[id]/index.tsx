@@ -86,8 +86,8 @@ export default function Org() {
       </>}
       {msg ? <Notice>{msg}</Notice> : null}
       <Eyebrow>Your group's home</Eyebrow>
-      <Panel><Row left={<IconCircle name={where.icon} />} last={!(officer && networkOpen && s.connection?.kind !== "ecosystem")} title={where.text} meta={s.connection?.kind === "ecosystem" ? "On the Dasig Ecosystem" : networkOpen ? "Connect to the Dasig Ecosystem to work from anywhere" : "Dasig Ecosystem: coming in 2027"} onPress={() => router.push("/network" as never)} />
-        {officer && networkOpen && s.connection?.kind !== "ecosystem" ? <Row left={<IconCircle name="cloud" />} title="Copy this group to the Dasig Ecosystem" meta="Work from anywhere; this phone keeps its copy" onPress={() => setCopying(true)} last /> : null}</Panel>
+      <Panel><Row left={<IconCircle name={where.icon} />} last={!(officer && networkOpen && s.connection?.kind !== "ecosystem")} title={where.text} meta={s.connection?.kind === "ecosystem" ? "On the Bayanihan Network" : networkOpen ? "Connect to the Bayanihan Network to work from anywhere" : "Bayanihan Network: coming in 2027"} onPress={() => router.push("/network" as never)} />
+        {officer && networkOpen && s.connection?.kind !== "ecosystem" ? <Row left={<IconCircle name="cloud" />} title="Copy this group to the Bayanihan Network" meta="Work from anywhere; this phone keeps its copy" onPress={() => setCopying(true)} last /> : null}</Panel>
       <CopyToEcosystem org={org} open={copying} onClose={() => { setCopying(false); reload(); }} />
       <Eyebrow right={`${roles.length}`}>People</Eyebrow>
       <Panel>
@@ -100,9 +100,9 @@ export default function Org() {
         <Row left={<IconCircle name="plus" tone="grey" />} title="Start a project" onPress={() => router.push({ pathname: "/new-project", params: { org: id } })} last />
       </Panel>
       {officer ? <><Eyebrow>Settings</Eyebrow><Panel>
-        <Row left={<IconCircle name={VISIBILITY.find((x) => x.value === visibilityOf(org))!.icon} />} title="Who can see this group" meta={label(visibilityOf(org)) + (visibilityOf(org) === "public" && s.connection?.kind !== "ecosystem" ? " · listed once the group is on the Dasig Ecosystem" : "")} onPress={() => setPrivacy(true)} />
+        <Row left={<IconCircle name={VISIBILITY.find((x) => x.value === visibilityOf(org))!.icon} />} title="Who can see this group" meta={label(visibilityOf(org)) + (visibilityOf(org) === "public" && s.connection?.kind !== "ecosystem" ? " · listed once the group is on the Bayanihan Network" : "")} onPress={() => setPrivacy(true)} />
         {storage?.allowance ? (() => { const mb = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)} GB` : `${Math.round(n / 1e6)} MB`); const pct = Math.min(100, (100 * (storage.used ?? 0)) / storage.allowance);
-          return <Row left={<IconCircle name="cloud" />} title="Storage on the Dasig Ecosystem" meta={`${mb(storage.used ?? 0)} of ${mb(storage.allowance)}${pct >= 80 ? " · nearly full. Photos already here stay" : " · free for every group"}`}
+          return <Row left={<IconCircle name="cloud" />} title="Storage on the Bayanihan Network" meta={`${mb(storage.used ?? 0)} of ${mb(storage.allowance)}${pct >= 80 ? " · nearly full. Photos already here stay" : " · free for every group"}`}
             right={<View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${pct}%`, height: 8, backgroundColor: c.accent }} /></View>} />; })() : null}
         {setupExt(org).hidden ? <Row left={<IconCircle name="check" />} title="Show the setup checklist" meta="Back on your group's home" onPress={() => save({ extension: withSetup(org, { hidden: false }) })} /> : null}
         <Row left={<IconCircle name="repeat" />} title="Hand over to the next officer" meta="At the end of your term" onPress={() => router.push(`/org/${id}/handover` as never)} />

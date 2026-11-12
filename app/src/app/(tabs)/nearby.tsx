@@ -18,7 +18,7 @@ const placeOf = (r?: R | null) => (r?.extension ?? []).find((x: any) => x.url ==
 const causeWords = (r?: R | null) => (r?.cause ?? []).map((x: any) => CAUSES.find((y) => y.code === x.code)?.label ?? x.code).join(", ");
 
 /**
- * Who's working here: the Dasig Ecosystem's public directory. Only groups and projects that chose to be found,
+ * Who's working here: the Bayanihan Network's public directory. Only groups and projects that chose to be found,
  * and only their summaries: name, place, causes. Never people, tasks or files. Needs internet.
  */
 export default function Nearby() {
@@ -69,7 +69,7 @@ export default function Nearby() {
       {msg ? <Notice>{msg}</Notice> : null}
       {status === "checking" && !found ? <Skeleton /> : null}
       {status === "offline" || status === "down" ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="wifioff" tone="white" />
-        <View style={{ flex: 1 }}><Text style={t.row}>{status === "offline" ? "You're offline" : "Couldn't reach the Dasig Ecosystem"}</Text>
+        <View style={{ flex: 1 }}><Text style={t.row}>{status === "offline" ? "You're offline" : "Couldn't reach the Bayanihan Network"}</Text>
           <Meta>Finding groups needs internet. Your own groups keep working on your phones and hub.</Meta></View></Sand></View> : null}
       {status === "ok" && found && !total && !emptyDirectory ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="pin" tone="white" />
         <View style={{ flex: 1 }}><Text style={t.row}>No one listed yet</Text><Meta>{q.trim() || cause !== "all" ? "Try another cause, word or place." : "Groups appear here when they choose \u201cAnyone can find it\u201d."}</Meta></View></Sand></View> : null}
@@ -119,8 +119,8 @@ export default function Nearby() {
           </View>
           {(open.project?.description ?? open.group?.description) ? <View style={{ marginTop: 12 }}><Body>{open.project?.description ?? open.group?.description}</Body></View> : null}
           <Meta>{["\n" + (placeOf(open.group) ?? ""), causeWords(open.project ?? open.group)].filter((x) => x && x.trim()).join(" · ")}</Meta>
-          {open.group ? <Buttons><Primary label={onEcosystem ? `Ask to join ${open.group.name}` : "Connect to the Ecosystem to ask"} onPress={() => ask(open.group!)} /></Buttons> : null}
-          {!onEcosystem ? <Meta>{"Asking to join needs a Dasig Ecosystem account on this phone. No password; it uses this phone's own key."}</Meta> : null}
+          {open.group ? <Buttons><Primary label={onEcosystem ? `Ask to join ${open.group.name}` : "Connect to the Bayanihan Network to ask"} onPress={() => ask(open.group!)} /></Buttons> : null}
+          {!onEcosystem ? <Meta>{"Asking to join needs a Bayanihan Network account on this phone. No password; it uses this phone's own key."}</Meta> : null}
         </> : null}
       </Sheet>
       {status === "offline" || status === "down" ? <Buttons><Outline flex label="Where your records live" onPress={() => router.push("/network" as never)} /></Buttons> : null}

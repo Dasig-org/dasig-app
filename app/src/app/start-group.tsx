@@ -45,11 +45,11 @@ export default function StartGroup() {
   const next = async () => {
     setChecking(true);
     try {
-      const here = (await bix.similar(name.trim(), place.trim())).map((x) => ({ resource: x.resource, where: s.connection?.kind === "ecosystem" ? "On the Dasig Ecosystem" : "On this phone", onEcosystem: s.connection?.kind === "ecosystem" }));
+      const here = (await bix.similar(name.trim(), place.trim())).map((x) => ({ resource: x.resource, where: s.connection?.kind === "ecosystem" ? "On the Bayanihan Network" : "On this phone", onEcosystem: s.connection?.kind === "ecosystem" }));
       let online: typeof here = [];
       if (s.connection?.kind !== "ecosystem" && networkUrl) {
         const r = await fetch(`${networkUrl}/$similar?${new URLSearchParams({ name: name.trim(), place: place.trim() })}`).then((x) => x.json()).catch(() => ({ entry: [] }));
-        online = (r.entry ?? []).map((x: any) => ({ resource: x.resource, where: "On the Dasig Ecosystem", onEcosystem: true }));
+        online = (r.entry ?? []).map((x: any) => ({ resource: x.resource, where: "On the Bayanihan Network", onEcosystem: true }));
       }
       const all = [...here, ...online].filter((x, i, xs) => xs.findIndex((y) => y.resource.id === x.resource.id) === i);
       if (all.length) setAlikes(all); else setStep(3);

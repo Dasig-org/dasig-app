@@ -5,7 +5,7 @@ import { networkUrl } from "./env";
 
 /**
  * Sign in with a Dasig account (dasig.org) through Supabase's OAuth 2.1 server: authorization code with PKCE, as a public
- * client, then the ID token goes once to the Ecosystem's POST /$oidc. Design: docs/auth/DASIG_ACCOUNTS.md.
+ * client, then the ID token goes once to the Bayanihan Network's POST /$oidc. Design: docs/auth/DASIG_ACCOUNTS.md.
  * Web only for now (a full-page redirect); Android and iOS will use expo-auth-session with the app's own redirect.
  */
 export const DASIG_ISSUER = process.env.EXPO_PUBLIC_DASIG_ISSUER ?? "https://turvwsqyusqixhjhvhhy.supabase.co/auth/v1";
@@ -18,19 +18,19 @@ const random = (n = 32) => b64url(crypto.getRandomValues(new Uint8Array(n)));
 const redirectUri = () => `${window.location.origin}/auth/callback`;
 
 /** Leave for Dasig's sign-in. `then` is where to land afterwards (e.g. an invite link). */
-export async function startDasigSignIn(then = "/") {
+export async function startDasigSignIn(then = "/", link = false) {
   if (!dasigAccountAvailable) throw new Error("Signing in with a Dasig account isn't set up in this version.");
   const verifier = random(48), state = random(16), nonce = random(16);
   const challenge = b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))));
-  await AsyncStorage.setItem(PENDING, JSON.stringify({ verifier, state, nonce, then }));
-  const q = new URLSearchParams({ response_type: "code", client_id: DASIG_CLIENT_ID, redirect_uri: redirectUri(), scope: "openid profile",
+  await AsyncStorage.setItem(PENDING, JSON.stringify({ verifier, state, nonce, then, link }));
+  const q = new URLSearchParams({ response_type: "code", client_id: DASIG_CLIENT_ID, redirect_uri: redirectUri(), scope: "openid profile email",
     state, nonce, code_challenge: challenge, code_challenge_method: "S256" });
   window.location.assign(`${DASIG_ISSUER}/oauth/authorize?${q}`);
 }
 
-/** Back from Dasig: swap the code for an ID token, then sign in to the Ecosystem as that person. Returns where to go. */
+/** Back from Dasig: swap the code for an ID token, then sign in to the Bayanihan Network as that person. Returns where to go. */
 export async function finishDasigSignIn(params: URLSearchParams, proof?: () => Promise<Record<string, unknown>>): Promise<string> {
-  const saved = JSON.parse((await AsyncStorage.getItem(PENDING)) ?? "null") as { verifier: string; state: string; nonce: string; then: string } | null;
+  const saved = JSON.parse((await AsyncStorage.getItem(PENDING)) ?? "null") as { verifier: string; state: string; nonce: string; then: string; link?: boolean } | null;
   await AsyncStorage.removeItem(PENDING);
   if (params.get("error")) throw new Error(params.get("error") === "access_denied" ? "Sign-in was cancelled." : String(params.get("error_description") ?? params.get("error")));
   if (!saved || params.get("state") !== saved.state) throw new Error("That sign-in didn't come from this browser. Try again.");
@@ -41,11 +41,13 @@ export async function finishDasigSignIn(params: URLSearchParams, proof?: () => P
   const c = await getConnection();
   const url = c.kind === "ecosystem" ? c.url : networkUrl.replace(/\/$/, "");
   const headers: Record<string, string> = { "content-type": "application/json", ...(c.kind === "ecosystem" && c.token ? { authorization: `Bearer ${c.token}` } : {}) };
-  const out = await fetch(`${url}/$oidc`, { method: "POST", headers, body: JSON.stringify({ provider: "dasig", idToken: tok.id_token, ...(proof ? await proof().catch(() => ({})) : {}) }) });
-  const body = (await out.json().catch(() => ({}))) as { token?: string; error?: string };
-  if (!out.ok || !body.token) throw new Error(String(body.error ?? "The Dasig Ecosystem didn't accept that sign-in."));
+  const out = await fetch(`${url}/$oidc`, { method: "POST", headers, body: JSON.stringify({ provider: "dasig", idToken: tok.id_token, ...(saved.link ? { link: true } : proof ? await proof().catch(() => ({})) : {}) }) });
+  const body = (await out.json().catch(() => ({}))) as { token?: string; error?: string; linked?: boolean };
+  if (saved.link) { if (!out.ok) throw new Error(String(body.error ?? "Dasig.org couldn't be added. Try again.")); return saved.then || "/account"; }
+  if (!out.ok || !body.token) throw new Error(String(body.error ?? "The Bayanihan Network didn't accept that sign-in."));
   await setConnection({ kind: "ecosystem", url, token: body.token });
   await AsyncStorage.setItem("dasig.account.linked", "dasig");
+  await (await import("./signin")).rememberMethod("dasig");
   return saved.then || "/";
 }
 export const dasigLinked = async () => (await AsyncStorage.getItem("dasig.account.linked")) === "dasig";

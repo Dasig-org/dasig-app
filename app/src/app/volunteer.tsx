@@ -12,7 +12,7 @@ export default function Volunteer() {
       <Panel>
         {can.hub ? <Row left={<IconCircle name="camera" />} title="A coordinator shows you a code" meta="At a meeting or event: join their phone's hotspot, then scan" onPress={() => router.push("/scan" as never)} /> : null}
         <Row left={<IconCircle name="link" />} title="Someone sent you a link" meta="Open it on this phone, or paste it here" onPress={() => router.push("/scan?paste=1" as never)} />
-        <Row left={<IconCircle name="pin" />} title="Find groups near you" meta="Needs internet and the Dasig Ecosystem" onPress={() => router.push("/nearby")} last />
+        <Row left={<IconCircle name="pin" />} title="Find groups near you" meta="Needs internet and the Bayanihan Network" onPress={() => router.push("/nearby")} last />
       </Panel>
       <Tip id="volunteer-what-happens" title="When you join">Take open work with “I'm in”. What you finish goes into your story.</Tip>
       <Eyebrow>Already know a group?</Eyebrow>

@@ -23,12 +23,14 @@ type Session = {
   /** Go back to using this phone's own server. */
   useThisPhone(): Promise<void>;
   /**
-   * Join the Dasig Ecosystem with this phone's own Person and key: the server sends a one-time challenge, the phone
+   * Join the Bayanihan Network with this phone's own Person and key: the server sends a one-time challenge, the phone
    * signs it, and the server issues this phone a token. Records already on the phone stay on the phone.
    */
   joinEcosystem(url?: string): Promise<void>;
-  /** Sign in with Google on the Ecosystem: links Google to you, or brings back the person you were on a new phone. */
+  /** Sign in with Google on the Bayanihan Network: links Google to you, or brings back the person you were on a new phone. */
   googleEcosystem(): Promise<void>;
+  /** Sign in to the Bayanihan Network with a proven method (lib/signin.ts): the route and what it needs. */
+  networkSignIn(path: string, extra: Record<string, unknown>, method: { via: string; email?: string }): Promise<{ created: boolean }>;
   refresh(): Promise<void>;
   signOut(): Promise<void>;
 };
@@ -53,7 +55,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const { withMyKey, keyRotation } = await import("./keys");
       const add = await withMyKey(me);
       if (add) me = (await bix.commitNow(bix.next(me, add)))[0] ?? me;
-      // Rotate an old key on the Ecosystem: publish the new key first, and use it only once the server has it.
+      // Rotate an old key on the Bayanihan Network: publish the new key first, and use it only once the server has it.
       else if (c.kind === "ecosystem") {
         const rot = await keyRotation(me);
         if (rot) { me = (await bix.commitNow(bix.next(me, { publicKey: rot.publicKey })))[0] ?? me; await rot.adopt();
@@ -87,10 +89,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!res.ok) throw new Error(String(out.error));
       await setConnection({ kind: "phone", token: out.token });
     } else if (c.kind === "ecosystem" && !c.token) {
-      // The web app: join the Ecosystem with a nickname. This browser's key is added to the Person on the next refresh.
+      // The web app: join the Bayanihan Network with a nickname. This browser's key is added to the Person on the next refresh.
       const res = await fetch(`${c.url}/$join`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nickname: name }) }).catch(() => null);
-      const out = res ? await res.json().catch(() => ({})) : { error: "the Dasig Ecosystem didn't answer; check your internet" };
-      if (!res || !res.ok) throw new Error(String(out.error ?? "Couldn't join the Dasig Ecosystem"));
+      const out = res ? await res.json().catch(() => ({})) : { error: "the Bayanihan Network didn't answer; check your internet" };
+      if (!res || !res.ok) throw new Error(String(out.error ?? "Couldn't join the Bayanihan Network"));
       await setConnection({ kind: "ecosystem", url: c.url, token: out.token });
     }
     await refresh();
@@ -109,7 +111,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const joinEcosystem = async (target?: string) => {
     const { networkUrl } = await import("./env");
     const url = (target ?? networkUrl).replace(/\/$/, "");
-    if (!url) throw new Error("The Dasig Ecosystem isn't set up in this version of the app.");
+    if (!url) throw new Error("The Bayanihan Network isn't set up in this version of the app.");
     let out: { token: string };
     if (person) {
       const { joinWithKey } = await import("./ecosystem");
@@ -117,7 +119,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       out = await joinWithKey(url, { id: person.id, name: person.name, credit: person.credit, description: person.description, publicKey: (person.publicKey ?? []).filter((x: any) => x.status === "active") });
     } else {
       const res = await fetch(`${url}/$join`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nickname: "Friend" }) }).catch(() => null);
-      if (!res || !res.ok) throw new Error("Couldn't join the Dasig Ecosystem. Check your internet and try again.");
+      if (!res || !res.ok) throw new Error("Couldn't join the Bayanihan Network. Check your internet and try again.");
       out = await res.json();
     }
     const before = await getConnection();
@@ -126,11 +128,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await refresh();
   };
 
+  const meNow = () => (person ? { id: person.id, name: person.name, credit: person.credit, publicKey: (person.publicKey ?? []).filter((x: any) => x.status === "active") } : null);
+  const networkSignIn = async (path: string, extra: Record<string, unknown>, method: { via: string; email?: string }) => {
+    const { networkUrl } = await import("./env");
+    const { networkSignIn: go } = await import("./ecosystem");
+    const out = await go(networkUrl, meNow(), path, extra);
+    if (!out.token) throw new Error("The Bayanihan Network didn't finish the sign-in. Try again.");
+    const before = await getConnection();
+    if (before.kind !== "ecosystem") await AsyncStorage.setItem(BEFORE_KEY, JSON.stringify(before));
+    await setConnection({ kind: "ecosystem", url: networkUrl, token: out.token });
+    await (await import("./signin")).rememberMethod(method.via, method.email);
+    await refresh();
+    return { created: !!(out as { created?: boolean }).created };
+  };
   const googleEcosystem = async () => {
     const { networkUrl } = await import("./env");
     const { googleSignIn } = await import("./ecosystem");
-    const me = person ? { id: person.id, name: person.name, credit: person.credit, publicKey: (person.publicKey ?? []).filter((x: any) => x.status === "active") } : null;
-    const out = await googleSignIn(networkUrl, me);
+    const out = await googleSignIn(networkUrl, meNow());
+    if (!out.token) throw new Error("Google sign-in didn't finish. Try again.");
+    await (await import("./signin")).rememberMethod("google");
     const before = await getConnection();
     if (before.kind !== "ecosystem") await AsyncStorage.setItem(BEFORE_KEY, JSON.stringify(before));
     await setConnection({ kind: "ecosystem", url: networkUrl, token: out.token });
@@ -138,7 +154,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   };
 
   const useThisPhone = async () => {
-    // Leaving the Ecosystem returns to whatever this device used before (its own server, its hub, or the web's server).
+    // Leaving the Bayanihan Network returns to whatever this device used before (its own server, its hub, or the web's server).
     const c = await getConnection();
     const saved = c.kind === "ecosystem" ? await AsyncStorage.getItem(BEFORE_KEY) : null;
     if (saved) { await setConnection(JSON.parse(saved) as Connection); await AsyncStorage.removeItem(BEFORE_KEY); }
@@ -147,7 +163,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   };
   const signOut = async () => {
     const c = await getConnection();
-    // On the Ecosystem, end the session on the server too; the account (Dasig or Google) is how you get back in.
+    // On the Bayanihan Network, end the session on the server too; the account (Dasig or Google) is how you get back in.
     if (c.kind === "ecosystem" && c.token) await fetch(`${c.url}/$signout`, { method: "POST", headers: { authorization: `Bearer ${c.token}` } }).catch(() => {});
     await AsyncStorage.removeItem("dasig.account.linked");
     if (c.kind === "cloud") await (await sb()).auth.signOut();
@@ -159,7 +175,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => { import("./files").then((m) => m.setUploadGroup(current?.id ?? null)).catch(() => {}); }, [current?.id]);
   const profileDone = !!(person?.extension ?? []).find((x: any) => x.url === "bayanihan:profile-done");
   const isLead = !!current && groups.some((g) => g.org.id === current.id && ["officer", "core-member"].includes(g.role.code?.code));
-  return <Ctx.Provider value={{ ready, person, profileDone, isLead, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, joinEcosystem, googleEcosystem, refresh, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ ready, person, profileDone, isLead, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, joinEcosystem, googleEcosystem, networkSignIn, refresh, signOut }}>{children}</Ctx.Provider>;
 }
 
 /** The phone's own token, remembered when switching to a hub, so going back keeps your local records. */

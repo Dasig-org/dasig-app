@@ -8,7 +8,7 @@ const GUIDES: { icon: IconName; q: string; a: string }[] = [
   { icon: "users", q: "How do I bring people in?", a: "Open People and tap Invite. At a meeting, turn on your hotspot and show the code; others scan it in Dasig. Or add someone by name and they can claim their record later." },
   { icon: "flag", q: "How do teams work?", a: "Each project has teams (committees) with a lead. Leads add work, ask people, and accept ideas. Anyone on a team can suggest work." },
   { icon: "building", q: "What's a gate?", a: "Something many tasks wait on, like a venue being approved. Mark it on the task (Others wait on this). Tasks that wait on it can be prepared but not taken until it's done." },
-  { icon: "lock", q: "Does it need internet?", a: "No. Your group's work lives on your phones. One phone can be the hub over its hotspot. Only finding groups nearby and public profiles need the Dasig Ecosystem." },
+  { icon: "lock", q: "Does it need internet?", a: "No. Your group's work lives on your phones. One phone can be the hub over its hotspot. Only finding groups nearby and public profiles need the Bayanihan Network." },
   { icon: "check", q: "What does “recorded and signed” mean?", a: "When work is done, your group's phone signs the record. Anyone can check it hasn't been changed. It goes into the story of everyone who did it." },
   { icon: "download", q: "Can I take my records with me?", a: "Yes. Your story → Your data → Download everything. It's in BIX, an open format any app can read." },
 ];
