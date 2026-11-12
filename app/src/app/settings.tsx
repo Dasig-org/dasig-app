@@ -7,6 +7,7 @@ import { useSession } from "@/lib/session";
 import { personName, shortRef } from "@/lib/work";
 import { Avatar, Body, Buttons, Eyebrow, IconCircle, LinkText, Meta, Notice, Outline, Panel, Primary, Row, Screen, Sheet } from "@/ui/kit";
 import { openSite } from "@/ui/About";
+import { PushToggle } from "@/ui/PushToggle";
 import { c, radius, type as t } from "@/ui/theme";
 
 /** Settings (from Me): profile, your bar, data and consent, account, where records live, help, About. */
@@ -30,6 +31,7 @@ export default function Settings() {
       <Panel>
         <Row left={<IconCircle name="pen" />} title="Your profile" meta="Name, photo, skills, credit name" onPress={() => router.push("/profile" as never)} />
         <Row left={<IconCircle name="download" />} title="Your data" meta="Download, choose what shows, delete" onPress={() => router.push("/your-data" as never)} />
+        <PushToggle />
         <Row left={<IconCircle name="swap" />} title="Your bar" meta="Choose what's on the bottom bar" onPress={() => router.push("/your-bar" as never)} />
         <Row left={<IconCircle name="lock" />} title="What you've agreed to" onPress={() => router.push("/consent" as never)} last />
       </Panel>

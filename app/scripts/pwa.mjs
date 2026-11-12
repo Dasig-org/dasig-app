@@ -35,6 +35,20 @@ self.addEventListener("fetch", (e) => {
   if (u.pathname.startsWith("/_expo/") || u.pathname.startsWith("/assets/") || u.pathname.startsWith("/icons/"))
     e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request).then((r) => { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); return r; })));
 });
+// Push (server: bayanihan push.ts): show it; a tap focuses an open window on that page, or opens one.
+self.addEventListener("push", (e) => {
+  let m = { title: "Dasig", body: "Something needs you.", url: "/inbox" };
+  try { m = { ...m, ...e.data.json() }; } catch {}
+  e.waitUntil(self.registration.showNotification(m.title, { body: m.body, icon: "/icons/icon-192.png", badge: "/icons/icon-192.png", data: { url: m.url }, tag: m.url }));
+});
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || "/inbox";
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ws) => {
+    const w = ws.find((x) => new URL(x.url).origin === location.origin);
+    return w ? w.focus().then(() => w.navigate(url)) : self.clients.openWindow(url);
+  }));
+});
 `);
 
 let html = readFileSync(join(dist, "index.html"), "utf8");

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "98994561757",
+    "project_id": "dasig-notify-50132",
+    "storage_bucket": "dasig-notify-50132.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:98994561757:android:147bb87945970e1ac43134",
+        "android_client_info": {
+          "package_name": "org.dasig.bayanihan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBW5pd-7rvlE1porjSbuG-U9MgL3fL5dg8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

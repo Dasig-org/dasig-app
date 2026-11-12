@@ -2,7 +2,7 @@
   "expo": {
     "name": "Dasig",
     "slug": "dasig",
-    "version": "0.11.1",
+    "version": "0.12.0",
     "orientation": "portrait",
     "icon": "./assets/brand/icon.png",
     "scheme": "dasig",
@@ -22,9 +22,11 @@
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.ACCESS_WIFI_STATE",
         "android.permission.CAMERA",
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.RECORD_AUDIO"
       ],
-      "versionCode": 12
+      "versionCode": 13,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "single",
@@ -56,11 +58,29 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.1071404459109-g0e3ucbmkeg7pfacb09ivffi1s6a6igi"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#F47C26"
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "4ebcb668-3539-4f9b-91f2-03a95aa7c870"
+      }
+    },
+    "owner": "dasigorg"
   }
 }

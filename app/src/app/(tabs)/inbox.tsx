@@ -6,6 +6,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { Avatar, IconCircle, LinkText, Meta, Notice, Outline, Panel, Row, Screen, Skeleton, Title } from "@/ui/kit";
 import type { IconName } from "@/ui/Icon";
+import { PushToggle } from "@/ui/PushToggle";
 import { type as t } from "@/ui/theme";
 
 const ICON: Record<Item["kind"], IconName> = { ask: "pen", join: "userplus", "team-join": "users", unanswered: "pending", idea: "spark", offer: "heart", report: "receipt" };
@@ -22,6 +23,7 @@ export default function Inbox() {
     <Screen onRefresh={reload}>
       <Title sub={data ? (data.length ? `${data.length} thing${data.length === 1 ? "" : "s"} for you, from all your groups` : "From all your groups") : undefined}>Inbox</Title>
       {error ? <Notice>{error}</Notice> : null}{msg ? <Notice>{msg}</Notice> : null}
+      <PushToggle card />
       {!data ? <Skeleton /> : !data.length ? <View style={{ marginTop: 12 }}><Panel><Row left={<IconCircle name="check" />} title="Nothing needs you right now"
         meta={s.groups.length ? "Asks, people asking to join, offers and reports will show here." : "When a group asks you something, it shows here."} last /></Panel></View>
         : <Panel>{data.map((x, i) => <Row key={x.id} last={i === data.length - 1} title={x.title} meta={x.meta}
