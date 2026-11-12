@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
-import { Text, View } from "react-native";
+import { Platform, Text, View } from "react-native";
 import { finishDasigSignIn } from "@/lib/dasig-account";
 import { useSession } from "@/lib/session";
 import { Buttons, Notice, Primary, Screen, Skeleton } from "@/ui/kit";
@@ -11,6 +11,8 @@ export default function AuthCallback() {
   const s = useSession();
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
+    // On Android the sign-in tab hands the result straight back to the screen that opened it; nothing to do here.
+    if (Platform.OS !== "web") { router.replace("/" as never); return; }
     if (typeof window === "undefined") return;
     finishDasigSignIn(new URLSearchParams(window.location.search))
       .then(async (then) => { await s.refresh(); router.replace(then as never); })

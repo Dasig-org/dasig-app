@@ -26,7 +26,12 @@ export function SignInMethods({ then = "/", onNickname }: { then?: string; onNic
   }, []);
   const run = async (via: string, f: () => Promise<unknown>) => { setBusy(via); setErr(null); try { await f(); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(null); } };
   const google = () => run("google", async () => { if (Platform.OS === "web") await startGoogleWeb(then); else { await s.googleEcosystem(); router.replace(then as never); } });
-  const dasig = () => run("dasig", () => startDasigSignIn(then));
+  const dasig = () => run("dasig", async () => {
+    if (Platform.OS === "web") return startDasigSignIn(then);
+    const { dasigIdTokenNative } = await import("@/lib/dasig-account");
+    const r = await s.networkSignIn("/$oidc", { provider: "dasig", idToken: await dasigIdTokenNative() }, { via: "dasig" });
+    router.replace((r.created ? `/profile?first=1&via=dasig&then=${encodeURIComponent(then)}` : then) as never);
+  });
   const email = () => router.push({ pathname: "/signin-email", params: { then } } as never);
   if (!offers) return <View style={{ height: 180 }} />;
   const list = [

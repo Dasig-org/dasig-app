@@ -45,7 +45,11 @@ export default function AccountScreen() {
   const addable = [
     can.google ? { via: "google", title: "Google", meta: has("google") ? "Already added" : "Your Google account", go: () => linkGoogle() } : null,
     can.email ? { via: "email", title: "Email", meta: "A code each time", go: async () => { router.push("/signin-email?link=1" as never); } } : null,
-    can.dasig && dasigAccountAvailable ? { via: "dasig", title: "Dasig.org", meta: has("dasig") ? "Already added" : "Your dasig.org account", go: () => startDasigSignIn("/account", true) } : null,
+    can.dasig && dasigAccountAvailable ? { via: "dasig", title: "Dasig.org", meta: has("dasig") ? "Already added" : "Your dasig.org account", go: async () => {
+      if (Platform.OS === "web") return startDasigSignIn("/account", true);
+      const [{ dasigIdTokenNative }, { networkSignIn }, { networkUrl }] = await Promise.all([import("@/lib/dasig-account"), import("@/lib/ecosystem"), import("@/lib/env")]);
+      await networkSignIn(networkUrl.replace(/\/$/, ""), null, "/$oidc", { provider: "dasig", idToken: await dasigIdTokenNative() }, true);
+    } } : null,
   ].filter(Boolean) as { via: string; title: string; meta: string; go: () => Promise<unknown> }[];
   const backIn = methods.map((m) => `${METHOD_LABEL[m.provider] ?? m.provider}${m.email ? ` (${m.email})` : ""}`).join(" or ");
   return (
@@ -73,7 +77,7 @@ export default function AccountScreen() {
         <Text style={[t.meta, { marginTop: 4, marginBottom: 10 }]}>It joins this account. Your groups and story stay the same.</Text>
         <Panel style={{ backgroundColor: c.wash }}>{addable.map((m, i) => <Row key={m.via} left={<MethodIcon via={m.via} size={40} />} title={m.title} meta={m.meta} last={i === addable.length - 1}
           right={has(m.via) && m.via !== "email" ? <Icon name="check" color={c.accent} /> : undefined}
-          onPress={has(m.via) && m.via !== "email" ? undefined : () => { setAdding(false); run(m.go, m.via === "google" && !web ? "Google added." : undefined); }} />)}</Panel>
+          onPress={has(m.via) && m.via !== "email" ? undefined : () => { setAdding(false); run(m.go, !web && m.via !== "email" ? `${m.title} added.` : undefined); }} />)}</Panel>
         <Text style={[t.meta, { marginTop: 10, marginLeft: 4 }]}>Apple and Facebook are coming.</Text>
       </Sheet>
       <Sheet open={leaving} onClose={() => setLeaving(false)}>
