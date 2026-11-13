@@ -44,7 +44,7 @@ export async function loadInbox(me: string, groups: Group[]): Promise<Item[]> {
     if (ideas.length) items.push({ id: `ideas-${g.org.id}`, kind: "idea", title: `${ideas.length} idea${ideas.length === 1 ? "" : "s"} from the team`, meta: g.org.name, go: "/ideas", at: ideas.map(at).sort().at(-1) ?? "" });
     const offers = (await Promise.all(needs.slice(0, 12).map((n) => bix.search("Offer", { matchedTo: `Need/${n.id}` }).catch(() => [] as R[])))).flat();
     for (const o of offers.filter((x) => x.status === "available"))
-      items.push({ id: `offer-${o.id}`, kind: "offer", title: `Offer: ${o.description ?? o.category?.display ?? "help"}`, meta: g.org.name, go: o.matchedTo?.[0] ? `/need/${o.matchedTo[0].reference.split("/")[1]}` : undefined, at: at(o) });
+      items.push({ id: `offer-${o.id}`, kind: "offer", title: `Offer: ${o.description ?? o.category?.display ?? "help"}`, meta: g.org.name, go: (() => { const m = Array.isArray(o.matchedTo) ? o.matchedTo[0] : o.matchedTo; return m?.reference ? `/need/${m.reference.split("/")[1]}` : undefined; })(), at: at(o) });
     const reports = await bix.search("Report", { owedBy: org }).catch(() => [] as R[]);
     for (const p of projects.filter((p) => p.status !== "cancelled" && p.period?.start && Date.parse(p.period.start) < Date.now() - 12 * 3600000 && Date.now() - Date.parse(p.period.start) < 14 * 86400000
       && !reports.some((r) => (r.scope?.initiative ?? []).some((x: any) => x.reference === `Initiative/${p.id}`))))
