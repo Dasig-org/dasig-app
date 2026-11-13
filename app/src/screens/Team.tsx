@@ -1,3 +1,4 @@
+import { AddPeople } from "@/ui/AddPeople";
 import { AddSheet } from "@/ui/AddSheet";
 import { short } from "@/lib/dates";
 import { useState } from "react";
@@ -22,6 +23,7 @@ import { c, type as t } from "@/ui/theme";
  * "people": lead, members, volunteers and the invite.
  */
 export default function Team({ view = "work" }: { view?: "work" | "people" }) {
+  const [addPeople, setAddPeople] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useSession();
@@ -125,7 +127,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
         <Row left={who(byRole("member"), photosOf("member"))} title="Members" meta={byRole("member").join(", ") || "None yet"} />
         <Row left={who(byRole("volunteer"), photosOf("volunteer"))} title="Volunteers" meta={byRole("volunteer").join(", ") || "None yet"} last />
       </Panel>
-      <Buttons><Outline flex label={parts.length > 1 ? "Invite more people" : "Invite your team"} onPress={() => makeInvite()} /></Buttons>
+      <Buttons><Outline flex label={parts.length > 1 ? "Add more people" : "Add your team"} onPress={() => (orgId ? setAddPeople(true) : makeInvite())} /></Buttons>
       {/* BIX "Seeing other committees' work": who sees this team's work, and what this team sees. Leads and officers set it. */}
       <Eyebrow>Who sees what</Eyebrow>
       <Panel>
@@ -137,7 +139,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
       {lead ? <Meta>{"\nTick to keep this team's work to itself, or to let its volunteers see the whole project."}</Meta> : null}
   </>);
   return (
-    <Screen onRefresh={reload} back right={<View style={{ flexDirection: "row", gap: 8 }}><RoundButton icon="userplus" label="Invite people" onPress={() => makeInvite()} />
+    <Screen onRefresh={reload} back right={<View style={{ flexDirection: "row", gap: 8 }}><RoundButton icon="userplus" label="Add people" onPress={() => (orgId ? setAddPeople(true) : makeInvite())} />
       {lead ? <RoundButton icon="plus" label="Add" onPress={() => setAddOpen(true)} /> : null}</View>}
       dock={view === "work" ? <Field value={title} onChangeText={setTitle} placeholder={lead ? "Add something to do" : "Suggest something to do"} onSubmitEditing={add} submitBehavior="submit" returnKeyType="done" /> : undefined}>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={teamIcon(team.name)} size={56} tone="white" />
@@ -166,6 +168,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
       </> : null}
       {msg ? <Notice>{msg}</Notice> : null}
       {onTeam && !leadsIt && view === "work" ? <View style={{ alignItems: "center", marginTop: 16 }}><LinkText onPress={() => setMe({ ...mine, status: "ended" }, `You left ${team.name}.`)}>Leave this team</LinkText></View> : null}
+      {orgId ? <AddPeople open={addPeople} onClose={() => { setAddPeople(false); reload(); }} orgId={orgId} target={{ kind: "team", team }} onSomeoneNew={() => makeInvite()} /> : null}
       <Sheet open={!!choosing} onClose={() => setChoosing(null)}>
         <Text style={[t.row, { fontSize: 18 }]}>{`Who leads ${team.name}?`}</Text>
         <Meta>Leads hand out work and accept ideas for this team.</Meta>

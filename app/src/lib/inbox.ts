@@ -6,7 +6,7 @@ import { act, peopleFor, personName } from "./work";
  * exist. Nothing new is stored. Asks for you; in groups you run, join requests, unanswered asks, ideas,
  * offers and reports to send. Later, every push notification will be one of these.
  */
-export type Item = { id: string; kind: "ask" | "join" | "team-join" | "unanswered" | "idea" | "offer" | "report";
+export type Item = { id: string; kind: "ask" | "invitation" | "asked-to-do" | "join" | "team-join" | "unanswered" | "idea" | "offer" | "report";
   title: string; meta: string; who?: R; go?: string; yes?: () => Promise<unknown>; no?: () => Promise<unknown>; yesLabel?: string; noLabel?: string; at: string };
 
 let count = 0;
@@ -22,6 +22,10 @@ export async function loadInbox(me: string, groups: Group[]): Promise<Item[]> {
   for (const x of mine.filter((t) => t.status === "requested"))
     items.push({ id: `ask-${x.id}`, kind: "ask", title: x.title, meta: "Asked of you", go: `/task/${x.id}`, at: at(x),
       yes: () => bix.commit(act.claim(x, me)), no: () => bix.commit(act.release(x)), yesLabel: "I'm in", noLabel: "Can't" });
+  // Invitations to me (BIX Invitation), on the network only.
+  const invs = await (await import("./invites")).myInvitations();
+  for (const v of invs) items.push({ id: `inv-${v.id}`, kind: "invitation", title: `${v.invitedBy.name} invited you`, meta: [v.group?.name, v.target.reference.startsWith("Organization/") ? null : v.target.title].filter(Boolean).join(" · "),
+    go: "/invitations", at: v.expires, yes: async () => { const { answerInvitation } = await import("./invites"); return answerInvitation(v.id, "accept"); }, no: async () => { const { answerInvitation } = await import("./invites"); return answerInvitation(v.id, "decline"); }, yesLabel: "Join", noLabel: "Not now" });
   // Asks to join a team, answered in place (teamwork sketches B6): for core members, and for leads of that team.
   const seen = new Set<string>();
   const teamAsks = (t: R, groupName: string) => {
@@ -52,6 +56,10 @@ export async function loadInbox(me: string, groups: Group[]): Promise<Item[]> {
     for (const t of teams) teamAsks(t, g.org.name);
     for (const x of tasks.filter((t) => t.status === "requested" && t.owner?.reference !== me))
       items.push({ id: `un-${x.id}`, kind: "unanswered", title: x.title, meta: "Asked, no answer yet", who: { reference: x.owner?.reference } as never, go: `/task/${x.id}`, at: at(x) });
+    // Asked to do a lead's-call task (BIX Task.taking ask): Give it, here.
+    for (const x of tasks.filter((t) => t.status === "ready")) for (const p of ((x.participant ?? []) as any[]).filter((y) => y.status === "requested" && !y.replaces && y.person.reference !== me))
+      items.push({ id: `atd-${x.id}-${p.person.reference}`, kind: "asked-to-do", title: `Asked to do “${x.title}”`, meta: g.org.name, who: { reference: p.person.reference } as never, go: `/task/${x.id}`, at: at(x), yesLabel: "Give it",
+        yes: async () => { const f = await bix.get("Task", x.id); return bix.commit(bix.next(f, { status: "accepted", owner: { reference: p.person.reference }, participant: ((f.participant ?? []) as any[]).filter((y) => y.status !== "requested" || y.person.reference === p.person.reference).map((y) => (y.person.reference === p.person.reference ? { ...y, status: "active" } : y)) })); } });
     const ideas = tasks.filter((t) => t.status === "draft");
     if (ideas.length) items.push({ id: `ideas-${g.org.id}`, kind: "idea", title: `${ideas.length} idea${ideas.length === 1 ? "" : "s"} from the team`, meta: g.org.name, go: "/ideas", at: ideas.map(at).sort().at(-1) ?? "" });
     const offers = (await Promise.all(needs.slice(0, 12).map((n) => bix.search("Offer", { matchedTo: `Need/${n.id}` }).catch(() => [] as R[])))).flat();
@@ -65,7 +73,7 @@ export async function loadInbox(me: string, groups: Group[]): Promise<Item[]> {
   // Faces for people-centred items.
   const refs = items.map((x) => (x.who as any)?.reference).filter(Boolean);
   const ppl = await peopleFor(refs, 30);
-  for (const x of items) { const r = (x.who as any)?.reference; if (r) { x.who = ppl[r]; if (x.kind === "join" || x.kind === "team-join") x.title = `${personName(ppl[r])} ${x.title.charAt(0).toLowerCase()}${x.title.slice(1)}`; if (x.kind === "unanswered") x.meta = `${personName(ppl[r])} hasn't answered`; } }
+  for (const x of items) { const r = (x.who as any)?.reference; if (r) { x.who = ppl[r]; if (x.kind === "join" || x.kind === "team-join") x.title = `${personName(ppl[r])} ${x.title.charAt(0).toLowerCase()}${x.title.slice(1)}`; if (x.kind === "unanswered") x.meta = `${personName(ppl[r])} hasn't answered`; if (x.kind === "asked-to-do") x.title = `${personName(ppl[r])} asked to do ${x.title.replace(/^Asked to do /, "")}`; } }
   items.sort((a, b) => b.at.localeCompare(a.at));
   count = items.length; listeners.forEach((l) => l(count));
   return items;

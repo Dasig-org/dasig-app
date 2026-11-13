@@ -17,6 +17,7 @@ const SKILLS = ["Writing", "Design", "Photos & video", "Teaching", "Driving", "F
 
 /** Your profile: nickname, optional full name, photo, a line about you, skills, and how you're credited. */
 export default function Profile() {
+  const [uname, setUname] = useState("");
   const acct = useAccount();
   const s = useSession();
   const q = useLocalSearchParams<{ first?: string; via?: string; then?: string }>();
@@ -43,6 +44,7 @@ export default function Profile() {
         ...(full.trim() ? [{ url: "bayanihan:full-name", value: full.trim() }] : []), { url: "bayanihan:profile-done", value: true }];
       await bix.commit(bix.next(p, { name: { text: nick.trim() || "Friend", use: "nickname" }, credit, skill: skills.length ? skillCodings(skills) : undefined, description: about.trim() || undefined, photo: photo ?? undefined, extension: ext }));
       await s.refresh();
+      if (first && uname.trim()) { const { setHandle, handleProblem } = await import("@/lib/invites"); const why = handleProblem(uname.trim()); if (why) throw new Error(`Username: ${why}`); await setHandle(uname.trim()); await s.refresh(); }
       router.replace(first ? ((via && q.then && q.then !== "/" ? q.then : "/paths") as never) : "/story");
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
   };
@@ -61,6 +63,8 @@ export default function Profile() {
           {acct.how ? <Text style={[t.meta, { marginTop: 2 }]}>{acct.how}</Text> : null}</View>
         <Icon name="chevron" size={14} color={c.s400} /></Pressable> : null}
       <Field label={first && via ? "What should groups call you?" : "Nickname"} value={nick} onChangeText={setNick} />
+      {first && s.connection?.kind === "ecosystem" ? <><Field label="Username (optional)" value={uname} onChangeText={(v) => setUname(v.toLowerCase().replace(/\s/g, ""))} placeholder="e.g. ana.cebu" autoCapitalize="none" autoCorrect={false} />
+        <Text style={[t.meta, { marginTop: 4, marginHorizontal: 4 }]}>So people can invite you by name. You can add it later in Settings.</Text></> : null}
       <Field label="Full name (optional)" value={full} onChangeText={setFull} placeholder="Shown only if you choose" />
       <Field label="About you (optional)" value={about} onChangeText={setAbout} placeholder="e.g. Student, loves organizing events" multiline />
       <Eyebrow>What you can help with</Eyebrow>

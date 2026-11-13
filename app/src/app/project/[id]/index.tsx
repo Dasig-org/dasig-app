@@ -89,6 +89,14 @@ export default function Project() {
 
       {openVotes.map((d) => <View key={d.id} style={{ marginTop: 12 }}><Panel><Row left={<IconCircle name="flag" />} title={d.question} meta="Vote open" right={<Pill tone="state">Vote</Pill>} onPress={() => router.push(`/vote/${d.id}` as never)} last /></Panel></View>)}
 
+      {/* Open in other teams (teamwork D10): where help is needed, beyond your own team. */}
+      {(() => { const mineT = new Set(teams.filter((tm) => (tm.participant ?? []).some((x: any) => x.person.reference === `Person/${s.person?.id}` && x.status === "active")).map((tm) => `Team/${tm.id}`));
+        const openW = tasks.filter((k) => k.status === "ready" && !k.basedOn && k.team?.reference && !mineT.has(k.team.reference)).slice(0, 5);
+        if (!openW.length || lead) return null;
+        return <><Eyebrow right={`${openW.length}`}>Open in other teams</Eyebrow><Panel>{openW.map((k, i) => { const tm = teams.find((x) => `Team/${x.id}` === k.team.reference); const n = Number(k.slots ?? 1);
+          const left = n - ((k.participant ?? []) as any[]).filter((x) => x.status === "active").length;
+          return <Row key={k.id} left={<IconCircle name={n > 1 ? "users" : "pen"} />} title={k.title} meta={[tm?.name, n > 1 ? `${left} place${left === 1 ? "" : "s"}` : k.taking === "ask" ? "lead's call" : null].filter(Boolean).join(" · ")}
+            right={<Pill>{k.taking === "ask" ? "Ask to do" : "I'm in"}</Pill>} onPress={() => router.push(`/task/${k.id}`)} last={i === openW.length - 1} />; })}</Panel></>; })()}
       <Eyebrow right={`${teams.length}`}>Teams</Eyebrow>
       {lead && teams.length ? <View style={{ marginBottom: 8 }}><Panel><Row left={<IconCircle name="pen" />} title="Edit the plan" meta="Add work to every team in one list" onPress={() => router.push(`/project/${p.id}/plan` as never)} last /></Panel></View> : null}
       <Panel>

@@ -1,3 +1,4 @@
+import { AddPeople } from "@/ui/AddPeople";
 import { useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { Platform, Share, Text, View } from "react-native";
@@ -20,6 +21,7 @@ const ROLES = [...CORE_ROLES, ...VOLUNTEER_ROLES] as const;
 
 /** People: everyone in the group, their role and position; invite, add by nickname, approve requests, change roles, add to teams. */
 export default function People({ orgId }: { orgId?: string } = {}) {
+  const [addPeople, setAddPeople] = useState(false);
   const [find, setFind] = useState("");
   const params = useLocalSearchParams<{ id: string }>();
   const id = orgId ?? params.id;
@@ -71,9 +73,10 @@ export default function People({ orgId }: { orgId?: string } = {}) {
 
   return (
     <Screen onRefresh={reload} back={!orgId}>
+      <AddPeople open={addPeople} onClose={() => { setAddPeople(false); reload(); }} orgId={id} target={{ kind: "group" }} onSomeoneNew={() => invite()} />
       <Title sub={s.current?.name}>People</Title>
       <Tip id="people" title="Core team and volunteers">The core team runs the group. Volunteers help with parts of it and see their own teams' work.</Tip>
-      {manage ? <Buttons><Primary label="Invite people" onPress={() => invite()} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}
+      {manage ? <Buttons><Primary label="Invite people" onPress={() => setAddPeople(true)} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}
       <Field icon="search" value={find} onChangeText={setFind} placeholder="Find someone" />
       {msg ? <Notice>{msg}</Notice> : null}
       {requests.length && manage ? <><Eyebrow right={`${requests.length}`}>Asking to join</Eyebrow><Panel>

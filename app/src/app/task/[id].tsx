@@ -1,3 +1,4 @@
+import { AddPeople } from "@/ui/AddPeople";
 import { AddSheet } from "@/ui/AddSheet";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
@@ -13,7 +14,7 @@ import { useLoad } from "@/lib/use";
 import { act, peopleFor, personName, placeOf, places, stateLabel } from "@/lib/work";
 import { Logo } from "@/ui/Context";
 import { History } from "@/ui/History";
-import { Body, Buttons, Chips, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton, RoundButton } from "@/ui/kit";
+import { Avatar, Body, Buttons, Check, Chips, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { Icon, type IconName } from "@/ui/Icon";
 import { atMost, visibilityOf } from "@/ui/Privacy";
 import { c, radius, type as t } from "@/ui/theme";
@@ -75,6 +76,7 @@ export default function Task() {
   const name = (r?: string) => (r && people[r]?.name?.text) || "Someone";
   const parts = (task.participant ?? []).filter((p: any) => p.status === "active");
   const isLead = (team?.participant ?? []).some((p: any) => p.person.reference === me && p.role === "lead" && p.status === "active") || s.isLead;
+  const orgOfTask = (project?.organization?.reference ?? team?.organization?.reference)?.split("/")[1];
   const mine = task.owner?.reference === me;
   const onIt = parts.some((p: any) => p.person.reference === me);
 
@@ -119,12 +121,18 @@ export default function Task() {
     status: "available", description: `Backup for ${task.title}` })); setMsg("You're a backup. If a place opens, you'll be asked first."); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };
   const sl = pl.shift && task.status === "ready" ? { label: `${pl.left} of ${pl.n} places left`, tone: "neutral" as const } : pl.shift && task.status === "accepted" ? { label: onIt ? "You're on it" : "Full", tone: (onIt ? "state" : "ok") as "state" | "ok" } : stateLabel(task, me);
   let actions = null;
+  const lead = (team?.participant ?? []).find((p: any) => p.role === "lead" && p.status === "active");
+  const askers = (task.participant ?? []).filter((x: any) => x.status === "requested" && x.person.reference !== me && !x.replaces);
   if (waitingOn.length && ["ready", "requested"].includes(task.status)) actions = <View style={{ marginTop: 14 }}><Sand><IconCircle name="pending" tone="white" />
     <View style={{ flex: 1 }}><Text style={t.row}>{`Waiting on ${waitingOn[0]!.title}`}</Text><Meta>You can prepare now. It can be taken once that's done.</Meta></View></Sand></View>;
   // A shift (Task.slots > 1): "I'm in" takes a place; full shifts take backups (BIX 2026-11-09).
   else if (pl.shift && (task.status === "ready" || task.status === "accepted") && onIt) actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => (onIt ? setFinishing(true) : finish(null, "stated"))} /> : null}<Outline flex label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if (pl.shift && task.status === "ready") actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.takePlace(task, me), "You're in.")} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
   else if (pl.shift && task.status === "accepted") actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => (onIt ? setFinishing(true) : finish(null, "stated"))} /> : <Primary label="Be a backup" onPress={backup} />}</Buttons>;
+  else if (task.status === "ready" && task.taking === "ask" && !isLead) actions = (task.participant ?? []).some((x: any) => x.person.reference === me && x.status === "requested")
+    ? <View style={{ marginTop: 14 }}><Sand><IconCircle name="pending" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>You asked to do this</Text><Meta>{lead ? `${name(lead.person.reference)} will see it in their Inbox` : "The core team will see it in their Inbox"}</Meta></View>
+        <LinkText onPress={() => run(bix.next(task, { participant: (task.participant ?? []).filter((x: any) => x.person.reference !== me) }), "Request cancelled.")}>Cancel</LinkText></Sand></View>
+    : <Buttons><Primary label="Ask to do this" busy={busy} onPress={() => run(bix.next(task, { participant: [...(task.participant ?? []), { person: { reference: me }, role: "owner", status: "requested" }] }), "Asked. The lead chooses who does it.")} /></Buttons>;
   else if (task.status === "ready") actions = <Buttons><Primary label="I'll take it" busy={busy} onPress={() => run(act.claim(task, me))} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
   else if (task.status === "requested" && mine) actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.claim(task, me))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if ((task.status === "accepted" || task.status === "in-progress") && (mine || isLead)) actions = <Buttons><Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
@@ -186,6 +194,9 @@ export default function Task() {
         : task.description ? <View style={{ marginTop: 10 }}><Body>{task.description}</Body></View>
         : isLead && open ? <View style={{ marginTop: 10 }}><Text style={t.meta} onPress={() => setDesc("")}>＋ What's this about? Who it helps, when and where, what to bring</Text></View> : null}
 
+      {isLead && task.status === "ready" && askers.length ? <><Eyebrow right={`${askers.length}`}>Asked to do it</Eyebrow><Panel>{askers.map((x: any, i: number) => <Row key={x.person.reference}
+        left={<Avatar name={name(x.person.reference)} photo={people[x.person.reference]?.photo} />} title={name(x.person.reference)} last={i === askers.length - 1}
+        right={<Outline label="Give it" onPress={() => run({ ...bix.next(task, { status: "accepted", owner: { reference: x.person.reference }, participant: [...(task.participant ?? []).filter((y: any) => y.status !== "requested" || y.person.reference === x.person.reference).map((y: any) => (y.person.reference === x.person.reference ? { ...y, status: "active" } : y))] }) }, `Given to ${name(x.person.reference)}.`)} />} />)}</Panel></> : null}
       {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} photos={parts.map((p: any) => people[p.person.reference]?.photo)} />} title={parts.map((p: any) => p.person.reference === me ? "You" : name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? (task.owner.reference === me ? "You're on it" : `${name(task.owner.reference)} is on it`) : undefined} last /></Panel></> : null}
       <Eyebrow right={(task.checklist ?? []).length ? `${(task.checklist ?? []).filter((x: any) => x.done).length} of ${(task.checklist ?? []).length}` : undefined}>Smaller steps</Eyebrow>
       <Panel>
@@ -229,6 +240,12 @@ export default function Task() {
           right={<View style={{ flexDirection: "row", gap: 6 }}>{[1, 2, 4].map((h) => <Outline key={h} label={`${h} h`} onPress={() => run(bix.next(task, { estimate: { value: h, unit: "h", per: "person" } }))} />)}</View>} />
         <Row left={<IconCircle name="users" />} title="People needed" meta={pl.n > 1 ? `${pl.n} places · ${pl.on} taken` : "One person"}
           right={<View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}><Outline label="−" onPress={() => { if (pl.n > Math.max(1, pl.on)) run(act.setSlots(task, pl.n - 1)); }} /><Text style={t.row}>{pl.n}</Text><Outline label="+" onPress={() => run(act.setSlots(task, pl.n + 1))} /></View>} />
+        {/* Who can take it (teamwork D12; BIX Task.taking, audience). */}
+        <View style={{ paddingVertical: 10 }}><Text style={[t.row, { marginLeft: 4, marginBottom: 6 }]}>Who can take it</Text>
+          <Chips options={[{ value: "team", label: "Anyone on the team" }, { value: "project", label: "Anyone on the project" }, { value: "ask", label: "I decide" }]}
+            value={task.taking === "ask" ? "ask" : task.audience === "organization" || task.audience === "open" ? "project" : "team"}
+            onChange={(v) => run(bix.next(task, v === "ask" ? { taking: "ask" } : { taking: undefined, audience: v === "project" ? (task.audience === "open" ? "open" : "organization") : "team" }))} />
+          {task.taking === "ask" ? <Meta>People ask to do it; you choose one in your Inbox or here.</Meta> : null}</View>
         <Row left={<IconCircle name="building" />} title="Others wait on this" meta="Make it a gate on the project page" right={<Check on={!!task.milestone} onPress={() => run(bix.next(task, { milestone: !task.milestone }))} />} />
         <Row left={<IconCircle name="pending" />} title="Waits on" meta={deps.length ? deps.map((x) => x.title).join(", ") : "Nothing"} onPress={() => { setTuning(false); setTimeout(() => setPlanning(true), 260); }} />
         <Row left={<IconCircle name="heart" />} title="Anyone can help" meta={openAllowed ? "Show to outside volunteers" : "Your group or project isn't public. Invite volunteers with a link instead"} right={<Check on={task.audience === "open"} onPress={!openAllowed && task.audience !== "open" ? undefined : () => run(bix.next(task, { audience: task.audience === "open" ? "team" : "open" }))} />} />
@@ -294,19 +311,8 @@ export default function Task() {
           run(bix.next(task, { restriction: { ...(task.restriction ?? {}), arrival: { ...(at ? { at: at.toISOString() } : {}), ...(arrive?.note.trim() ? { note: arrive.note.trim() } : {}) } } })); setArrive(null); }} /></Buttons>
       </Sheet>
 
-      <Sheet open={asking} onClose={() => setAsking(false)}>
-        <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>Who should we ask?</Text>
-        <Meta>They'll get an ask they can say yes or no to.</Meta>
-        <Panel style={{ backgroundColor: c.wash, marginTop: 10 }}>
-          {(team?.participant ?? []).filter((p: any) => p.status === "active" && p.person.reference !== me).map((p: any) =>
-            <Row key={p.person.reference} left={<Avatar name={name(p.person.reference)} photo={people[p.person.reference]?.photo} />} title={name(p.person.reference)} meta={p.role}
-              onPress={() => { setAsking(false); run(act.ask(task, p.person.reference), `Asked ${name(p.person.reference)}.`); }} />)}
-        </Panel>
-        {(before ?? []).length ? <><Eyebrow>{`Helped ${team?.name ?? "this team"} before`}</Eyebrow><Panel style={{ backgroundColor: c.wash }}>
-          {before!.map((x, i, all) => <Row key={x.ref} left={<Avatar name={personName(x.p)} photo={x.p.photo} />} title={personName(x.p)} meta="Asked back" last={i === all.length - 1}
-            onPress={() => { setAsking(false); run(act.ask(task, x.ref), `Asked ${personName(x.p)}.`); }} />)}</Panel></> : null}
-        <View style={{ marginTop: 12 }}><LinkText onPress={() => setAsking(false)}>Not now</LinkText></View>
-      </Sheet>
+      {orgOfTask ? <AddPeople open={asking} onClose={() => { setAsking(false); reload(); }} orgId={orgOfTask} target={{ kind: "task", task, teamName: team?.name }}
+        suggested={(before ?? []).map((x) => ({ ref: x.ref, p: x.p }))} suggestedLabel={`Helped ${team?.name ?? "this team"} before`} onDone={(m) => setMsg(m)} /> : null}
     </Screen>
   );
 }

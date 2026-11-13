@@ -9,7 +9,7 @@ import type { IconName } from "@/ui/Icon";
 import { PushToggle } from "@/ui/PushToggle";
 import { type as t } from "@/ui/theme";
 
-const ICON: Record<Item["kind"], IconName> = { ask: "pen", join: "userplus", "team-join": "users", unanswered: "pending", idea: "spark", offer: "heart", report: "receipt" };
+const ICON: Record<Item["kind"], IconName> = { ask: "pen", invitation: "mail", "asked-to-do": "userplus", join: "userplus", "team-join": "users", unanswered: "pending", idea: "spark", offer: "heart", report: "receipt" };
 
 /** Inbox: what needs your answer, newest first, with the action in place. */
 export default function Inbox() {

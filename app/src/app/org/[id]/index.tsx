@@ -7,7 +7,7 @@ import { fileUri, pickPhoto } from "@/lib/files";
 import { CAUSES } from "@/lib/org";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { Body, Buttons, Faces, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton } from "@/ui/kit";
+import { Body, Buttons, Chips, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { Logo } from "@/ui/Context";
 import { Icon } from "@/ui/Icon";
 import { directoryOpen, networkOpen } from "@/lib/network";
@@ -39,8 +39,9 @@ export default function Org() {
   useEffect(() => { if (data?.org.image) fileUri(data.org.image).then(setLogoUri).catch(() => {}); }, [data?.org.image?.hash]);
   const [name, setName] = useState(""); const [about, setAbout] = useState("");
   const [placeV, setPlaceV] = useState<PlaceValue>({ text: "" }); const [causes, setCauses] = useState<string[]>([]);
+  const [invitePolicy, setInvitePolicy] = useState("core-team");
   useEffect(() => { if (data) { const ex = (data.org.extension ?? []) as { url: string; value: string }[];
-    setName(data.org.name); setAbout(data.org.description ?? ""); setCauses((data.org.cause ?? []).map((x: any) => x.code));
+    setName(data.org.name); setAbout(data.org.description ?? ""); setCauses((data.org.cause ?? []).map((x: any) => x.code)); setInvitePolicy(data.org.invitePolicy ?? "core-team");
     setPlaceV({ text: ex.find((x) => x.url === "bayanihan:place-text")?.value ?? "", code: ex.find((x) => x.url === "bayanihan:psgc")?.value }); } }, [data?.org.meta.version]);
   if (!data) return <Screen back><Skeleton /></Screen>;
   const { org, roles, requests, projects, contacts } = data;
@@ -60,6 +61,8 @@ export default function Org() {
         <Field label="Name" value={name} onChangeText={setName} />
         <Field label="What you do" value={about} onChangeText={setAbout} multiline />
         <PlaceField label="Where" value={placeV} onChange={setPlaceV} placeholder="e.g. Lapu-Lapu City, Cebu" />
+        <Eyebrow>Who can invite by username or email</Eyebrow>
+        <Chips options={[{ value: "core-team", label: "The core team" }, { value: "members", label: "Everyone in the group" }]} value={invitePolicy} onChange={(v) => setInvitePolicy(v as string)} />
         <Eyebrow>Causes</Eyebrow>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
           {CAUSES.map((x) => { const on = causes.includes(x.code); return <Pressable key={x.code} onPress={() => setCauses(on ? causes.filter((y) => y !== x.code) : [...causes, x.code])} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
@@ -69,7 +72,7 @@ export default function Org() {
           // Keep every other extension (setup checklist state, etc.); replace only the place ones.
           const other = ((org.extension ?? []) as { url: string }[]).filter((x) => x.url !== "bayanihan:place-text" && x.url !== "bayanihan:psgc");
           const ext = [...other, ...(placeV.text.trim() ? placeExtensions(placeV) : [])];
-          save({ name: name.trim(), description: about.trim() || undefined, cause: causes.map((code) => ({ system: "bayanihan:cause", code, display: CAUSES.find((x) => x.code === code)?.label })), extension: ext.length ? ext : undefined });
+          save({ name: name.trim(), description: about.trim() || undefined, cause: causes.map((code) => ({ system: "bayanihan:cause", code, display: CAUSES.find((x) => x.code === code)?.label })), extension: ext.length ? ext : undefined, invitePolicy });
         }} /><Outline label="Cancel" onPress={() => setEditing(false)} /></Buttons>
       </> : <>
         {/* About (UX_GAPS A4): what the group does, where, its causes, and who to contact. Task and project pages link here. */}

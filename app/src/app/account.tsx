@@ -5,7 +5,8 @@ import { useAccount } from "@/lib/account";
 import { dasigAccountAvailable, startDasigSignIn } from "@/lib/dasig-account";
 import { useSession } from "@/lib/session";
 import { linkGoogle, METHOD_LABEL, removeMethod, signOutDevice } from "@/lib/signin";
-import { Buttons, Eyebrow, IconCircle, LinkText, Notice, Outline, Panel, Primary, Row, Sand, Screen, Sheet, Skeleton, Title } from "@/ui/kit";
+import { handleProblem, setFindable, setHandle } from "@/lib/invites";
+import { Buttons, Eyebrow, Field, IconCircle, LinkText, Notice, Outline, Panel, Primary, Row, Sand, Screen, Sheet, Skeleton, Title } from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { MethodIcon } from "@/ui/SignIn";
 import { SignInMethods } from "@/ui/SignInMethods";
@@ -25,6 +26,10 @@ export default function AccountScreen() {
   const [adding, setAdding] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [naming, setNaming] = useState<string | null>(null);
+  const handle = (s.person as any)?.handle as { value: string; findable?: boolean } | undefined;
+  const saveHandle = async () => { const v = (naming ?? "").trim().toLowerCase().replace(/^@/, ""); const why = v ? handleProblem(v) : null; if (why) { setMsg(why); return; }
+    await run(async () => { await setHandle(v || null); await s.refresh(); setNaming(null); }, v ? `Your username is @${v}.` : "Username removed."); };
   useEffect(() => { if (add === "1" && a.loaded && a.onNetwork) setAdding(true); }, [add, a.loaded]);
   const web = Platform.OS === "web";
   const run = async (f: () => Promise<unknown>, ok?: string) => { setMsg(null); try { await f(); if (ok) setMsg(ok); await a.reload(); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };
@@ -56,6 +61,14 @@ export default function AccountScreen() {
     <Screen back onRefresh={a.reload}>
       <Title sub="On the Bayanihan Network. Any of these gets you in.">Your account</Title>
       {msg ? <Notice>{msg}</Notice> : null}
+      {/* Username (BIX Person.handle): optional, for being invited by name. */}
+      <Eyebrow>Username</Eyebrow>
+      <Panel>
+        <Row left={<IconCircle name="at" />} title={handle ? `@${handle.value}` : "Pick a username"} meta={handle ? "People can invite you with it" : "So people can invite you by name, e.g. @ana.cebu"}
+          onPress={() => setNaming(handle?.value ?? "")} last={!handle} />
+        {handle ? <Row left={<IconCircle name="eye" />} title="Let people invite me by username" meta={handle.findable === false ? "Off: only exact invites by email or in your groups" : "On: found only by the exact username"}
+          right={<Outline label={handle.findable === false ? "Turn on" : "Turn off"} onPress={() => run(async () => { await setFindable(handle.findable === false); await s.refresh(); })} />} last /> : null}
+      </Panel>
       {a.guest ? <View style={{ marginBottom: 6 }}><Sand><View style={{ flex: 1 }}><Text style={t.row}>Keep your work</Text>
         <Text style={[t.meta, { marginTop: 4 }]}>{`You're using a nickname. Add a way to sign in so you can get back in if you lose this ${web ? "browser" : "phone"}.`}</Text>
         <Buttons><Primary label="Add a way to sign in" onPress={() => setAdding(true)} /></Buttons></View></Sand></View> : <>
@@ -72,6 +85,12 @@ export default function AccountScreen() {
           right={d.current ? undefined : <LinkText onPress={() => run(() => signOutDevice(d.id), "Signed out there.")}>Sign out</LinkText>} />)}</Panel></> : null}
       <Buttons><Outline flex label="Sign out" onPress={() => setLeaving(true)} /></Buttons>
 
+      <Sheet open={naming !== null} onClose={() => setNaming(null)}>
+        <Text style={[t.row, { fontSize: 18 }]}>{handle ? "Change your username" : "Pick a username"}</Text>
+        <Text style={[t.meta, { marginTop: 4 }]}>3 to 20 lowercase letters, numbers, dots and underscores. You can change it once every 30 days.</Text>
+        <Field value={naming ?? ""} onChangeText={(v) => setNaming(v.toLowerCase().replace(/\s/g, ""))} placeholder="ana.cebu" autoCapitalize="none" autoCorrect={false} autoFocus onSubmitEditing={saveHandle} />
+        <Buttons><Primary label="Save" onPress={saveHandle} />{handle ? <Outline label="Remove" onPress={() => { setNaming(""); setTimeout(saveHandle, 0); }} /> : null}</Buttons>
+      </Sheet>
       <Sheet open={adding} onClose={() => setAdding(false)}>
         <Text style={[t.row, { fontSize: 18 }]}>Add a way to sign in</Text>
         <Text style={[t.meta, { marginTop: 4, marginBottom: 10 }]}>It joins this account. Your groups and story stay the same.</Text>
