@@ -62,6 +62,21 @@ export const bix = {
       throw e;
     }
   },
+  /** Commit with what suggested the change (BIX "Suggestions and their answers"): a rule or Bayani, recorded in Provenance. */
+  async commitAssisted(records: R[], assistedBy: { type: "rule"; rule: string } | { type: "model"; model: { name: string; version: string; question?: string; confidence?: number; edited?: boolean } }): Promise<R[]> {
+    announce({ kind: "change", records });
+    try {
+      const b = await call<{ entry: ({ ok: true; record: R } | { ok: false; reasons: string[]; current: R | null })[] }>("POST", "/", { type: "transaction", entry: records.map((resource) => ({ resource, assistedBy })) });
+      const bad = b.entry.find((e) => !e.ok) as { reasons: string[]; current: R | null } | undefined;
+      if (bad) throw new BixError(bad.reasons.map(friendly), bad.current);
+      const out = b.entry.map((e) => (e as { record: R }).record); announce({ kind: "change", records: out }); return out;
+    } catch (e) {
+      const { isNetworkError, enqueue } = await import("./outbox");
+      // Offline: kept and sent later without the suggester (the outbox has no place for it yet).
+      if (isNetworkError(e)) { await enqueue(records); throw new BixError(["Saved on this phone. We'll send it when you're back online."]); }
+      announce({ kind: "revert" }); throw e;
+    }
+  },
   async commitNow(...records: R[]): Promise<R[]> {
     const b = await call<{ entry: ({ ok: true; record: R } | { ok: false; reasons: string[]; current: R | null })[] }>("POST", "/", { type: "transaction", entry: records.map((resource) => ({ resource })) });
     const bad = b.entry.find((e) => !e.ok) as { reasons: string[]; current: R | null } | undefined;

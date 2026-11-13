@@ -1,3 +1,4 @@
+import { MemoryCard } from "@/ui/MemoryCard";
 import { AddSheet } from "@/ui/AddSheet";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
@@ -97,6 +98,8 @@ export default function Project() {
           const left = n - ((k.participant ?? []) as any[]).filter((x) => x.status === "active").length;
           return <Row key={k.id} left={<IconCircle name={n > 1 ? "users" : "pen"} />} title={k.title} meta={[tm?.name, n > 1 ? `${left} place${left === 1 ? "" : "s"}` : k.taking === "ask" ? "lead's call" : null].filter(Boolean).join(" · ")}
             right={<Pill>{k.taking === "ask" ? "Ask to do" : "I'm in"}</Pill>} onPress={() => router.push(`/task/${k.id}`)} last={i === openW.length - 1} />; })}</Panel></>; })()}
+      {/* Project memory, rules only (Bayani v0 Phase 1): leads, when the group turned it on. */}
+      {lead && ((org?.assist ?? []) as any[]).some((a) => a.code === "memory") ? <MemoryCard project={p} tasks={tasks} teams={teams} onChanged={reload} /> : null}
       <Eyebrow right={`${teams.length}`}>Teams</Eyebrow>
       {lead && teams.length ? <View style={{ marginBottom: 8 }}><Panel><Row left={<IconCircle name="pen" />} title="Edit the plan" meta="Add work to every team in one list" onPress={() => router.push(`/project/${p.id}/plan` as never)} last /></Panel></View> : null}
       <Panel>

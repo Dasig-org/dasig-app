@@ -7,7 +7,7 @@ import { fileUri, pickPhoto } from "@/lib/files";
 import { CAUSES } from "@/lib/org";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { Body, Buttons, Chips, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton } from "@/ui/kit";
+import { Body, Buttons, Check, Chips, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { Logo } from "@/ui/Context";
 import { Icon } from "@/ui/Icon";
 import { directoryOpen, networkOpen } from "@/lib/network";
@@ -40,8 +40,9 @@ export default function Org() {
   const [name, setName] = useState(""); const [about, setAbout] = useState("");
   const [placeV, setPlaceV] = useState<PlaceValue>({ text: "" }); const [causes, setCauses] = useState<string[]>([]);
   const [invitePolicy, setInvitePolicy] = useState("core-team");
+  const [memoryOn, setMemoryOn] = useState(false);
   useEffect(() => { if (data) { const ex = (data.org.extension ?? []) as { url: string; value: string }[];
-    setName(data.org.name); setAbout(data.org.description ?? ""); setCauses((data.org.cause ?? []).map((x: any) => x.code)); setInvitePolicy(data.org.invitePolicy ?? "core-team");
+    setName(data.org.name); setAbout(data.org.description ?? ""); setCauses((data.org.cause ?? []).map((x: any) => x.code)); setInvitePolicy(data.org.invitePolicy ?? "core-team"); setMemoryOn(((data.org.assist ?? []) as any[]).some((a) => a.code === "memory"));
     setPlaceV({ text: ex.find((x) => x.url === "bayanihan:place-text")?.value ?? "", code: ex.find((x) => x.url === "bayanihan:psgc")?.value }); } }, [data?.org.meta.version]);
   if (!data) return <Screen back><Skeleton /></Screen>;
   const { org, roles, requests, projects, contacts } = data;
@@ -61,6 +62,9 @@ export default function Org() {
         <Field label="Name" value={name} onChangeText={setName} />
         <Field label="What you do" value={about} onChangeText={setAbout} multiline />
         <PlaceField label="Where" value={placeV} onChange={setPlaceV} placeholder="e.g. Lapu-Lapu City, Cebu" />
+        <Eyebrow>Help from Bayani</Eyebrow>
+        <Row left={<IconCircle name="book" />} title="Project memory" meta="What a project usually needs, from your past projects. Suggestions only; a person decides"
+          right={<Check on={memoryOn} onPress={() => setMemoryOn(!memoryOn)} />} last />
         <Eyebrow>Who can invite by username or email</Eyebrow>
         <Chips options={[{ value: "core-team", label: "The core team" }, { value: "members", label: "Everyone in the group" }]} value={invitePolicy} onChange={(v) => setInvitePolicy(v as string)} />
         <Eyebrow>Causes</Eyebrow>
@@ -72,7 +76,8 @@ export default function Org() {
           // Keep every other extension (setup checklist state, etc.); replace only the place ones.
           const other = ((org.extension ?? []) as { url: string }[]).filter((x) => x.url !== "bayanihan:place-text" && x.url !== "bayanihan:psgc");
           const ext = [...other, ...(placeV.text.trim() ? placeExtensions(placeV) : [])];
-          save({ name: name.trim(), description: about.trim() || undefined, cause: causes.map((code) => ({ system: "bayanihan:cause", code, display: CAUSES.find((x) => x.code === code)?.label })), extension: ext.length ? ext : undefined, invitePolicy });
+          save({ name: name.trim(), description: about.trim() || undefined, cause: causes.map((code) => ({ system: "bayanihan:cause", code, display: CAUSES.find((x) => x.code === code)?.label })), extension: ext.length ? ext : undefined, invitePolicy,
+            assist: [...((org.assist ?? []) as any[]).filter((a) => a.code !== "memory"), ...(memoryOn ? [{ system: "bayanihan:assist-area", code: "memory" }] : [])] });
         }} /><Outline label="Cancel" onPress={() => setEditing(false)} /></Buttons>
       </> : <>
         {/* About (UX_GAPS A4): what the group does, where, its causes, and who to contact. Task and project pages link here. */}
