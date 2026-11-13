@@ -28,6 +28,15 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 }
 const entries = (b: { entry?: { resource: R }[] }) => (b.entry ?? []).map((e) => e.resource);
 
+/*
+ * Optimistic updates (2026-11-13). commit() announces the records before the network answers, so every screen that
+ * shows them (useLoad) swaps them in at once; when the server refuses, it announces a revert and screens reload.
+ */
+type LocalListener = (e: { kind: "change"; records: R[] } | { kind: "revert" }) => void;
+const local = new Set<LocalListener>();
+export const onLocalChange = (l: LocalListener) => { local.add(l); return () => { local.delete(l); }; };
+const announce = (e: Parameters<LocalListener>[0]) => local.forEach((l) => { try { l(e); } catch {} });
+
 /** A thin client for any Bayanihan Server: the same calls any BIX app makes. */
 export const bix = {
   me: (nickname?: string) => call<R>("POST", "/$me", { nickname }),
@@ -44,10 +53,12 @@ export const bix = {
   verify: (type: string, id: string) => call<{ allValid: boolean; signatures: { signedBy: string; when: string; unchanged: boolean }[] }>("GET", `/${type}/${id}/$verify`),
   /** Apply changes now; if there's no connection, keep them to sync later. Throws BixError if refused. */
   async commit(...records: R[]): Promise<R[]> {
-    try { return await this.commitNow(...records); }
+    announce({ kind: "change", records });
+    try { const out = await this.commitNow(...records); announce({ kind: "change", records: out }); return out; }
     catch (e) {
       const { isNetworkError, enqueue } = await import("./outbox");
       if (isNetworkError(e)) { await enqueue(records); throw new BixError(["Saved on this phone. We'll send it when you're back online."]); }
+      announce({ kind: "revert" });
       throw e;
     }
   },

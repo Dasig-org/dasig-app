@@ -1,3 +1,4 @@
+import { useState } from "react";
 /**
  * The bottom bar (2026-11-11): a floating, fully rounded light pill, after Netflix's bar, in Dasig's colours. Five
  * equal slots, each an icon over a short label; the active one sits in a soft pill of its own. Me shows the person's
@@ -5,7 +6,7 @@
  */
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
+import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { Avatar } from "./kit";
 import { c } from "./theme";
 
@@ -35,6 +36,13 @@ function Plus() {
     <Defs><LinearGradient id="tabplus" x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor="#F47C26" /><Stop offset="1" stopColor="#E85C21" /></LinearGradient></Defs>
     <Circle cx={23} cy={23} r={23} fill="url(#tabplus)" /><Path d="M23 14v18M14 23h18" stroke="#fff" strokeWidth={2.6} strokeLinecap="round" /></Svg></View>;
 }
+/** The active tab's soft grey pill, as a rounded shape that fills the item. */
+function ActivePill() {
+  const [w, setW] = useState(0);
+  return <View pointerEvents="none" style={StyleSheet.absoluteFill} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+    {w ? <Svg width={w} height={52}><Rect x={0} y={0} width={w} height={52} rx={26} ry={26} fill="rgba(15,23,42,0.06)" /></Svg> : null}
+  </View>;
+}
 /** Me: your photo, or your initial on a warm circle. */
 function MeDot({ name, photo }: { name: string; photo?: any }) {
   if (photo) return <Avatar name={name} photo={photo} size={24} />;
@@ -54,9 +62,11 @@ export function TabBar({ active, onSelect, me, items, badge = 0 }: { active: Tab
           const on = i.key === active, action = i.key === "add";
           const tint = on ? c.ink : c.s500;
           return (
-            <Pressable key={i.key} onPress={() => onSelect(i.key)} style={st.button} accessibilityRole={action ? "button" : "tab"} accessibilityLabel={i.label}
+            <Pressable key={i.key} onPress={() => onSelect(i.key)} style={({ pressed }) => [st.button, { opacity: pressed ? 0.6 : 1 }]} accessibilityRole={action ? "button" : "tab"} accessibilityLabel={i.label}
               accessibilityState={action ? undefined : { selected: on }}>
-              {action ? <Plus /> : <View style={[st.item, on && st.itemOn]}>
+              {action ? <Plus /> : <View style={st.item}>
+                {/* The active pill is drawn, not a View background: some Android builds showed it square (2026-11-13). */}
+                {on ? <ActivePill /> : null}
                 {i.key === "story" ? <MeDot name={me.name} photo={me.photo} /> : <Glyph name={i.key} color={tint} strokeWidth={on ? 2.1 : 1.9} />}
                 {i.key === "inbox" && badge > 0 ? <View style={st.badge}><Text style={st.badgeText}>{badge > 9 ? "9+" : String(badge)}</Text></View> : null}
                 <Text numberOfLines={1} style={[st.label, { color: tint }]}>{i.label}</Text>
@@ -77,7 +87,6 @@ const st = StyleSheet.create({
   button: { flex: 1, height: TAB_BAR_HEIGHT, alignItems: "center", justifyContent: "center" },
   // Android draws borderRadius 999 on a stretched View as square; use half the height and clip (2026-11-12).
   item: { alignItems: "center", justifyContent: "center", gap: 2, height: 52, minWidth: 58, paddingHorizontal: 10, borderRadius: 26 },
-  itemOn: { backgroundColor: "rgba(15,23,42,0.06)" },
   label: { fontSize: 11, fontWeight: "600" },
   me: { width: 24, height: 24, alignItems: "center", justifyContent: "center" },
   meText: { color: "#fff", fontSize: 11, fontWeight: "800" },

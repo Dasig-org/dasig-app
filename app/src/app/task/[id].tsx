@@ -1,3 +1,4 @@
+import { appUrl } from "@/lib/env";
 import { AddPeople } from "@/ui/AddPeople";
 import { AddSheet } from "@/ui/AddSheet";
 import { useEffect, useState } from "react";
@@ -7,7 +8,7 @@ import { onSynced } from "@/lib/outbox";
 import { pickDocument, pickPhoto, type Attachment } from "@/lib/files";
 import { Files } from "@/ui/Files";
 import { useLocalSearchParams } from "expo-router";
-import { Alert, Platform, Text, View } from "react-native";
+import { Alert, Platform, Share, Text, View } from "react-native";
 import { bix, BixError, type R } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
@@ -134,6 +135,10 @@ export default function Task() {
         <LinkText onPress={() => run(bix.next(task, { participant: (task.participant ?? []).filter((x: any) => x.person.reference !== me) }), "Request cancelled.")}>Cancel</LinkText></Sand></View>
     : <Buttons><Primary label="Ask to do this" busy={busy} onPress={() => run(bix.next(task, { participant: [...(task.participant ?? []), { person: { reference: me }, role: "owner", status: "requested" }] }), "Asked. The lead chooses who does it.")} /></Buttons>;
   else if (task.status === "ready") actions = <Buttons><Primary label="I'll take it" busy={busy} onPress={() => run(act.claim(task, me))} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
+  // Waiting on someone's answer (seen in the test: a lead had no way to move it along).
+  else if (task.status === "requested" && !mine && isLead) actions = <Buttons>
+    <Primary label="Ask someone else" busy={busy} onPress={async () => { await run(act.release(task)); setAsking(true); }} />
+    <Outline label={`Remind ${name(task.owner?.reference).split(" ")[0]}`} onPress={() => Share.share({ message: `Hi ${name(task.owner?.reference).split(" ")[0]}! Can you do "${task.title}"? Say yes or no here: ${appUrl()}/task/${task.id}` }).catch(() => {})} /></Buttons>;
   else if (task.status === "requested" && mine) actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.claim(task, me))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if ((task.status === "accepted" || task.status === "in-progress") && (mine || isLead)) actions = <Buttons><Primary label="Mark done" busy={busy} onPress={() => run(act.done(task))} /><Outline label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   // Reopen (BIX 2026-11-12): a lead brings back done, failed or cancelled work. The earlier completion and its proof

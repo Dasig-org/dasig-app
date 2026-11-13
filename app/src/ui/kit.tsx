@@ -77,9 +77,14 @@ export function Avatar({ name, size = 30, index, photo }: { name: string; size?:
     <Text style={{ color: bg === c.gold ? c.ink : c.white, fontWeight: "700", fontSize: size * 0.4 }}>{(name[0] ?? "?").toUpperCase()}</Text>
   </View>;
 }
-export const Faces = ({ names, photos }: { names: string[]; photos?: ({ hash?: string } | null | undefined)[] }) => (
-  <View style={{ flexDirection: "row" }}>{names.slice(0, 5).map((n, i) => <View key={i} style={{ marginLeft: i ? -7 : 0 }}><Avatar name={n} size={24} photo={photos?.[i]} /></View>)}</View>
-);
+/** A small stack of faces: at most `max` (default 3); beyond that, the last place says "+n" (2026-11-13: stacks overlapped titles). */
+export const Faces = ({ names, photos, max = 3 }: { names: string[]; photos?: ({ hash?: string } | null | undefined)[]; max?: number }) => {
+  const more = names.length > max ? names.length - (max - 1) : 0;
+  const shown = more ? names.slice(0, max - 1) : names;
+  return <View style={{ flexDirection: "row" }}>{shown.map((n, i) => <View key={i} style={{ marginLeft: i ? -7 : 0 }}><Avatar name={n} size={24} photo={photos?.[i]} /></View>)}
+    {more ? <View style={{ marginLeft: -7, width: 24, height: 24, borderRadius: 12, backgroundColor: c.s200, borderWidth: 1.5, borderColor: c.white, alignItems: "center", justifyContent: "center" }}>
+      <Text style={{ fontSize: 10, fontWeight: "800", color: c.slate }}>{`+${more}`}</Text></View> : null}</View>;
+};
 
 export function Row({ left, title, meta, right, onPress, last }: { left?: ReactNode; title: string; meta?: string; right?: ReactNode; onPress?: () => void; last?: boolean }) {
   const style = { flexDirection: "row" as const, alignItems: "center" as const, gap: 12, paddingVertical: 13, minHeight: 56, borderBottomWidth: last ? 0 : 1, borderBottomColor: c.s200 };
@@ -90,7 +95,10 @@ export function Row({ left, title, meta, right, onPress, last }: { left?: ReactN
   </>;
   // A row without its own action must not be a (disabled) button: that would mark buttons inside it as disabled for screen readers.
   if (!onPress) return <View style={style}>{body}</View>;
-  return <Pressable onPress={onPress} android_ripple={{ color: c.s200 }} accessibilityRole="button" accessibilityLabel={meta ? `${title}, ${meta}` : title} style={({ pressed }) => ({ ...style, opacity: Platform.OS === "android" ? 1 : pressed ? 0.7 : 1 })}>{body}</Pressable>;
+  // Press feedback is a rounded wash inside the panel, never a square ripple to its edges (2026-11-13).
+  return <View style={{ borderBottomWidth: last ? 0 : 1, borderBottomColor: c.s200 }}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={meta ? `${title}, ${meta}` : title}
+      style={({ pressed }) => ({ ...style, borderBottomWidth: 0, marginHorizontal: -8, paddingHorizontal: 8, marginVertical: 2, paddingVertical: 11, borderRadius: radius.inner, backgroundColor: pressed ? "rgba(15,23,42,0.06)" : "transparent" })}>{body}</Pressable></View>;
 }
 export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "ok" | "state" }) {
   const s = { neutral: { bg: c.wash, fg: c.ink, b: c.wash }, ok: { bg: c.white, fg: c.slate, b: c.s200 }, state: { bg: c.accent, fg: c.white, b: c.accent } }[tone];
@@ -98,12 +106,12 @@ export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone
     <Text style={{ fontSize: 12, fontWeight: "600", color: s.fg }}>{children}</Text></View>;
 }
 export function Primary({ label, onPress, busy, disabled }: { label: string; onPress: () => void; busy?: boolean; disabled?: boolean }) {
-  return <Pressable android_ripple={{ color: "rgba(255,255,255,.25)", borderless: false }} onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); onPress(); }} disabled={busy || disabled} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!(busy || disabled), busy: !!busy }} style={({ pressed }) => ({ flex: 1, minHeight: 48, borderRadius: radius.pill, backgroundColor: pressed ? c.accent : c.primary, ...(pressed || disabled ? {} : primaryFill), opacity: disabled ? 0.5 : 1, alignItems: "center", justifyContent: "center" })}>
+  return <Pressable onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); onPress(); }} disabled={busy || disabled} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!(busy || disabled), busy: !!busy }} style={({ pressed }) => ({ flex: 1, minHeight: 48, borderRadius: radius.pill, backgroundColor: pressed ? c.accent : c.primary, ...(pressed || disabled ? {} : primaryFill), opacity: disabled ? 0.5 : 1, alignItems: "center", justifyContent: "center" })}>
     {busy ? <ActivityIndicator color={c.white} /> : <Text style={{ color: c.white, fontWeight: "700", fontSize: 15 }}>{label}</Text>}
   </Pressable>;
 }
 export function Outline({ label, onPress, flex }: { label: string; onPress: () => void; flex?: boolean }) {
-  return <Pressable onPress={onPress} android_ripple={{ color: tint.pressed }} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ overflow: "hidden", flex: flex ? 1 : undefined, minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: pressed ? tint.pressed : tint.rest, alignItems: "center", justifyContent: "center" })}>
+  return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ overflow: "hidden", flex: flex ? 1 : undefined, minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: pressed ? tint.pressed : tint.rest, alignItems: "center", justifyContent: "center" })}>
     <Text style={{ color: c.ink, fontWeight: "600", fontSize: 15 }}>{label}</Text></Pressable>;
 }
 export const Buttons = ({ children }: { children: ReactNode }) => <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>{children}</View>;
