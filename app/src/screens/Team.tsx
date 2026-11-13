@@ -11,7 +11,7 @@ import { appUrl } from "@/lib/env";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, shortRef, stateLabel, teamIcon, places } from "@/lib/work";
-import { Avatar, Buttons, Check, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Screen, Sheet, Skeleton } from "@/ui/kit";
+import { Avatar, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { InviteOptions, linkOpts, type InviteOpts } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
 
@@ -46,7 +46,17 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
   const { team, tasks, parts, people, asking } = data;
   const name = (ref: string) => people[ref]?.name?.text ?? "Someone";
   const leadsIt = parts.some((p: any) => p.person.reference === me && p.role === "lead");
-  const lead = leadsIt || s.isLead;
+  // Rights come from the team's own group, not the group chosen in the pill (bug found in the multi-person test).
+  const orgId = team.organization?.reference?.split("/")[1];
+  const myGroup = s.groups.find((g) => g.org.id === orgId);
+  const coreHere = !!myGroup && ["officer", "core-member"].includes(myGroup.role.code?.code);
+  const lead = leadsIt || coreHere;
+  const mine = (team.participant ?? []).find((p: any) => p.person.reference === me);
+  const onTeam = mine?.status === "active", askedToJoin = mine?.status === "requested";
+  const setMe = async (entry: any | null, ok: string) => {
+    try { const fresh = await bix.get("Team", id); const others = (fresh.participant ?? []).filter((p: any) => p.person.reference !== me);
+      await bix.commit(bix.next(fresh, { participant: entry ? [...others, entry] : others })); setMsg(ok); reload(); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
+  };
   const byRole = (r: string) => parts.filter((p: any) => p.role === r).map((p: any) => name(p.person.reference));
   const photosOf = (r: string) => parts.filter((p: any) => p.role === r).map((p: any) => people[p.person.reference]?.photo);
   const who = (n: string[], ph?: any[]) => (n.length ? <View style={{ width: 54 }}><Faces names={n} photos={ph} /></View> : <View style={{ width: 54 }}><IconCircle name="users" tone="grey" size={30} /></View>);
@@ -132,8 +142,16 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
       dock={view === "work" ? <Field value={title} onChangeText={setTitle} placeholder={lead ? "Add something to do" : "Suggest something to do"} onSubmitEditing={add} submitBehavior="submit" returnKeyType="done" /> : undefined}>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={teamIcon(team.name)} size={56} tone="white" />
         <View style={{ flex: 1 }}><Meta>{view === "people" ? "People" : leadsIt ? "You lead it" : s.isLead ? "Your group's team" : "Team"}</Meta><Text style={[t.title, { fontSize: 24 }]}>{team.name}</Text></View></View>
+      {/* Join this team (teamwork sketches B4, B5): core members join at once; others in the group ask the lead. */}
+      {!onTeam && !askedToJoin && myGroup ? <View style={{ marginTop: 14 }}>
+        <Buttons><Primary label={coreHere ? "Join this team" : "Ask to join"} onPress={() => setMe({ person: { reference: me }, role: coreHere ? "member" : "volunteer", status: coreHere ? "active" : "requested" },
+          coreHere ? `You're on ${team.name}.` : "Asked. The lead will see it in their Inbox.")} /></Buttons>
+        <Meta>{coreHere ? "You're on the core team, so you join right away." : "Open places you can still take without joining."}</Meta></View> : null}
+      {askedToJoin ? <View style={{ marginTop: 14 }}><Sand><IconCircle name="pending" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>You asked to join</Text>
+        <Meta>{(team.participant ?? []).some((p: any) => p.role === "lead" && p.status === "active") ? "The lead will see it in their Inbox" : "The core team will see it in their Inbox"}</Meta></View>
+        <LinkText onPress={() => setMe(null, "Request cancelled.")}>Cancel</LinkText></Sand></View> : null}
       {lead && asking.length ? <><Eyebrow right={`${asking.length}`}>Asking to join</Eyebrow><Panel>{asking.map((p: any, i: number) => <Row key={p.person.reference} left={<Avatar name={name(p.person.reference)} photo={people[p.person.reference]?.photo} />}
-        title={name(p.person.reference)} meta="Joined through your invite link" right={<View style={{ flexDirection: "row", gap: 6 }}><Outline label="Accept" onPress={() => answer(p.person.reference, true)} /><Outline label="No" onPress={() => answer(p.person.reference, false)} /></View>} last={i === asking.length - 1} />)}</Panel></> : null}
+        title={name(p.person.reference)} meta="Wants to join this team" right={<View style={{ flexDirection: "row", gap: 6 }}><Outline label="Accept" onPress={() => answer(p.person.reference, true)} /><Outline label="No" onPress={() => answer(p.person.reference, false)} /></View>} last={i === asking.length - 1} />)}</Panel></> : null}
       {view === "work" && lead && ideas.length ? <View style={{ marginTop: 14 }}><Panel>{ideas.map((x, i) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta={`Suggested by ${name(x.note?.[0]?.author?.reference ?? "")}`}
         right={<Outline label="Accept" onPress={async () => { try { await bix.commit(act.accept(x)); } catch {} reload(); }} />} last={i === ideas.length - 1} />)}</Panel></View> : null}
       {view === "people" || setup ? roster : summary}
@@ -147,6 +165,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
       </Panel>
       </> : null}
       {msg ? <Notice>{msg}</Notice> : null}
+      {onTeam && !leadsIt && view === "work" ? <View style={{ alignItems: "center", marginTop: 16 }}><LinkText onPress={() => setMe({ ...mine, status: "ended" }, `You left ${team.name}.`)}>Leave this team</LinkText></View> : null}
       <Sheet open={!!choosing} onClose={() => setChoosing(null)}>
         <Text style={[t.row, { fontSize: 18 }]}>{`Who leads ${team.name}?`}</Text>
         <Meta>Leads hand out work and accept ideas for this team.</Meta>

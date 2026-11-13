@@ -14,7 +14,7 @@ import { act, peopleFor, personName, placeOf, places, stateLabel } from "@/lib/w
 import { Logo } from "@/ui/Context";
 import { History } from "@/ui/History";
 import { Body, Buttons, Chips, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen, Sheet, Avatar , Skeleton, RoundButton } from "@/ui/kit";
-import { Icon } from "@/ui/Icon";
+import { Icon, type IconName } from "@/ui/Icon";
 import { atMost, visibilityOf } from "@/ui/Privacy";
 import { c, radius, type as t } from "@/ui/theme";
 
@@ -142,26 +142,38 @@ export default function Task() {
   return (
     <Screen back right={(onIt || isLead) && task.status !== "completed" ? <RoundButton icon="plus" label="Add" onPress={() => setAddOpen(true)} /> : undefined}>
       <AddSheet open={addOpen} onClose={() => setAddOpen(false)} ctx={{ kind: "task", task, lead: isLead, onIt, on: (w) => { if (w === "step") setStepFocus((n) => n + 1); else if (w === "photo") setAdding(true); else if (w === "ask") setAsking(true); else setTuning(true); } }} />
-      <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={task.status === "completed" ? "check" : "pen"} size={56} tone="white" />
-        <View style={{ flex: 1 }}><Meta>{team?.name ?? ""}</Meta><Text style={[t.title, { fontSize: 24 }]}>{task.title}</Text></View></View>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}><Pill tone={sl.tone}>{sl.label}</Pill>{task.due ? <Pill tone="ok">{`Due ${short(task.due)}`}</Pill> : null}{estH ? <Pill tone="ok">{`About ${hrs(estH)}`}</Pill> : null}{task.milestone ? <Pill tone="ok">Gate</Pill> : null}{task.goodFirstStep ? <Pill tone="ok">Good first step</Pill> : null}</View>
-      {naming !== null ? <><Field value={naming} onChangeText={setNaming} placeholder="What needs doing" autoFocus /><Buttons><Primary label="Save" disabled={!naming.trim()} onPress={() => { run(bix.next(task, { title: naming.trim() })); setNaming(null); }} /><Outline label="Cancel" onPress={() => setNaming(null)} /></Buttons></> : null}
-      {desc !== null ? <><Field value={desc} onChangeText={setDesc} multiline placeholder="What it's for and who it helps, when and where, what to bring or know" /><Buttons><Primary label="Save" onPress={() => { run(bix.next(task, { description: desc.trim() || undefined })); setDesc(null); }} /><Outline label="Cancel" onPress={() => setDesc(null)} /></Buttons></>
-        : task.description ? <View style={{ marginTop: 10 }}><Body>{task.description}</Body></View>
-        : isLead && open ? <View style={{ marginTop: 10 }}><Text style={t.meta} onPress={() => setDesc("")}>＋ What's this about? Who it helps, when and where, what to bring</Text></View> : null}
-
-      {/* Context before the button that finishes it (UX_GAPS A1): the group, the project, where, and who's on it. */}
-      {org || project ? <View style={{ marginTop: 14 }}><Panel>
-        {org ? <Row left={<Logo name={org.name} image={org.image} size={36} />} title={org.name} meta={[placeOf(org), "About the group"].filter(Boolean).join(" · ")} onPress={() => router.push(`/org/${org.id}` as never)} last={!project} /> : null}
-        {project ? <Row left={<IconCircle name="flag" />} title={project.title} meta={[project.period?.start ? short(project.period.start) : null, placeOf(project), "The project"].filter(Boolean).join(" · ")} onPress={() => router.push(`/project/${project.id}`)} last /> : null}
-      </Panel></View> : null}
-      {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} photos={parts.map((p: any) => people[p.person.reference]?.photo)} />} title={parts.map((p: any) => p.person.reference === me ? "You" : name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? (task.owner.reference === me ? "You're on it" : `${name(task.owner.reference)} is on it`) : undefined} last /></Panel></> : null}
-      {/* What to know (sketch V2): when and where to arrive, what to bring, who leads. For the people on it. */}
-      {onIt && open ? (() => { const a = task.restriction?.arrival; const ld = (team?.participant ?? []).find((p: any) => p.role === "lead" && p.status === "active");
-        return <><Eyebrow>What to know</Eyebrow><Panel>
-          <Row left={<IconCircle name="pin" />} title={a?.at ? `Be there ${new Date(a.at).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}` : project?.period?.start ? short(project.period.start) : "Time to be confirmed"} meta={a?.note ?? placeOf(project) ?? undefined} />
-          {ld ? <Row left={<Avatar name={name(ld.person.reference)} photo={people[ld.person.reference]?.photo} />} title={`Your lead is ${name(ld.person.reference)}`} meta={team?.name} last /> : <Row left={<IconCircle name="users" />} title={team?.name ?? "Your team"} meta="No lead yet" last />}
-        </Panel></>; })() : null}
+      {/* Header (design/teamwork-sketches.html A1–A3): the title, one small line for the team and the project (the group is
+          one tap further, from the project), then the facts as chips, then the action. Everything the old cards and
+          "What to know" showed is here: when, where, places, due, how long, gate, lead, arrival note. */}
+      <Text style={[t.title, { fontSize: 24, marginTop: 4 }]}>{task.title}</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 2, marginHorizontal: 2 }}>
+        {team ? <Text style={[t.meta, { fontWeight: "700", color: c.ink }]} onPress={() => router.push(`/team/${team.id}` as never)}>{team.name}</Text> : null}
+        {team && project ? <Text style={[t.meta, { color: c.s300 }]}>{"  ·  "}</Text> : null}
+        {project ? <Text style={[t.meta, { fontWeight: "600" }]} onPress={() => router.push(`/project/${project.id}`)}>{`${project.title} ›`}</Text>
+          : org ? <Text style={[t.meta, { fontWeight: "600" }]} onPress={() => router.push(`/org/${org.id}` as never)}>{`${org.name} ›`}</Text> : null}
+      </View>
+      {(() => {
+        const arr = task.restriction?.arrival?.at ?? task.restriction?.period?.start;
+        const when = arr ? new Date(arr).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : null;
+        const where = placeOf(task) ?? placeOf(project);
+        const ld = (team?.participant ?? []).find((p: any) => p.role === "lead" && p.status === "active");
+        const hot = pl.shift ? "places" : task.due && open ? "due" : null;
+        const chip = (icon: IconName, label: string, on = false) => <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: on ? c.sand : c.white }}>
+          <Icon name={icon} size={14} color={c.accent} /><Text style={{ fontSize: 12.5, fontWeight: "600", color: on ? c.accent : c.ink }}>{label}</Text></View>;
+        return <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+          {!open || !pl.shift ? chip(task.status === "completed" ? "check" : "pending", sl.label, false) : null}
+          {pl.shift ? chip("users", sl.label, hot === "places") : null}
+          {when ? chip("cal", when) : null}
+          {where ? chip("pin", where) : null}
+          {task.due ? chip("clock", `Due ${short(task.due)}`, hot === "due") : null}
+          {estH ? chip("clock", `About ${hrs(estH)}`) : null}
+          {task.milestone ? chip("flag", "Others wait on this") : null}
+          {waitingOn.length ? chip("pending", `Waits on ${waitingOn[0]!.title}`) : null}
+          {task.goodFirstStep ? chip("spark", "Good first step") : null}
+          {team ? chip("users", ld ? `Lead: ${ld.person.reference === me ? "you" : name(ld.person.reference)}` : "No lead yet") : null}
+        </View>;
+      })()}
+      {task.restriction?.arrival?.note && onIt ? <View style={{ marginTop: 8, marginHorizontal: 4 }}><Meta>{task.restriction.arrival.note}</Meta></View> : null}
       {msg ? <Notice>{msg}</Notice> : null}
       {/* I'm here (sketch V6): on the day, the person records their own arrival (BIX participant.attended). */}
       {(() => { const mineP = parts.find((x: any) => x.person.reference === me) as any; const day = task.restriction?.arrival?.at ?? task.due ?? project?.period?.start;
@@ -169,6 +181,12 @@ export default function Task() {
         return mineP.attended ? <View style={{ marginTop: 12 }}><Notice>{`You're checked in, ${new Date(mineP.attended.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}.`}</Notice></View>
           : <Buttons><Primary label="I'm here" busy={busy} onPress={() => run(bix.next(task, { participant: (task.participant ?? []).map((x: any) => (x.person.reference === me ? { ...x, attended: { at: new Date().toISOString(), by: { reference: me } } } : x)) }), "Checked in. Your lead can see you've arrived.")} /></Buttons>; })()}
       {actions}
+      {naming !== null ? <><Field value={naming} onChangeText={setNaming} placeholder="What needs doing" autoFocus /><Buttons><Primary label="Save" disabled={!naming.trim()} onPress={() => { run(bix.next(task, { title: naming.trim() })); setNaming(null); }} /><Outline label="Cancel" onPress={() => setNaming(null)} /></Buttons></> : null}
+      {desc !== null ? <><Field value={desc} onChangeText={setDesc} multiline placeholder="What it's for and who it helps, when and where, what to bring or know" /><Buttons><Primary label="Save" onPress={() => { run(bix.next(task, { description: desc.trim() || undefined })); setDesc(null); }} /><Outline label="Cancel" onPress={() => setDesc(null)} /></Buttons></>
+        : task.description ? <View style={{ marginTop: 10 }}><Body>{task.description}</Body></View>
+        : isLead && open ? <View style={{ marginTop: 10 }}><Text style={t.meta} onPress={() => setDesc("")}>＋ What's this about? Who it helps, when and where, what to bring</Text></View> : null}
+
+      {parts.length ? <><Eyebrow>Working on it</Eyebrow><Panel><Row left={<Faces names={parts.map((p: any) => name(p.person.reference))} photos={parts.map((p: any) => people[p.person.reference]?.photo)} />} title={parts.map((p: any) => p.person.reference === me ? "You" : name(p.person.reference)).join(" and ")} meta={task.owner?.reference?.startsWith("Person/") ? (task.owner.reference === me ? "You're on it" : `${name(task.owner.reference)} is on it`) : undefined} last /></Panel></> : null}
       <Eyebrow right={(task.checklist ?? []).length ? `${(task.checklist ?? []).filter((x: any) => x.done).length} of ${(task.checklist ?? []).length}` : undefined}>Smaller steps</Eyebrow>
       <Panel>
         {(task.checklist ?? []).map((x: any, i: number) => <Row key={i} left={<Check on={!!x.done} onPress={onIt || isLead ? () => run(act.toggle(task, i, me)) : undefined} />} title={x.text} />)}

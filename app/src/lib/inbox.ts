@@ -22,6 +22,19 @@ export async function loadInbox(me: string, groups: Group[]): Promise<Item[]> {
   for (const x of mine.filter((t) => t.status === "requested"))
     items.push({ id: `ask-${x.id}`, kind: "ask", title: x.title, meta: "Asked of you", go: `/task/${x.id}`, at: at(x),
       yes: () => bix.commit(act.claim(x, me)), no: () => bix.commit(act.release(x)), yesLabel: "I'm in", noLabel: "Can't" });
+  // Asks to join a team, answered in place (teamwork sketches B6): for core members, and for leads of that team.
+  const seen = new Set<string>();
+  const teamAsks = (t: R, groupName: string) => {
+    for (const p of ((t.participant ?? []) as any[]).filter((x) => x.status === "requested")) {
+      const key = `tj-${t.id}-${p.person.reference}`; if (seen.has(key)) continue; seen.add(key);
+      const answer = (yes: boolean) => async () => { const fresh = await bix.get("Team", t.id); const rest = ((fresh.participant ?? []) as any[]).filter((x) => !(x.person.reference === p.person.reference && x.status === "requested"));
+        return bix.commit(bix.next(fresh, { participant: yes ? [...rest, { ...p, status: "active", role: p.role ?? "volunteer" }] : rest })); };
+      items.push({ id: key, kind: "team-join", title: `Wants to join ${t.name}`, meta: groupName, who: { reference: p.person.reference } as never, go: `/team/${t.id}`, at: at(t),
+        yes: answer(true), no: answer(false), yesLabel: "Accept", noLabel: "Decline" });
+    }
+  };
+  const ledTeams = (await bix.search("Team", { participant: me }).catch(() => [] as R[])).filter((t) => ((t.participant ?? []) as any[]).some((x) => x.person.reference === me && x.role === "lead" && x.status === "active"));
+  for (const t of ledTeams) teamAsks(t, groups.find((g) => `Organization/${g.org.id}` === t.organization?.reference)?.org.name ?? "Your team");
   // Groups you run.
   for (const g of groups.filter((x) => ["officer", "core-member"].includes(x.role.code?.code))) {
     const org = `Organization/${g.org.id}`;
@@ -36,8 +49,7 @@ export async function loadInbox(me: string, groups: Group[]): Promise<Item[]> {
       Promise.all(live.map((p) => bix.search("Task", { partOf: `Initiative/${p.id}` }))).then((x) => x.flat()),
       Promise.all(live.map((p) => bix.search("Need", { initiative: `Initiative/${p.id}` }))).then((x) => x.flat()),
     ]);
-    for (const t of teams) for (const p of ((t.participant ?? []) as any[]).filter((x) => x.status === "requested"))
-      items.push({ id: `tj-${t.id}-${p.person.reference}`, kind: "team-join", title: `Wants to join ${t.name}`, meta: g.org.name, who: { reference: p.person.reference } as never, go: `/team/${t.id}`, at: at(t) });
+    for (const t of teams) teamAsks(t, g.org.name);
     for (const x of tasks.filter((t) => t.status === "requested" && t.owner?.reference !== me))
       items.push({ id: `un-${x.id}`, kind: "unanswered", title: x.title, meta: "Asked, no answer yet", who: { reference: x.owner?.reference } as never, go: `/task/${x.id}`, at: at(x) });
     const ideas = tasks.filter((t) => t.status === "draft");
@@ -53,7 +65,7 @@ export async function loadInbox(me: string, groups: Group[]): Promise<Item[]> {
   // Faces for people-centred items.
   const refs = items.map((x) => (x.who as any)?.reference).filter(Boolean);
   const ppl = await peopleFor(refs, 30);
-  for (const x of items) { const r = (x.who as any)?.reference; if (r) { x.who = ppl[r]; if (x.kind === "join" || x.kind === "team-join") x.title = `${personName(ppl[r])} ${x.title.toLowerCase()}`; if (x.kind === "unanswered") x.meta = `${personName(ppl[r])} hasn't answered`; } }
+  for (const x of items) { const r = (x.who as any)?.reference; if (r) { x.who = ppl[r]; if (x.kind === "join" || x.kind === "team-join") x.title = `${personName(ppl[r])} ${x.title.charAt(0).toLowerCase()}${x.title.slice(1)}`; if (x.kind === "unanswered") x.meta = `${personName(ppl[r])} hasn't answered`; } }
   items.sort((a, b) => b.at.localeCompare(a.at));
   count = items.length; listeners.forEach((l) => l(count));
   return items;
