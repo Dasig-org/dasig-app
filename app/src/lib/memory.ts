@@ -1,6 +1,7 @@
 import { declineSuggestion, outOfOrder, usuallyDoneByNow, usuallyNeeded, wasDeclined } from "@bayanihan/core/memory";
 import { bix, type R } from "./bix";
 import STARTERS from "@/data/starter-practices.json";
+import { closestTask, modelDownloaded, sameStep } from "./bayani";
 
 /*
  * Project memory, rules only (Bayani v0 Phase 1; design/bayani-app-sketches.html 7; BIX "Project memory: Practices"
@@ -11,7 +12,8 @@ import STARTERS from "@/data/starter-practices.json";
  * - Worth a look (usually done by now) and out of order: only with the group's own Practices (they carry figures).
  */
 // The app's event kinds → the starter Practices' kinds (bayani/data/playbooks.ts).
-const KIND_ALIAS: Record<string, string> = { run: "fun-run", cleanup: "coastal-cleanup", talk: "community-conference", outreach: "feeding-program" };
+// Only real matches: a workshop isn't a conference, and outreach or relief isn't a feeding program (no starters for those yet).
+const KIND_ALIAS: Record<string, string> = { run: "fun-run", cleanup: "coastal-cleanup" };
 export const MEMORY_RULE = "memory:usually-needed";
 
 const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\b(the|a|an|for|of|to)\b/g, "").replace(/\s+/g, " ").trim();
@@ -40,8 +42,22 @@ export async function loadMemory(project: R, tasks: R[]): Promise<Memory> {
   const practices: R[] = usingStarters ? (STARTERS as R[]).map((x) => ({ ...x, organization: project.organization })) : ownForKind;
   const declined = org ? await bix.search("ChangeProposal", { target: `Initiative/${project.id}` }).catch(() => [] as R[]) : [];
   const have = new Set(tasks.filter((t) => t.status !== "cancelled").map((t) => norm(t.title ?? "")));
-  const needed = usuallyNeeded(p, tasks, practices, 2 / 3)
-    .filter((sug) => !have.has(norm(String(sug.practice.title))) && !wasDeclined(declined, `Initiative/${project.id}`, `Practice/${sug.practice.id}`))
+  let candidates = usuallyNeeded(p, tasks, practices, 2 / 3)
+    .filter((sug) => !have.has(norm(String(sug.practice.title))) && !wasDeclined(declined, `Initiative/${project.id}`, `Practice/${sug.practice.id}`));
+  // Bayani-1, when it's on this phone: drop a suggestion when an existing step, worded differently, is the same step.
+  if (await modelDownloaded().catch(() => false)) {
+    const teams = await bix.search("Team", { initiative: `Initiative/${project.id}` }).catch(() => [] as R[]);
+    const teamName = (t: R) => teams.find((x) => `Team/${x.id}` === (t.team as { reference?: string } | undefined)?.reference)?.name as string | undefined;
+    const kept: typeof candidates = [];
+    for (const sug of candidates) {
+      const t = closestTask(sug.practice, tasks, teamName);
+      const same = t ? await sameStep(project, t, teamName(t), sug.practice).catch(() => null) : null;
+      if (same !== true) kept.push(sug);
+      if (kept.length >= 5) break;
+    }
+    candidates = kept;
+  }
+  const needed = candidates
     .slice(0, 5)
     .map((sug) => ({ practice: sug.practice, why: usingStarters ? "Common for projects like this" : sug.why, starter: usingStarters }));
   const now = new Date().toISOString();

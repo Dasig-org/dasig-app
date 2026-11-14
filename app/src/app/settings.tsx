@@ -46,6 +46,7 @@ export default function Settings() {
       <Panel>
         <Row left={<IconCircle name="wifioff" />} title="Working offline" meta={s.connection?.kind === "ecosystem" ? "Saved on the Bayanihan Network" : s.connection?.kind === "hub" ? "Your group's hub" : "On this phone only"} onPress={() => router.push("/offline" as never)} />
         <Row left={<IconCircle name="spark" />} title="How Dasig works" meta="Short guides" onPress={() => router.push("/help" as never)} />
+        <Row left={<IconCircle name="spark" tone="bayani" />} title="Ask Bayani" meta="Questions about Dasig, BIX and Bayani; Bayani on this phone" onPress={() => router.push("/ask-bayani")} />
         <Row left={<IconCircle name="book" />} title="BIX, Bayanihan and Bayani" meta="Open source from Dasig Inc., and why we share it" onPress={() => router.push("/about" as never)} last />
       </Panel>
     </Screen>

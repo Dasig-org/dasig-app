@@ -68,7 +68,8 @@
           "icon": "./assets/images/android-icon-monochrome.png",
           "color": "#F47C26"
         }
-      ]
+      ],
+      "llama.rn"
     ],
     "experiments": {
       "typedRoutes": false,

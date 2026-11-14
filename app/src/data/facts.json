@@ -1,0 +1,371 @@
+[
+ {
+  "id": "what-is-bayanihan",
+  "questions": [
+   "What is Bayanihan?",
+   "What does Bayanihan mean here?",
+   "What are the Bayanihan foundations?"
+  ],
+  "answer": "Bayanihan is the Filipino tradition of a community lifting a neighbour's house together. Here it also names the open foundations anyone can use and build on: BIX (the open format), Bayanihan Core (the rules engine), Bayanihan Server (the reference server) and Bayanihan Intelligence (the AI programme, whose model is Bayani).",
+  "source": "https://bayanihan.dasig.org/about",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "what-is-dasig",
+  "questions": [
+   "What is Dasig?",
+   "What is the Dasig app?",
+   "What does this app do?"
+  ],
+  "answer": "Dasig is the app for volunteers and organizations. It turns a group's work into teams and small steps, so everyone can carry a part: someone starts a project, leads break it down, and volunteers tap \"I'm in\". It's free, open source, mobile first, and works without the internet.",
+  "source": "https://bayanihan.dasig.org/",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "who-makes-dasig",
+  "questions": [
+   "Who makes Dasig?",
+   "Who made this app?",
+   "Who is behind this?",
+   "Who is Dasig Inc.?"
+  ],
+  "answer": "Dasig is made by Dasig Inc., which also develops BIX and runs Dasig Fundraising. \"Dasig\" and the hands emblem are trademarks of Dasig Inc., the way Firefox is Mozilla's: anyone can use the open code, but only Dasig Inc. ships it as Dasig.",
+  "source": "https://bayanihan.dasig.org/about",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "dasig-vs-dasig-fundraising",
+  "questions": [
+   "Is this the same as dasig.org?",
+   "How is Dasig different from Dasig Fundraising?",
+   "Can I raise money here?"
+  ],
+  "answer": "They are separate. Dasig Fundraising, at dasig.org, is where people raise money. The Dasig app is where groups coordinate the work. Raising money stays on Dasig Fundraising; coordinating the work lives in the Dasig app. Their data is kept separately.",
+  "source": "https://bayanihan.dasig.org/about",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "who-it-is-for",
+  "questions": [
+   "Who is Dasig for?",
+   "What kind of groups use it?",
+   "Is it only for nonprofits?"
+  ],
+  "answer": "It's for the groups that do community work, registered or not: clubs, parishes and faith communities, school organizations, barangay youth, event teams, and the volunteers around them. It's built for the ordinary week, like a feeding program, tutoring or a cleanup. Disaster response is one kind of work it can hold, not its premise.",
+  "source": "https://bayanihan.dasig.org/",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "why-it-exists",
+  "questions": [
+   "Why was this built?",
+   "What problem does it solve?",
+   "Why do groups need this?"
+  ],
+  "answer": "Groups already do the work. What's hard is everything around it: chasing replies in chats, not knowing who's bringing what, receipts and photos lost in phones, the way things were done leaving when officers change, and writing the same report in four formats. Bayanihan works because someone does the extra work; Dasig is for sharing it.",
+  "source": "https://bayanihan.dasig.org/",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "status-pilot",
+  "questions": [
+   "Is Dasig available?",
+   "Can I download the app?",
+   "Is it on Google Play or the App Store?"
+  ],
+  "answer": "Dasig is in pilot with a small number of groups, who get the app directly with help setting up. The Android app is in pilot now and goes to Google Play after the pilot; the iPhone app is being prepared for the App Store. Groups can ask to join the pilot at hello@dasig.org.",
+  "source": "https://bayanihan.dasig.org/get",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "open-source-licences",
+  "questions": [
+   "Is it open source?",
+   "What licences do you use?",
+   "Can I use the code?"
+  ],
+  "answer": "Yes. The Dasig app is AGPL-3.0; BIX's schemas and Bayanihan Core use a permissive licence; Bayanihan Server is Apache-2.0. The licences take effect when the code is published with the first release. The code is open; the Dasig name and emblem stay trademarks of Dasig Inc.",
+  "source": "https://bayanihan.dasig.org/about",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "cost",
+  "questions": [
+   "Is Dasig free?",
+   "How much does it cost?",
+   "Do I have to pay?"
+  ],
+  "answer": "The Dasig app is free and open source.",
+  "source": "https://bayanihan.dasig.org/",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "contact",
+  "questions": [
+   "How do I contact you?",
+   "How do I join the pilot?",
+   "Who do I email?"
+  ],
+  "answer": "Email hello@dasig.org. Pilot groups get the app directly and help setting up their teams.",
+  "source": "https://bayanihan.dasig.org/pilot",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "what-is-bix",
+  "questions": [
+   "What is BIX?",
+   "What does BIX stand for?",
+   "What is the Bayanihan Information Exchange?"
+  ],
+  "answer": "BIX, the Bayanihan Information Exchange, is an open standard for the work volunteer groups do: who is doing what, for whom, where, and whether it really happened. Any app that speaks BIX can read and write the same records, so a group can change apps or run its own server without losing its history. BIX is not an app.",
+  "source": "https://bayanihan.dasig.org/docs/bix",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "bix-status",
+  "questions": [
+   "Is BIX finished?",
+   "What version is BIX?",
+   "Does the government use BIX?"
+  ],
+  "answer": "BIX is a v0.1 draft, shaped in conversations with the groups in the pilot. It isn't a government system and no LGU uses it today; it's built so an LGU or agency could set a shared goal and see which groups contribute.",
+  "source": "https://bayanihan.dasig.org/docs/bix",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "bix-inspiration",
+  "questions": [
+   "Where does BIX come from?",
+   "Is BIX based on FHIR?",
+   "Why is BIX like FHIR?"
+  ],
+  "answer": "BIX takes its pattern from HL7 FHIR, the standard health care uses to share records: resources, references, lifecycles, extensions, bundles and a REST API. Civic Interconnect's CAE and CEP give it a classification of civic things and a way to export confirmed work. BIX is not affiliated with or endorsed by HL7.",
+  "source": "https://bayanihan.dasig.org/docs/bix",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "bix-governance",
+  "questions": [
+   "Who owns BIX?",
+   "Who decides what goes into BIX?",
+   "Can I contribute to BIX?"
+  ],
+  "answer": "BIX is developed by Dasig Inc. and shaped by the pilot groups, who are credited as contributors with their permission. It's open to contribution, and as organizations join it is to be governed together with them. Dasig is one app built on BIX; it is meant to have others.",
+  "source": "https://bayanihan.dasig.org/docs/bix",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "bix-everyday-words",
+  "questions": [
+   "What are the main parts of BIX?",
+   "What does BIX call a committee?",
+   "What is an Initiative or a Task?"
+  ],
+  "answer": "In everyday words: your group is an Organization; a committee is a Team; a project, program or Saturday session is an Initiative; what you still lack is a Need; what someone will give is an Offer; a job someone says yes to is a Task; the logbook of who did what is Provenance; a report you owe is a Report.",
+  "source": "https://bayanihan.dasig.org/docs/bix",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "bix-how-it-works",
+  "questions": [
+   "How does BIX work?",
+   "What are the main ideas of BIX?"
+  ],
+  "answer": "Everything is a record with a permanent ID, and records point to each other: a job belongs to a project, a project to a group. Anyone can suggest; a person with the right role decides. Report numbers are counted from confirmed work, not typed. Your group decides who sees what, the people you serve are counted, never named, and you can take all your records with you.",
+  "source": "https://bayanihan.dasig.org/docs/bix",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "proposals",
+  "questions": [
+   "Can volunteers suggest work?",
+   "Can the AI change my records?",
+   "What is a proposal?"
+  ],
+  "answer": "Anyone in a group can suggest work or an edit, and so can Bayani if the group turns it on. A suggestion stays a draft until someone with the right role accepts it, and every change records who suggested it and who confirmed it. A suggestion made against an old version is marked outdated and never applied.",
+  "source": "https://bayanihan.dasig.org/docs/bix",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "what-is-core",
+  "questions": [
+   "What is Bayanihan Core?",
+   "What does the rules engine do?"
+  ],
+  "answer": "Bayanihan Core is the engine that enforces BIX: it checks every change against BIX's rules, such as who may make it, what can come next and who confirmed it, and it counts report figures and votes. The same code runs on the phone and on the server.",
+  "source": "https://bayanihan.dasig.org/about",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "what-is-server",
+  "questions": [
+   "What is Bayanihan Server?",
+   "Where are my group's records stored?"
+  ],
+  "answer": "Bayanihan Server is the reference BIX server, like HAPI for FHIR. It stores a group's records and answers the BIX API. It runs inside the Dasig app, on a hub phone, or on your own machine.",
+  "source": "https://bayanihan.dasig.org/about",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "self-hosting",
+  "questions": [
+   "Can we run our own server?",
+   "Can an LGU host its own data?",
+   "What do I need to self-host?"
+  ],
+  "answer": "Yes, with the first open-source release. An LGU, federation, school or network of chapters can run its own Bayanihan Server, keep its records on its own machine, and still list its groups on the Dasig Ecosystem if it wants. It needs a small Linux server (1 GB of memory is enough for many groups), Docker, S3-compatible storage for backups and a domain name.",
+  "source": "https://bayanihan.dasig.org/docs/self-hosting",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "start-a-group",
+  "questions": [
+   "How do I start a group?",
+   "How long does setup take?",
+   "How do I set up teams?"
+  ],
+  "answer": "About five minutes, on one phone, with no internet. Open Dasig and give a nickname, choose \"I run a group\", name it and pick its kind and positions, then start a project and pick the teams it needs, or start from last year's teams. Open a team and tap Lead to choose its lead.",
+  "source": "https://bayanihan.dasig.org/docs/start-a-group",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "bring-people-in",
+  "questions": [
+   "How do I add people to my group?",
+   "How do volunteers join?",
+   "Do volunteers need the app?"
+  ],
+  "answer": "Together in one place, make one phone the group's hub: others join its hotspot and scan its QR code, with no internet. Apart, send an invite link. Without the app, add someone by nickname so you can record their work; they can claim it later. A nickname is all a volunteer needs to join.",
+  "source": "https://bayanihan.dasig.org/docs/start-a-group",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "volunteering",
+  "questions": [
+   "What can volunteers do?",
+   "What is \"I'm in\"?",
+   "What is a good first step?"
+  ],
+  "answer": "Volunteers use the same app as coordinators. Today shows what you've taken, what someone asked you to do, and open work you can say \"I'm in\" to; some work is marked as a good first step for newcomers. You can suggest work, and your team's lead accepts it and credits you for the idea.",
+  "source": "https://bayanihan.dasig.org/docs/volunteering",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "your-story",
+  "questions": [
+   "Do I keep a record of my volunteering?",
+   "What is \"Your story\"?",
+   "What happens to my work if I leave?"
+  ],
+  "answer": "Everything you finish is signed by the group that received it and kept on your phone, across every group you help. Download it any time from Me \u2192 Your data. Leaving a group never erases what you did; deleting your account removes your profile after 14 days, and groups keep the work credited to \"a former volunteer\".",
+  "source": "https://bayanihan.dasig.org/docs/volunteering",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "offline-and-hubs",
+  "questions": [
+   "Does Dasig need the internet?",
+   "Does it work without signal or data?",
+   "What is a hub?",
+   "Can we use it where there's no signal?"
+  ],
+  "answer": "Dasig never needs the internet to do the work. Bayanihan Server runs inside the app, so one person can run a project on their own phone. A group can make one phone or tablet its hub: others join its hotspot and scan its QR code once, and their phones save to it whenever they're near. Changes made away from the hub are sent, in order, when back in range.",
+  "source": "https://bayanihan.dasig.org/docs/hubs",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "hub-backup",
+  "questions": [
+   "What if the hub phone is lost?",
+   "How do I back up my group's records?"
+  ],
+  "answer": "One hub phone holds everything, so if it's lost its records go with it. Keep it safe and download your group's records now and then (group page \u2192 Download). When the Dasig Ecosystem opens, a group will be able to keep a copy on its server too.",
+  "source": "https://bayanihan.dasig.org/docs/hubs",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "privacy",
+  "questions": [
+   "Where is my data stored?",
+   "Who can see my group's records?",
+   "Do you sell data?"
+  ],
+  "answer": "The Dasig app keeps your group's records on your phones or your group's hub phone; nothing is sent to Dasig unless your group joins the Dasig Ecosystem, whose server is in Singapore. Your group decides who sees what. There's no advertising and no selling or renting of data. The people a group serves are counted, never named.",
+  "source": "https://bayanihan.dasig.org/trust/privacy",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "ai-training-data",
+  "questions": [
+   "Is my group's data used to train AI?",
+   "Does Bayani learn from our records?"
+  ],
+  "answer": "No, not unless a group opts in. Bayani reads your group's records on the phone to make suggestions, but those records aren't used to train any model without the group's agreement.",
+  "source": "https://bayanihan.dasig.org/trust/privacy",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "safety-reports",
+  "questions": [
+   "How do I report a problem?",
+   "What if a group is fake?",
+   "Something looks wrong on the Ecosystem"
+  ],
+  "answer": "Report it, even without an account: fraudulent or impersonating groups, hateful or sexual content, anything that puts someone in danger, especially a child, or your own information shown where you didn't agree. During the pilot every report is read within 2 working days. If someone is in immediate danger, call 911 or your local barangay first.",
+  "source": "https://bayanihan.dasig.org/trust/safety",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "what-is-bayani",
+  "questions": [
+   "Who are you?",
+   "What is Bayani?",
+   "Are you an AI?"
+  ],
+  "answer": "I'm Bayani, the small AI model in the Dasig app, in development. I help your group remember what its projects usually need, and suggest smaller steps, missing steps and what usually comes first. I run on the phone, I only suggest, and a person decides every change.",
+  "source": "https://bayanihan.dasig.org/bayani",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "bayani-how-it-works",
+  "questions": [
+   "How does Bayani know what my project needs?",
+   "Where does Bayani get its suggestions?"
+  ],
+  "answer": "From your group's own finished projects. Each kind of step your group does is remembered as a Practice, with how often it was needed, when it was usually done, what came before it and how often it was forgotten until the last week. Dasig's rules count those; Bayani judges whether a step is the same as one you know and whether it applies to this project.",
+  "source": "https://bayanihan.dasig.org/docs/bix",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "bayani-limits",
+  "questions": [
+   "Can Bayani do anything else?",
+   "Can you write a letter for us?",
+   "Can I chat with Bayani?"
+  ],
+  "answer": "Bayani isn't a chatbot. It answers questions about your group's projects and steps, from your group's own records, and says when something is outside what it can help with. Every change it suggests is a draft that a person accepts or declines.",
+  "source": "https://bayanihan.dasig.org/bayani",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "bayani-choose",
+  "questions": [
+   "Can we turn Bayani off?",
+   "Who decides what Bayani helps with?"
+  ],
+  "answer": "Each group chooses. An officer turns on only the areas the group wants, such as remembering how projects go or breaking down steps, and everything is off until then. The app works the same without Bayani.",
+  "source": "https://bayanihan.dasig.org/bayani",
+  "updated": "2026-11-14"
+ },
+ {
+  "id": "bayani-privacy",
+  "questions": [
+   "Does Bayani send my data anywhere?",
+   "Does Bayani need the internet?",
+   "Can Bayani see everything?"
+  ],
+  "answer": "Bayani runs on the phone and needs no internet; nothing is sent anywhere to get an answer. It only reads what the person using it may see, so its suggestions never show more than they could open themselves.",
+  "source": "https://bayanihan.dasig.org/bayani",
+  "updated": "2026-11-14"
+ }
+]

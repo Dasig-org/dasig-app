@@ -5,14 +5,14 @@ const projectRoot = __dirname;
 const config = getDefaultConfig(projectRoot);
 // Private checkout: the sibling repos (bix, bayanihan) cloned next to this one.
 const siblings = path.resolve(projectRoot, "../..");
-config.watchFolders = [path.join(siblings, "bayanihan/packages/core"), path.join(siblings, "bayanihan/packages/server"), path.join(siblings, "bix")];
+config.watchFolders = [path.join(siblings, "bayanihan/packages/core"), path.join(siblings, "bayanihan/packages/server"), path.join(siblings, "bix"), path.join(siblings, "bayani")];
 config.resolver.nodeModulesPaths = [path.join(projectRoot, "node_modules")];
 // Hierarchical lookup stays on (nested deps need it); no react exists at the repo root, so it cannot duplicate.
 // Core is written with ".js" import specifiers (TypeScript NodeNext style); map them to the .ts sources.
 const defaultResolve = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   const resolve = defaultResolve ?? context.resolveRequest;
-  if (moduleName.startsWith(".") && moduleName.endsWith(".js") && (/(@bayanihan|packages)[\\/](core|server)[\\/]/.test(context.originModulePath))) {
+  if (moduleName.startsWith(".") && moduleName.endsWith(".js") && (/(@bayanihan|packages)[\\/](core|server|bayani)[\\/]|[\\/]bayani[\\/]src[\\/]/.test(context.originModulePath))) {
     try { return resolve(context, moduleName.replace(/\.js$/, ".ts"), platform); } catch {}
   }
   return resolve(context, moduleName, platform);
