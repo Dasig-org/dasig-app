@@ -12,7 +12,7 @@ import { facesOf, peopleFor, placeOf, shortRef, teamIcon } from "@/lib/work";
 import { Logo } from "@/ui/Context";
 import { History } from "@/ui/History";
 import { Files } from "@/ui/Files";
-import { Body, Buttons, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Sheet, Tip, Skeleton, usePhoto } from "@/ui/kit";
+import { Body, Buttons, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, Sheet, Skeleton, Tip, usePhoto } from "@/ui/kit";
 import { atMost, InviteOptions, linkOpts, VisibilityChoice, visibilityFields, visibilityOf, type Visibility } from "@/ui/Privacy";
 import { appUrl } from "@/lib/env";
 import { c, type as t } from "@/ui/theme";
@@ -98,6 +98,8 @@ export default function Project() {
           const left = n - ((k.participant ?? []) as any[]).filter((x) => x.status === "active").length;
           return <Row key={k.id} left={<IconCircle name={n > 1 ? "users" : "pen"} />} title={k.title} meta={[tm?.name, n > 1 ? `${left} place${left === 1 ? "" : "s"}` : k.taking === "ask" ? "lead's call" : null].filter(Boolean).join(" · ")}
             right={<Pill>{k.taking === "ask" ? "Ask to do" : "I'm in"}</Pill>} onPress={() => router.push(`/task/${k.id}`)} last={i === openW.length - 1} />; })}</Panel></>; })()}
+      {p.status === "cancelled" ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="pending" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>This project was cancelled</Text>
+        <Meta>Its work, people and history are kept, so you can look back. Nothing new can be added.</Meta></View></Sand></View> : null}
       {/* Project memory, rules only (Bayani v0 Phase 1): leads, when the group turned it on. */}
       {lead && ((org?.assist ?? []) as any[]).some((a) => a.code === "memory") ? <MemoryCard project={p} tasks={tasks} teams={teams} onChanged={reload} /> : null}
       <Eyebrow right={`${teams.length}`}>Teams</Eyebrow>

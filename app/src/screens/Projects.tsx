@@ -11,9 +11,13 @@ import { Eyebrow, Field, IconCircle, Notice, Panel, Row, Screen, Skeleton, Title
 export default function Projects({ tab }: { tab?: boolean } = {}) {
   const s = useSession();
   const [find, setFind] = useState("");
+  const [showCancelled, setShowCancelled] = useState(false);
   const { data, error } = useLoad(async () => (s.current ? bix.search("Initiative", { organization: `Organization/${s.current.id}` }) : s.person ? bix.search("Initiative", { person: `Person/${s.person.id}` }) : []), [s.current?.id, s.person?.id]);
   const q = find.trim().toLowerCase();
-  const all = (data ?? []).filter((p) => p.kind !== "session" && p.status !== "cancelled" && (!q || `${p.title} ${p.description ?? ""}`.toLowerCase().includes(q)));
+  const matches = (p: R) => p.kind !== "session" && (!q || `${p.title} ${p.description ?? ""}`.toLowerCase().includes(q));
+  const all = (data ?? []).filter((p) => p.status !== "cancelled" && matches(p));
+  // Cancelled projects (14 Nov): kept in BIX with their history; listed last, folded, so they can be found and opened.
+  const cancelled = (data ?? []).filter((p) => p.status === "cancelled" && matches(p)).sort((a, b) => String((b.meta as any)?.lastUpdated ?? "").localeCompare(String((a.meta as any)?.lastUpdated ?? "")));
   const done = (p: R) => p.status === "completed" || (p.period?.start && Date.parse(p.period.start) < Date.now() - 2 * 86400000);
   const soon = all.filter((p) => !done(p) && p.period?.start).sort((a, b) => a.period.start.localeCompare(b.period.start));
   const undated = all.filter((p) => !done(p) && !p.period?.start);
@@ -34,6 +38,12 @@ export default function Projects({ tab }: { tab?: boolean } = {}) {
         {!soon.length ? <Panel><Row left={<IconCircle name="plus" tone="grey" />} title="New event" meta={q ? `Nothing matches "${find}"` : "Nothing coming up yet"} onPress={() => router.push((s.current ? { pathname: "/new-project", params: { org: s.current.id } } : "/new-project") as never)} last /></Panel> : null}
         {list("No date yet", undated)}
         {list("Done", past)}
+        {cancelled.length ? <>
+          <Eyebrow right={`${cancelled.length}`}>Cancelled</Eyebrow>
+          <Panel>
+            {showCancelled ? cancelled.map((p, i) => <Row key={p.id} left={<IconCircle name="pending" tone="grey" />} title={p.title} meta={[when(p), "Cancelled"].filter(Boolean).join(" · ")} onPress={() => router.push(`/project/${p.id}`)} last={i === cancelled.length - 1} />)
+              : <Row left={<IconCircle name="pending" tone="grey" />} title={`Show ${cancelled.length} cancelled project${cancelled.length === 1 ? "" : "s"}`} meta="Kept with their history" onPress={() => setShowCancelled(true)} last />}
+          </Panel></> : null}
       </>}
     </Screen>
   );
