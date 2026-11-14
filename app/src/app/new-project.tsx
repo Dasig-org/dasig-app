@@ -2,7 +2,7 @@ import { PlaceField, placeExtensions, type PlaceValue } from "@/ui/PlaceField";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Image, Pressable, Share, Text, View } from "react-native";
-import { bix, ref, type R } from "@/lib/bix";
+import { bix, newId, ref, type R } from "@/lib/bix";
 import { DAY, parseDate } from "@/lib/dates";
 import { appUrl } from "@/lib/env";
 import { pickPhoto, type Attachment } from "@/lib/files";
@@ -74,14 +74,15 @@ export default function NewEvent() {
       const kept = teams.filter((x) => x.keep);
       const teamRecs = kept.map((x) => bix.create("Team", { name: x.name, organization: { reference: `Organization/${orgId}` }, initiative: ref(ini), kind: "initiative", status: "active",
         access: x.name === "Communications" ? "initiative" : "own-tasks", participant: x.lead ? [{ person: { reference: x.lead }, role: "lead", status: "active" }] : [] }));
-      await bix.commit(ini, ...teamRecs);
+      // Everything in one commit (2026-11-14): before, the project and teams were saved first, so a failure making the
+      // tasks left a project behind, and trying again made duplicates.
       // Within a team, work after a gate waits on it (e.g. nothing on the route before the permit).
-      const tasks = kept.flatMap((x, i) => { const ws = x.work.filter((w) => w.keep); const ids = ws.map(() => crypto.randomUUID());
+      const tasks = kept.flatMap((x, i) => { const ws = x.work.filter((w) => w.keep); const ids = ws.map(() => newId());
         return ws.map((w, k) => { const gate = ws.findIndex((g) => g.gate && g.before > w.before);
           return bix.create("Task", { id: ids[k], ...(gate >= 0 && gate !== k ? { dependsOn: [{ reference: `Task/${ids[gate]}` }] } : {}), intent: "plan", status: "ready", title: w.title, partOf: ref(ini),
         owner: ref(teamRecs[i]!), team: ref(teamRecs[i]!), audience: "team", ...(w.people && w.people > 1 ? { slots: w.people } : {}), ...(w.hours ? { estimate: { value: w.hours, unit: "h", per: "person" } } : {}), ...(w.gate ? { milestone: true } : {}),
         ...(date ? { due: new Date(date.getTime() - w.before * DAY).toISOString() } : {}) }); }); });
-      if (tasks.length) await bix.commit(...tasks);
+      await bix.commit(ini, ...teamRecs, ...tasks);
       setMade(ini);
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
   };

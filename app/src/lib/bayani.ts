@@ -36,13 +36,23 @@ export async function modelDownloaded(): Promise<boolean> {
   return (["base", "lora"] as const).every((k) => file(k).exists && (file(k).size ?? 0) > FILES[k].mb * 900_000);
 }
 
-/** Download both files (about 1.1 GB). Use Wi-Fi. */
-export async function downloadModel(): Promise<void> {
-  const { FS, dir, file } = await fs();
+/**
+ * Download both files (about 1.1 GB), to their exact names, with progress (0–1). Use Wi-Fi.
+ * 2026-11-14: File.downloadFileAsync into the folder named the file after Hugging Face's redirect URL, so it was never
+ * found, and showed no progress. Now the legacy resumable download, which writes to the given path and reports bytes.
+ */
+export async function downloadModel(onProgress?: (share: number) => void): Promise<void> {
+  const { file } = await fs();
+  const L = await import("expo-file-system/legacy");
+  const total = MODEL_MB * 1_000_000;
+  let before = 0;
   for (const k of ["lora", "base"] as const) {
-    if (file(k).exists && (file(k).size ?? 0) > FILES[k].mb * 900_000) continue;
+    if (file(k).exists && (file(k).size ?? 0) > FILES[k].mb * 900_000) { before += FILES[k].mb * 1_000_000; onProgress?.(before / total); continue; }
     if (file(k).exists) file(k).delete();
-    await FS.File.downloadFileAsync(`${HF}/${FILES[k].name}`, dir);
+    const dl = L.createDownloadResumable(`${HF}/${FILES[k].name}`, file(k).uri, {}, (p) => onProgress?.(Math.min(1, (before + p.totalBytesWritten) / total)));
+    const r = await dl.downloadAsync();
+    if (!r || r.status >= 400) { if (file(k).exists) file(k).delete(); throw new Error(`The download stopped (${r?.status ?? "no answer"}). Try again on Wi-Fi.`); }
+    before += FILES[k].mb * 1_000_000;
   }
 }
 

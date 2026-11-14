@@ -1,5 +1,5 @@
 import { declineSuggestion, outOfOrder, usuallyDoneByNow, usuallyNeeded, wasDeclined } from "@bayanihan/core/memory";
-import { bix, type R } from "./bix";
+import { bix, newId, type R } from "./bix";
 import STARTERS from "@/data/starter-practices.json";
 import { closestTask, modelDownloaded, sameStep } from "./bayani";
 
@@ -90,6 +90,6 @@ export async function addFromMemory(project: R, teams: R[], s: { practice: R; st
 export async function declineFromMemory(project: R, s: { practice: R }) {
   const org = project.organization?.reference;
   if (!org) return;
-  await bix.commit(declineSuggestion({ id: crypto.randomUUID(), target: { reference: `Initiative/${project.id}` }, basedOn: project.meta.version, organization: { reference: org },
+  await bix.commit(declineSuggestion({ id: newId(), target: { reference: `Initiative/${project.id}` }, basedOn: project.meta.version, organization: { reference: org },
     practice: { reference: `Practice/${s.practice.id}` }, question: "usually-needed", title: s.practice.title }) as R);
 }
