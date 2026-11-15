@@ -2,7 +2,7 @@
   "expo": {
     "name": "Dasig",
     "slug": "dasig",
-    "version": "0.18.0",
+    "version": "0.19.0",
     "orientation": "portrait",
     "icon": "./assets/brand/icon.png",
     "scheme": [
@@ -28,7 +28,7 @@
         "android.permission.INTERNET",
         "android.permission.RECORD_AUDIO"
       ],
-      "versionCode": 19,
+      "versionCode": 20,
       "googleServicesFile": "./google-services.json"
     },
     "web": {
@@ -37,7 +37,26 @@
     },
     "plugins": [
       "expo-router",
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "useLegacyPackaging": true,
+            "packagingOptions": {
+              "exclude": [
+                "**/librnllama_v8.so",
+                "**/librnllama_jni_v8.so",
+                "**/librnllama_v8_2.so",
+                "**/librnllama_jni_v8_2.so",
+                "**/librnllama_v8_2_i8mm.so",
+                "**/librnllama_jni_v8_2_i8mm.so",
+                "**/librnllama_v8_2_dotprod_i8mm_hexagon_opencl.so",
+                "**/librnllama_jni_v8_2_dotprod_i8mm_hexagon_opencl.so"
+              ]
+            }
+          }
+        }
+      ],
       "expo-sqlite",
       [
         "expo-camera",
@@ -69,7 +88,8 @@
           "color": "#F47C26"
         }
       ],
-      "llama.rn"
+      "llama.rn",
+      "./plugins/withoutHexagonAssets"
     ],
     "experiments": {
       "typedRoutes": false,
