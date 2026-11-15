@@ -7,12 +7,14 @@ import { type as t } from "@/ui/theme";
 import { ago, useWhere } from "@/ui/Where";
 import { onReach, reach } from "@/lib/reach";
 import { router } from "expo-router";
+import { useSnackbar } from "@/ui/Snackbar";
 
 /** Sync (sketch: P2 #14): what's waiting, where it goes, and anything that couldn't be saved. Never silently dropped. */
 export default function Sync() {
   const s = useSession();
   const [items, setItems] = useState<Pending[]>([]);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const [busy, setBusy] = useState(false);
   const load = () => pending().then(setItems);
   useEffect(() => { load(); }, []);
@@ -35,7 +37,6 @@ export default function Sync() {
       {items.length ? <Panel style={{ marginTop: 10 }}>{items.map((p, i) => <Row key={i} left={<IconCircle name="pending" tone="grey" />} title={label(p)} meta={new Date(p.occurredAt).toLocaleString()} right={<Pill>Waiting</Pill>} last={i === items.length - 1} />)}</Panel> : null}
       {s.connection?.kind === "phone" ? <Text style={[t.meta, { marginTop: 12 }]}>On this phone, changes are saved at once. Waiting changes only happen when you're connected to a hub or the online server.</Text> : null}
       {items.length ? <Buttons><Primary label="Send now" busy={busy} onPress={async () => { setBusy(true); try { const r = await flush(); setMsg(r.refused.length ? `${r.refused.length} couldn't be saved: someone got there first.` : "Sent."); } catch { setMsg("Still can't reach it. We'll keep trying."); } finally { setBusy(false); load(); } }} /></Buttons> : null}
-      {msg ? <Notice>{msg}</Notice> : null}
       <Meta>{"\nChanges replay in the order they happened. Anything refused is shown, never quietly dropped."}</Meta>
     </Screen>
   );

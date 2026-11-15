@@ -8,6 +8,7 @@ import { useLoad } from "@/lib/use";
 import { Files } from "@/ui/Files";
 import { Body, Buttons, Check, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen , Skeleton} from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 /** A vote: options with their files, one vote each (changeable until it closes), result counted by Core, statement by a person. */
 export default function Vote() {
@@ -16,7 +17,8 @@ export default function Vote() {
   const me = s.person ? `Person/${s.person.id}` : "";
   const [pick, setPick] = useState<string | null>(null);
   const [stmt, setStmt] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const { data, reload } = useLoad(async () => { const d = await bix.get("Decision", id); const tally = await bix.tally(id).catch(() => null); return { d, tally }; }, [id]);
   if (!data) return <Screen back><Skeleton /></Screen>;
   const { d, tally } = data;
@@ -49,7 +51,6 @@ export default function Vote() {
       {d.status === "open" && s.isLead ? <Buttons><Outline flex label="Close voting now" onPress={close} /></Buttons> : null}
       {decided && s.isLead && !d.statement ? <><Field label="Say what was decided (shown to everyone)" value={stmt} onChangeText={setStmt} placeholder="e.g. Concept B, with the colours from A" />
         <Buttons><Primary label="Post" disabled={!stmt.trim()} onPress={() => run(() => bix.commit(bix.next(d, { statement: stmt.trim() })))} /></Buttons></> : null}
-      {msg ? <Notice>{msg}</Notice> : null}
     </Screen>
   );
 }

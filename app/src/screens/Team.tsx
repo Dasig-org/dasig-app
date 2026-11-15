@@ -1,4 +1,7 @@
 import { AddPeople } from "@/ui/AddPeople";
+import { AnswerRow } from "@/ui/Answer";
+import { suggester } from "@/lib/work";
+import { ErrorState } from "@/ui/ErrorState";
 import { AddSheet } from "@/ui/AddSheet";
 import { short } from "@/lib/dates";
 import { useState } from "react";
@@ -12,9 +15,11 @@ import { appUrl } from "@/lib/env";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, shortRef, stateLabel, teamIcon, places } from "@/lib/work";
+import { FaceGrid } from "@/ui/m3";
 import { Avatar, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { InviteOptions, linkOpts, type InviteOpts } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 /**
  * A team, in two views.
@@ -29,7 +34,8 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
   const s = useSession();
   const me = s.person ? `Person/${s.person.id}` : "";
   const [title, setTitle] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const [invite, setInvite] = useState<string | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [choosing, setChoosing] = useState<null | R[]>(null);
@@ -41,11 +47,14 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
     const asking = (team.participant ?? []).filter((p: any) => p.status === "requested");
     const people: Record<string, R> = {};
     for (const p of [...parts, ...asking]) { try { people[p.person.reference] = await bix.get("Person", p.person.reference.split("/")[1]); } catch {} }
-    return { team, tasks, parts, people, asking };
+    // Who suggested each idea (its note, else its history), named and not "Someone".
+    const by: Record<string, string> = {};
+    for (const x of tasks.filter((t) => t.status === "draft")) { const r = await suggester(x); if (r) { by[x.id] = r; if (!people[r]) { try { people[r] = await bix.get("Person", r.split("/")[1]!); } catch {} } } }
+    return { team, tasks, parts, people, asking, by };
   }, [id]);
-  if (error) return <Screen onRefresh={reload} back><Notice>{error}</Notice></Screen>;
+  if (error) return <Screen onRefresh={reload} back><ErrorState message={error} onRetry={reload} /></Screen>;
   if (!data) return <Screen onRefresh={reload} back><Skeleton /></Screen>;
-  const { team, tasks, parts, people, asking } = data;
+  const { team, tasks, parts, people, asking, by } = data;
   const name = (ref: string) => people[ref]?.name?.text ?? "Someone";
   const leadsIt = parts.some((p: any) => p.person.reference === me && p.role === "lead");
   // Rights come from the team's own group, not the group chosen in the pill (bug found in the multi-person test).
@@ -115,6 +124,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
   );
   const roster = (<>
       <Eyebrow right={lead ? undefined : undefined}>The team</Eyebrow>
+      {parts.length > 1 ? <View style={{ marginBottom: 10 }}><FaceGrid people={parts.map((p: any) => ({ key: p.person.reference, name: name(p.person.reference), photo: people[p.person.reference]?.photo, role: p.role === "lead" ? "Lead" : undefined }))} /></View> : null}
       <Panel>
         <Row left={who(byRole("lead"), photosOf("lead"))} title="Lead" meta={byRole("lead").join(", ") || (s.isLead ? "No lead yet · tap to choose" : "No lead yet")}
           onPress={s.isLead ? async () => {
@@ -152,10 +162,10 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
       {askedToJoin ? <View style={{ marginTop: 14 }}><Sand><IconCircle name="pending" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>You asked to join</Text>
         <Meta>{(team.participant ?? []).some((p: any) => p.role === "lead" && p.status === "active") ? "The lead will see it in their Inbox" : "The core team will see it in their Inbox"}</Meta></View>
         <LinkText onPress={() => setMe(null, "Request cancelled.")}>Cancel</LinkText></Sand></View> : null}
-      {lead && asking.length ? <><Eyebrow right={`${asking.length}`}>Asking to join</Eyebrow><Panel>{asking.map((p: any, i: number) => <Row key={p.person.reference} left={<Avatar name={name(p.person.reference)} photo={people[p.person.reference]?.photo} />}
-        title={name(p.person.reference)} meta="Wants to join this team" right={<View style={{ flexDirection: "row", gap: 6 }}><Outline label="Accept" onPress={() => answer(p.person.reference, true)} /><Outline label="No" onPress={() => answer(p.person.reference, false)} /></View>} last={i === asking.length - 1} />)}</Panel></> : null}
-      {view === "work" && lead && ideas.length ? <View style={{ marginTop: 14 }}><Panel>{ideas.map((x, i) => <Row key={x.id} left={<IconCircle name="pen" />} title={x.title} meta={`Suggested by ${name(x.note?.[0]?.author?.reference ?? "")}`}
-        right={<Outline label="Accept" onPress={async () => { try { await bix.commit(act.accept(x)); } catch {} reload(); }} />} last={i === ideas.length - 1} />)}</Panel></View> : null}
+      {lead && asking.length ? <><Eyebrow right={`${asking.length}`}>Asking to join</Eyebrow><Panel>{asking.map((p: any, i: number) => <AnswerRow key={p.person.reference} first={i === 0} left={<Avatar name={name(p.person.reference)} photo={people[p.person.reference]?.photo} />}
+        title={name(p.person.reference)} meta="Wants to join this team" onYes={() => answer(p.person.reference, true)} onNo={() => answer(p.person.reference, false)} />)}</Panel></> : null}
+      {view === "work" && lead && ideas.length ? <View style={{ marginTop: 14 }}><Panel>{ideas.map((x, i) => <AnswerRow key={x.id} first={i === 0} left={<IconCircle name="spark" />} title={x.title}
+        meta={`An idea · suggested by ${name(by[x.id] ?? x.note?.[0]?.author?.reference ?? "")}`} yesLabel="Accept" onYes={async () => { try { await bix.commit(act.accept(x)); } catch {} reload(); }} />)}</Panel></View> : null}
       {view === "people" || setup ? roster : summary}
       {view === "work" ? <>
       <Eyebrow right={`${work.filter((x) => x.status === "completed").length} of ${work.length} done`}>Our work</Eyebrow>
@@ -166,7 +176,6 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
         {work.length ? null : <Row title="Nothing yet" meta={lead ? "Add the first thing to do below" : "Suggest something below"} last />}
       </Panel>
       </> : null}
-      {msg ? <Notice>{msg}</Notice> : null}
       {onTeam && !leadsIt && view === "work" ? <View style={{ alignItems: "center", marginTop: 16 }}><LinkText onPress={() => setMe({ ...mine, status: "ended" }, `You left ${team.name}.`)}>Leave this team</LinkText></View> : null}
       {orgId ? <AddPeople open={addPeople} onClose={() => { setAddPeople(false); reload(); }} orgId={orgId} target={{ kind: "team", team }} onSomeoneNew={() => makeInvite()} /> : null}
       <Sheet open={!!choosing} onClose={() => setChoosing(null)}>

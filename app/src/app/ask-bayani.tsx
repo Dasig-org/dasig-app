@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
-import { Linking, Text, View } from "react-native";
-import { ask, downloadModel, modelDownloaded, modelSupported, MODEL_MB, removeModel } from "@/lib/bayani";
-import { Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Primary, Row, Sand, Screen, Title } from "@/ui/kit";
-import { type as t } from "@/ui/theme";
+import { View } from "react-native";
+import { downloadModel, modelDownloaded, modelSupported, MODEL_MB, removeModel } from "@/lib/bayani";
+import { AskBox } from "@/ui/Bayani";
+import { Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Primary, Row, Screen, Title } from "@/ui/kit";
+import { useSnackbar } from "@/ui/Snackbar";
 
-const EXAMPLES = ["What is BIX?", "Does it work without signal?", "Who are you?", "Is our data used to train AI?"];
-
-/** Ask Bayani: answers from the facts library, shown as written with their source; and Bayani-1 on this phone. */
+/**
+ * Ask Bayani: answers from the facts library, shown as written with their source; and Bayani-1 on this phone.
+ * Bayani-1 is trained on BIX records, not text: it answers its six trained questions about a project's records, and
+ * the Bayani sheet (ui/Bayani.tsx, lib/copilot.ts) turns those into suggestions a lead accepts or declines.
+ */
 export default function AskBayani() {
   const [pct, setPct] = useState(0);
-  const [q, setQ] = useState("");
-  const found = q.trim().length > 2 ? ask(q) : [];
   const [has, setHas] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   useEffect(() => { modelDownloaded().then(setHas).catch(() => setHas(false)); }, []);
   const get = async () => {
     setBusy(true); setMsg(null);
@@ -21,32 +23,20 @@ export default function AskBayani() {
     setBusy(false);
   };
   return (
-    <Screen back>
-      <Title sub="Answers come from Dasig's facts, word for word, with where they come from.">Ask Bayani</Title>
-      <Field icon="spark" placeholder="Ask about Dasig, BIX or Bayani" value={q} onChangeText={setQ} autoCorrect={false} />
-      {q.trim().length > 2 ? (found.length ? found.map((f, i) => (
-        <View key={f.fact.id} style={{ marginTop: 12 }}><Panel>
-          <Row left={<IconCircle name="spark" tone="bayani" />} title={f.fact.questions[0] ?? ""} meta={i === 0 ? "Best match" : "Also related"} last />
-          <View style={{ paddingBottom: 14, gap: 8 }}>
-            <Text style={t.body}>{f.fact.answer}</Text>
-            <Meta>{`From ${f.fact.source.replace("https://", "")} · checked ${f.fact.updated}`}</Meta>
-            <View style={{ alignSelf: "flex-start" }}><Outline label="Open the page" onPress={() => Linking.openURL(f.fact.source)} /></View>
-          </View>
-        </Panel></View>
-      )) : <Sand><Text style={t.body}>I don't know that yet. I can answer questions about Dasig, BIX and Bayani, and help with your group's projects.</Text></Sand>)
-        : <View style={{ marginTop: 12 }}><Panel>{EXAMPLES.map((x, i) => <Row key={x} left={<IconCircle name="spark" />} title={x} onPress={() => setQ(x)} last={i === EXAMPLES.length - 1} />)}</Panel></View>}
+    <Screen back bayani={false}>
+      <Title sub="Ask about Dasig, BIX or Bayani and get the answer as written, with its source. On a project or a step, the round button opens Bayani as your copilot: it says what's late and what's missing, and a lead can do it from there.">Ask Bayani</Title>
+      <AskBox />
 
       <Eyebrow>Bayani on this phone</Eyebrow>
       {!modelSupported ? <Meta>Bayani's model runs in the Android and iPhone apps, not in the browser. The answers above work everywhere.</Meta>
         : has ? <Panel>
-            <Row left={<IconCircle name="check" />} title="Bayani-1 is on this phone" meta="It checks project suggestions against steps you already have, worded differently. Works offline." last />
+            <Row left={<IconCircle name="check" />} title="Bayani-1 is on this phone" meta="For leads, when the group turned on Project memory. On a project or a step it checks usual steps against the ones you have, judges which belong, links steps to your usual steps, suggests a team for steps without one, and at close-out names the steps worth keeping. Each suggestion shows how sure it is; you accept, decline or undo. Offline." last />
             <View style={{ paddingBottom: 14 }}><Outline label="Remove it" onPress={async () => { await removeModel(); setHas(false); }} /></View>
           </Panel>
         : <Panel>
             <Row left={<IconCircle name="download" />} title="Download Bayani-1" meta={`About ${(MODEL_MB / 1000).toFixed(1)} GB. Use Wi-Fi. In development.`} last />
             <View style={{ paddingBottom: 14 }}><Primary label={busy ? `Downloading… ${Math.round(pct * 100)}%` : "Download"} disabled={busy} onPress={get} /></View>
           </Panel>}
-      {msg ? <Notice>{msg}</Notice> : null}
     </Screen>
   );
 }

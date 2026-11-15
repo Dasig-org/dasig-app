@@ -7,13 +7,15 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { Buttons, Check, Eyebrow, IconCircle, Meta, Notice, Outline, Panel, Row, Screen, Sheet, Title } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 /** Your data (sketch: trust #3, #4): what's kept, download it, choose what shows, delete your account. Not legal advice. */
 const isMinimal = (p: any) => (p?.extension ?? []).some((x: any) => x.url === "bayanihan:profile-visibility" && x.value === "nickname-only");
 export default function YourData() {
   const s = useSession();
   const minimal = isMinimal(s.person);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const [confirm, setConfirm] = useState(false);
   const { data, reload } = useLoad(async () => (s.person ? bix.exportMe(s.person.id) : null), [s.person?.id]);
   const entries = (data?.entry ?? []).map((e) => e.resource);
@@ -37,7 +39,6 @@ export default function YourData() {
         <Row left={<IconCircle name="pending" tone="grey" />} title={dueDelete ? "Deletion scheduled" : "Delete my account"} meta={dueDelete ? `On ${new Date(dueDelete).toLocaleDateString()}. Tap to cancel.` : undefined}
           onPress={dueDelete ? async () => { await bix.deleteMe(true); await s.refresh(); reload(); setMsg("Cancelled. Your account stays."); } : () => setConfirm(true)} last />
       </Panel>
-      {msg ? <Notice>{msg}</Notice> : null}
       <Text style={[t.meta, { marginTop: 12 }]}>Starting points under the Data Privacy Act (RA 10173), not legal advice.</Text>
       <Sheet open={confirm} onClose={() => setConfirm(false)}>
         <Text style={[t.row, { fontSize: 18 }]}>Delete your account?</Text>

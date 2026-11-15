@@ -1,52 +1,99 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { fileUri } from "@/lib/files";
 import * as Haptics from "expo-haptics";
-import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View, type TextInputProps, type ViewStyle, PanResponder } from "react-native";
+import { ActivityIndicator, Image, Keyboard, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, useWindowDimensions, View, type TextInputProps, type ViewStyle } from "react-native";
+import Animated, { Easing, interpolate, interpolateColor, LinearTransition, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Icon, type IconName } from "./Icon";
 import { SyncBar } from "./SyncBar";
 import { KScroll, KSticky } from "./kbd";
 import { Where } from "./Where";
-import { avatarColors, c, primaryFill, radius, tint, type } from "./theme";
+import type { Here } from "./Bayani";
+import type { AddContext } from "./AddSheet";
+import { avatarColors, c, motion, primaryFill, radius, scale, tint, tone, type } from "./theme";
 
 /** A screen on the wash, phone-first, with an optional fixed bottom bar. */
 /** `dock` is a composer pinned to the bottom that rises with the keyboard (e.g. "Add something to do"). */
-export function Screen({ children, bottom, back, onRefresh, dock, right, where }: { children: ReactNode; bottom?: ReactNode; back?: boolean; onRefresh?: () => Promise<unknown> | void; dock?: ReactNode; right?: ReactNode; where?: false }) {
+/** The button every Screen draws bottom right (the Bayani button, ui/Bayani.tsx), given by the root layout so kit doesn't import it back. */
+export const ScreenButton = createContext<ComponentType<{ here?: Here; add?: AddContext; lifted?: boolean }> | null>(null);
+/** Every screen. `here` tells Bayani what this screen shows (ui/Bayani.tsx); `bayani={false}` hides its button (only on Bayani's own screens). */
+const TitleCtx = createContext<((t: string) => void) | null>(null);
+const ScrollCtx = createContext<ReturnType<typeof useSharedValue<number>> | null>(null);
+export function Screen({ children, bottom, back, onRefresh, dock, right, where, here, add, bayani }: { children: ReactNode; bottom?: ReactNode; back?: boolean; onRefresh?: () => Promise<unknown> | void; dock?: ReactNode; right?: ReactNode; where?: false; here?: Here; add?: AddContext; bayani?: false }) {
   const inset = useSafeAreaInsets();
-  const { useState } = require("react") as typeof import("react");
   const [refreshing, setRefreshing] = useState(false);
+  const [title, setTitle] = useState("");
+  const scrollY = useSharedValue(0);
+  const Fab = useContext(ScreenButton);
+  const bar = where === false ? 0 : 56;
+  // The M3 top app bar stays put: its tint deepens once content scrolls under it, and the screen's title (from <Title>) fades in as the large one scrolls away.
+  const barStyle = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(scrollY.value, [0, 16], [c.wash, tone.surfaceHigh]) }));
+  const titleStyle = useAnimatedStyle(() => ({ opacity: interpolate(scrollY.value, [40, 80], [0, 1], "clamp") }));
   return (
+    <TitleCtx.Provider value={setTitle}><ScrollCtx.Provider value={scrollY}>
     <View style={{ flex: 1, backgroundColor: c.wash }}>
-      <KScroll bottomOffset={dock ? 96 : 24} contentContainerStyle={{ paddingTop: inset.top + 12, paddingHorizontal: 18, paddingBottom: (bottom || dock ? 96 : 40) + inset.bottom, maxWidth: 520, width: "100%", alignSelf: "center" }}
-        keyboardShouldPersistTaps="handled" refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} colors={[c.accent]} tintColor={c.accent}
+      {/* The bottom padding leaves room for the round action button (56px, 16px above the bar or the action bar), so it
+          never covers the last row (review 2026-11-15: it hid chips and rows on most pages). */}
+      <KScroll bottomOffset={dock ? 96 : 24} contentContainerStyle={{ paddingTop: inset.top + bar + 8, paddingHorizontal: 18, paddingBottom: (bottom || dock ? 96 : 0) + 104 + inset.bottom, maxWidth: 520, width: "100%", alignSelf: "center" }}
+        keyboardShouldPersistTaps="handled" scrollEventThrottle={16} onScroll={(e) => { scrollY.value = e.nativeEvent.contentOffset.y; }}
+        refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} colors={[c.accent]} tintColor={c.accent} progressViewOffset={inset.top + bar}
           onRefresh={async () => { setRefreshing(true); try { await onRefresh(); } finally { setRefreshing(false); } }} /> : undefined}>
         <SyncBar />
-        {where === false ? null : back || right ? <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 8 }}>
-          {back ? <RoundButton icon="back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} label="Back" /> : <View style={{ width: 40 }} />}
-          <View style={{ flex: 1, alignItems: "center" }}><Where /></View>
-          {right ?? <View style={{ width: 40 }} />}</View>
-          : <View style={{ alignItems: "flex-end", marginBottom: 6 }}><Where /></View>}
         {children}
       </KScroll>
+      {where === false ? null : <Animated.View style={[{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 2, paddingTop: inset.top, height: inset.top + bar }, barStyle]}>
+        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 4, maxWidth: 560, width: "100%", alignSelf: "center" }}>
+          {back ? <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} style={{ width: 48, height: 48, alignItems: "center", justifyContent: "center" }}>
+            <Icon name="back" size={22} color={c.ink} /></Pressable> : <View style={{ width: 14 }} />}
+          <Animated.View style={[{ flex: 1 }, titleStyle]}><Text numberOfLines={1} style={[scale.title, { color: c.ink }]}>{title}</Text></Animated.View>
+          <Where />
+          {right ?? <View style={{ width: 8 }} />}
+        </View>
+      </Animated.View>}
       {bottom}
       {dock ? <KSticky offset={{ closed: 0, opened: inset.bottom }} style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
         <View style={{ backgroundColor: c.wash, paddingHorizontal: 18, paddingTop: 8, paddingBottom: inset.bottom + 10, maxWidth: 520, width: "100%", alignSelf: "center" }}>{dock}</View>
       </KSticky> : null}
+      {where === false || bayani === false || !Fab ? null : <Fab here={here} add={add} lifted={!!dock || !!bottom} />}
     </View>
+    </ScrollCtx.Provider></TitleCtx.Provider>
   );
 }
-export const Title = ({ children, sub }: { children: ReactNode; sub?: ReactNode }) => (
-  <View style={{ marginBottom: 14 }}><Text style={type.title}>{children}</Text>{sub ? <Text style={[type.body, { marginTop: 4 }]}>{sub}</Text> : null}</View>
-);
-export const Eyebrow = ({ children, right }: { children: ReactNode; right?: ReactNode }) => (
+/** Registers a screen's title with its app bar when the page has no <Title> of its own (the project page's hero). */
+export function ScreenTitle({ children }: { children: string }) {
+  const set = useContext(TitleCtx);
+  useEffect(() => { set?.(children); }, [children, set]);
+  return null;
+}
+/** The screen's large title. As the page scrolls it shrinks toward the top bar and fades while the bar's own title fades in (a collapsing large app bar). */
+export const Title = ({ children, sub }: { children: ReactNode; sub?: ReactNode }) => {
+  const set = useContext(TitleCtx);
+  const y = useContext(ScrollCtx);
+  useEffect(() => { if (typeof children === "string") set?.(children); }, [children, set]);
+  const big = useAnimatedStyle(() => y ? ({ opacity: interpolate(y.value, [0, 70], [1, 0], "clamp"), transform: [{ scale: interpolate(y.value, [0, 70], [1, 0.82], "clamp") }, { translateY: interpolate(y.value, [0, 70], [0, y.value > 0 ? 8 : 0], "clamp") }] }) : ({}));
+  return <View style={{ marginBottom: 14 }}><Animated.View style={[{ transformOrigin: "left center" } as object, big]}><Text style={type.title}>{children}</Text></Animated.View>{sub ? <Text style={[type.body, { marginTop: 4 }]}>{sub}</Text> : null}</View>;
+};
+export const Eyebrow = ({ children, right, onRightPress }: { children: ReactNode; right?: ReactNode; onRightPress?: () => void }) => (
   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginTop: 20, marginBottom: 8, marginHorizontal: 4 }}>
-    <Text style={type.eyebrow}>{children}</Text>{right ? <Text style={{ fontSize: 12.5, fontWeight: "600", color: c.s500 }}>{right}</Text> : null}
+    <Text style={type.eyebrow}>{children}</Text>{right ? <Text onPress={onRightPress} accessibilityRole={onRightPress ? "button" : undefined} style={{ fontSize: 13, fontWeight: "600", color: onRightPress ? c.accent : c.s500, paddingVertical: onRightPress ? 6 : 0 }}>{right}</Text> : null}
   </View>
 );
+/** Lists change in place: when rows are added or removed the others slide (spring), never jump (§2.3). */
+export const listLayout = LinearTransition.springify().stiffness(motion.spring.stiffness).damping(motion.spring.damping);
 export const Panel = ({ children, style }: { children: ReactNode; style?: ViewStyle }) => (
-  <View style={[{ backgroundColor: c.white, borderRadius: radius.panel, paddingHorizontal: 16, paddingVertical: 4 }, style]}>{children}</View>
+  <Animated.View layout={listLayout} style={[{ backgroundColor: c.white, borderRadius: radius.panel, paddingHorizontal: 16, paddingVertical: 4 }, style]}>{children}</Animated.View>
 );
+/** Press feedback for anything tappable: scale to 0.97 in 90ms, spring back. Honors the OS reduce-motion setting. */
+export function usePress() {
+  const k = useSharedValue(1);
+  const reduce = useReducedMotion();
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: k.value }] }));
+  return { style, onPressIn: () => { if (!reduce) k.value = withTiming(motion.press.scale, { duration: motion.press.in }); }, onPressOut: () => { k.value = withSpring(1, motion.spring); } };
+}
+const APressable = Animated.createAnimatedComponent(Pressable);
 export const Hero = ({ children }: { children: ReactNode }) => <View style={{ backgroundColor: c.white, borderRadius: radius.hero, padding: 18 }}>{children}</View>;
 export const Meta = ({ children }: { children: ReactNode }) => <Text style={type.meta}>{children}</Text>;
 export const Body = ({ children }: { children: ReactNode }) => <Text style={type.body}>{children}</Text>;
@@ -74,7 +121,7 @@ export function Avatar({ name, size = 30, index, photo }: { name: string; size?:
   const bg = avatarColors[i % avatarColors.length]!;
   if (uri) return <Image source={{ uri }} accessibilityLabel={name} style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: c.white, backgroundColor: c.s200 }} />;
   return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: c.white }}>
-    <Text style={{ color: bg === c.gold ? c.ink : c.white, fontWeight: "700", fontSize: size * 0.4 }}>{(name[0] ?? "?").toUpperCase()}</Text>
+    <Text style={{ color: bg === "#FBB931" ? "#0F172A" : "#fff", fontWeight: "700", fontSize: size * 0.4 }}>{(name[0] ?? "?").toUpperCase()}</Text>
   </View>;
 }
 /** A small stack of faces: at most `max` (default 3); beyond that, the last place says "+n" (2026-11-13: stacks overlapped titles). */
@@ -106,13 +153,15 @@ export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone
     <Text style={{ fontSize: 12, fontWeight: "600", color: s.fg }}>{children}</Text></View>;
 }
 export function Primary({ label, onPress, busy, disabled }: { label: string; onPress: () => void; busy?: boolean; disabled?: boolean }) {
-  return <Pressable onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); onPress(); }} disabled={busy || disabled} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!(busy || disabled), busy: !!busy }} style={({ pressed }) => ({ flex: 1, minHeight: 48, borderRadius: radius.pill, backgroundColor: pressed ? c.accent : c.primary, ...(pressed || disabled ? {} : primaryFill), opacity: disabled ? 0.5 : 1, alignItems: "center", justifyContent: "center" })}>
-    {busy ? <ActivityIndicator color={c.white} /> : <Text style={{ color: c.white, fontWeight: "700", fontSize: 15 }}>{label}</Text>}
-  </Pressable>;
+  const pr = usePress();
+  return <APressable onPressIn={pr.onPressIn} onPressOut={pr.onPressOut} onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); onPress(); }} disabled={busy || disabled} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!(busy || disabled), busy: !!busy }} style={[{ flex: 1, minHeight: 48, borderRadius: radius.pill, backgroundColor: c.primary, ...(disabled ? {} : primaryFill), opacity: disabled ? 0.5 : 1, alignItems: "center", justifyContent: "center" }, pr.style]}>
+    {busy ? <ActivityIndicator color={c.white} /> : <Text style={{ color: c.white, fontWeight: "700", fontSize: 16 }}>{label}</Text>}
+  </APressable>;
 }
 export function Outline({ label, onPress, flex }: { label: string; onPress: () => void; flex?: boolean }) {
-  return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => ({ overflow: "hidden", flex: flex ? 1 : undefined, minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: pressed ? tint.pressed : tint.rest, alignItems: "center", justifyContent: "center" })}>
-    <Text style={{ color: c.ink, fontWeight: "600", fontSize: 15 }}>{label}</Text></Pressable>;
+  const pr = usePress();
+  return <APressable onPressIn={pr.onPressIn} onPressOut={pr.onPressOut} onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={[{ overflow: "hidden", flex: flex ? 1 : undefined, minHeight: 48, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: tint.rest, alignItems: "center", justifyContent: "center" }, pr.style]}>
+    <Text style={{ color: c.ink, fontWeight: "600", fontSize: 16 }}>{label}</Text></APressable>;
 }
 export const Buttons = ({ children }: { children: ReactNode }) => <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>{children}</View>;
 export const LinkText = ({ children, onPress }: { children: ReactNode; onPress: () => void }) => (
@@ -156,50 +205,80 @@ export function Check({ on, onPress }: { on: boolean; onPress?: () => void }) {
 export function Sand({ children }: { children: ReactNode }) {
   return <View style={{ backgroundColor: c.sand, borderRadius: radius.tile, padding: 14, flexDirection: "row", gap: 12, alignItems: "center" }}>{children}</View>;
 }
-export function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
+/**
+ * A bottom sheet that follows the finger (Reanimated + gesture-handler, on the UI thread). Drag the handle or the top
+ * down: the backdrop dims with progress; past 100px or a flick it closes, otherwise it springs back.
+ */
+export function Sheet({ open, onClose, children, tall, snap }: { open: boolean; onClose: () => void; children: ReactNode; tall?: boolean; snap?: boolean }) {
   const inset = useSafeAreaInsets();
-  const y = useRef(new Animated.Value(600)).current;
-  const fade = useRef(new Animated.Value(0)).current;
+  const { height } = useWindowDimensions();
+  const reduce = useReducedMotion();
+  const [shown, setShown] = useState(open);
+  // `snap`: two resting places. Half open previews the top of the sheet; drag up for all of it, down to close.
+  const full = snap || tall;
+  const half = snap ? height * 0.92 * 0.5 : 0;
+  const y = useSharedValue(height);
+  const start = useSharedValue(0);
+  const finish = () => setShown(false);
+  // The keyboard (2026-11-15: Ask Bayani's field sat under it). A Modal is its own window, so KeyboardAvoidingView
+  // can't be trusted on Android: read the keyboard's height ourselves, lift the sheet by it, and open a half sheet fully.
+  const [kb, setKb] = useState(0);
   useEffect(() => {
-    if (open) {
-      y.setValue(600);
-      Animated.parallel([
-        Animated.timing(fade, { toValue: 1, duration: 180, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.spring(y, { toValue: 0, damping: 22, stiffness: 220, mass: 0.9, useNativeDriver: true }),
-      ]).start();
-    } else { fade.setValue(0); }
+    if (Platform.OS === "web") return;
+    const ios = Platform.OS === "ios";
+    const show = Keyboard.addListener(ios ? "keyboardWillShow" : "keyboardDidShow", (e) => setKb(e.endCoordinates.height));
+    const hide = Keyboard.addListener(ios ? "keyboardWillHide" : "keyboardDidHide", () => setKb(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  useEffect(() => { if (open && kb > 0 && snap) y.value = withSpring(0, motion.sheet); }, [kb]);
+  // Some phones already shrink the Modal's window for the keyboard; then we must not lift the sheet a second time.
+  const [room, setRoom] = useState(0);
+  const base = useRef(0);
+  const lift = kb > 0 && base.current > 0 && room > 0 && room < base.current - kb * 0.5 ? 0 : kb;
+  const close = () => {
+    y.value = withTiming(height, { duration: reduce ? 100 : 220, easing: Easing.in(Easing.quad) }, (done) => { if (done) scheduleOnRN(finish); });
+    onClose();
+  };
+  useEffect(() => {
+    if (open) { setShown(true); y.value = height; y.value = reduce ? withTiming(half, { duration: 120 }) : withSpring(half, motion.sheet); }
+    else if (shown) { y.value = withTiming(height, { duration: 200 }, (done) => { if (done) scheduleOnRN(finish); }); }
   }, [open]);
-  const close = () => Animated.parallel([
-    Animated.timing(fade, { toValue: 0, duration: 160, useNativeDriver: true }),
-    Animated.timing(y, { toValue: 600, duration: 200, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-  ]).start(() => onClose());
-  // Swipe down to close: drag the handle or the top of the sheet; past 100 px (or a quick flick) it closes, else it springs back.
-  const drag = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
-    onPanResponderMove: (_, g) => { if (g.dy > 0) y.setValue(g.dy); },
-    onPanResponderRelease: (_, g) => { if (g.dy > 100 || g.vy > 1.2) close(); else Animated.spring(y, { toValue: 0, damping: 22, stiffness: 260, useNativeDriver: true }).start(); },
-    onPanResponderTerminate: () => Animated.spring(y, { toValue: 0, useNativeDriver: true }).start(),
-  })).current;
-  return <Modal visible={open} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={close}>
-    <Animated.View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(15,23,42,.38)", opacity: fade }}>
-      <Pressable accessibilityLabel="Close" onPress={close} style={{ flex: 1 }} />
-    </Animated.View>
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, justifyContent: "flex-end" }} pointerEvents="box-none">
-      <Animated.View style={{ transform: [{ translateY: y }], backgroundColor: c.white, borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingHorizontal: 22, paddingTop: 12,
-        paddingBottom: inset.bottom + 22, maxWidth: 560, width: "100%", alignSelf: "center", maxHeight: "92%",
-        shadowColor: "#0F172A", shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: -6 }, elevation: 24 }}>
-        <View {...drag.panHandlers} accessibilityLabel="Drag down to close" style={{ paddingTop: 4, paddingBottom: 14, marginTop: -8, marginHorizontal: -22 }}>
-          <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: c.s300, alignSelf: "center" }} /></View>
-        <OnSheet.Provider value={true}><ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>{children}</ScrollView></OnSheet.Provider>
+  const drag = Gesture.Pan().activeOffsetY([-8, 8]).failOffsetX([-24, 24])
+    .onBegin(() => { start.value = y.value; })
+    .onUpdate((e) => { y.value = Math.max(0, start.value + e.translationY); })
+    .onEnd((e) => {
+      const closing = y.value > half + 100 || (e.velocityY > 1200 && y.value >= half);
+      if (closing) { y.value = withTiming(height, { duration: 180 }, (done) => { if (done) scheduleOnRN(finish); }); scheduleOnRN(onClose); }
+      else if (snap) y.value = withSpring(e.velocityY < -800 || y.value < half * 0.5 ? 0 : half, motion.sheet);
+      else y.value = withSpring(0, motion.sheet);
+    });
+  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
+  const backdrop = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [0, height * 0.5], [1, 0], "clamp") }));
+  return <Modal visible={shown} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={close}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Animated.View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(15,23,42,.38)" }, backdrop]}>
+        <Pressable accessibilityLabel="Close" onPress={close} style={{ flex: 1 }} />
       </Animated.View>
-    </KeyboardAvoidingView>
+      <View onLayout={(e) => { const h = e.nativeEvent.layout.height; if (kb === 0) base.current = h; setRoom(h); }} style={{ flex: 1, justifyContent: "flex-end", paddingBottom: lift }} pointerEvents="box-none">
+        <Animated.View style={[{ backgroundColor: c.white, borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingHorizontal: 22, paddingTop: 12,
+          paddingBottom: (lift ? 12 : inset.bottom + 22), maxWidth: 560, width: "100%", alignSelf: "center", maxHeight: "92%", ...(full ? { height: "92%" as const } : null),
+          shadowColor: "#0F172A", shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: -6 }, elevation: 24 }, sheetStyle]}>
+          <GestureDetector gesture={drag}>
+            <View accessibilityLabel="Drag down to close" style={{ paddingTop: 4, paddingBottom: 14, marginTop: -8, marginHorizontal: -22 }}>
+              <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: c.s300, alignSelf: "center" }} /></View>
+          </GestureDetector>
+          <OnSheet.Provider value={true}><ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={snap && !lift ? { paddingBottom: half } : undefined}>{children}</ScrollView></OnSheet.Provider>
+        </Animated.View>
+      </View>
+    </GestureHandlerRootView>
   </Modal>;
 }
 /** Calm placeholder while a screen loads. */
 export function Skeleton({ rows = 4 }: { rows?: number }) {
-  const pulse = useRef(new Animated.Value(0.5)).current;
-  useEffect(() => { Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }), Animated.timing(pulse, { toValue: 0.5, duration: 700, useNativeDriver: true })])).start(); }, []);
-  return <Animated.View accessibilityLabel="Loading" style={{ opacity: pulse }}>
+  const pulse = useSharedValue(0.5);
+  useEffect(() => { pulse.value = withRepeat(withSequence(withTiming(1, { duration: 700 }), withTiming(0.5, { duration: 700 })), -1); }, []);
+  const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  return <Animated.View accessibilityLabel="Loading" style={pulseStyle}>
     <View style={{ width: "60%", height: 26, borderRadius: 13, backgroundColor: c.s200, marginBottom: 16 }} />
     <View style={{ backgroundColor: c.white, borderRadius: radius.panel, padding: 16, gap: 18 }}>
       {Array.from({ length: rows }, (_, i) => <View key={i} style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.wash }} />

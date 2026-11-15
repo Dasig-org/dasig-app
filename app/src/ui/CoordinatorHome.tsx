@@ -11,7 +11,8 @@ import { ContextPill } from "./Context";
 import { GroupQuest } from "./GroupQuest";
 import { InstallGuide } from "./InstallGuide";
 import { Avatar, Buttons, Check, Eyebrow, Faces, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Screen, Sheet, Tip, usePhoto } from "./kit";
-import { c, radius, type as t } from "./theme";
+import { Card, Carousel, Count, ProgressRing, SharedCover, StateChip } from "./m3";
+import { c, radius, scale, tone, type as t } from "./theme";
 
 /*
  * The coordinator's home, built around the next event (workspace/design/coordinator-sketches.html, A1–A2):
@@ -121,17 +122,21 @@ export function CoordinatorHome() {
         <View style={{ padding: 16 }}><Text style={[t.title, { fontSize: 20 }]}>{`How ${data.past[0].title} went`}</Text><Meta>Written from what your teams did. Takes 2 minutes to check.</Meta>
           <Buttons><Primary label="Check and send" onPress={() => router.push(`/project/${data.past[0]!.id}/report` as never)} /></Buttons></View>
       </View> : null}
+      {/* One hero: the next event, with the numbers that matter and two actions (UI_REIMAGINE §3). */}
       {event ? <View style={{ marginTop: 14, borderRadius: radius.panel, overflow: "hidden", backgroundColor: c.white }}>
-        <Pressable onPress={() => router.push(`/project/${event.id}`)}><Cover image={event.image} h={150} chip={countdown(event.period?.start)} /></Pressable>
+        <Pressable onPress={() => router.push(`/project/${event.id}`)} accessibilityRole="button" accessibilityLabel={`Open ${event.title}`}><SharedCover id={event.id}><Cover image={event.image} h={170} chip={countdown(event.period?.start)} /></SharedCover></Pressable>
         <View style={{ padding: 16 }}>
-          <Text style={[t.title, { fontSize: 22 }]}>{event.title}</Text>
+          <Text style={[scale.title, { color: c.ink }]}>{event.title}</Text>
           <Meta>{[(event.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value, `${(data?.teams ?? []).filter((tm) => tm.initiative?.reference === `Initiative/${event.id}`).length} teams`].filter(Boolean).join(" · ")}</Meta>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
-            {faces.length ? <Faces names={faces.map(name)} photos={faces.map((r) => data?.people[r]?.photo)} /> : null}
-            <Text style={[t.meta, { flex: 1 }]}>{onIt.size ? `${onIt.size} ${onIt.size === 1 ? "person" : "people"} on it` : "Nobody yet"}</Text>
-            <Pill>{`${openWork.reduce((n, x) => n + openPlaces(x), 0)} open`}</Pill></View>
-          <View style={{ height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden", marginTop: 12 }}><View style={{ width: `${work.length ? (done / work.length) * 100 : 0}%`, height: 8, backgroundColor: c.accent }} /></View>
-          <Meta>{`${done} of ${work.length} done`}</Meta>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 16, marginTop: 14 }}>
+            <ProgressRing value={work.length ? done / work.length : 0} label={work.length ? `${done}/${work.length}` : "–"} sub="done" size={64} />
+            <View style={{ flex: 1, gap: 8 }}>
+              {openWork.length ? <StateChip kind="open"><Count value={openWork.reduce((n, x) => n + openPlaces(x), 0)} suffix=" open places" /></StateChip> : <StateChip kind="done">All places filled</StateChip>}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                {faces.length ? <Faces names={faces.map(name)} photos={faces.map((r) => data?.people[r]?.photo)} /> : null}
+                <Text style={[t.meta, { flex: 1 }]}>{onIt.size ? `${onIt.size} ${onIt.size === 1 ? "person" : "people"} on it` : "Nobody yet"}</Text></View>
+            </View>
+          </View>
           {event.period?.start && Math.abs(Date.parse(event.period.start) - Date.now()) < DAY ? <Buttons><Primary label="Event day: check people in" onPress={() => router.push(`/project/${event.id}/day` as never)} /></Buttons> : null}
           <Buttons>{openWork.length ? <Primary label="Share open slots" onPress={() => { setSkip(new Set()); setSharing(event); }} /> : null}<Outline flex label="Open" onPress={() => router.push(`/project/${event.id}`)} /></Buttons>
         </View>
@@ -141,18 +146,31 @@ export function CoordinatorHome() {
       {event?.period?.start && Date.parse(event.period.start) > Date.now() && Date.parse(event.period.start) - Date.now() < 3 * DAY ? <View style={{ marginTop: 14 }}>
         <Panel><Row left={<IconCircle name="send" />} title={`${event.title} is ${inDays(event.period.start)}`} meta="Remind each team who's on what" right={<Pill>Remind</Pill>}
           onPress={() => setRemind((data?.teams ?? []).find((tm) => tm.initiative?.reference === `Initiative/${event.id}`)?.id ?? null)} last /></Panel></View> : null}
-      {risk ? <><Eyebrow right={`${risk}`}>At risk this week</Eyebrow><Panel>
-        {soonOpen.map((x) => <Row key={x.id} left={<IconCircle name={teamIcon(teamOf(x)?.name ?? "")} tone="grey" />} title={x.title}
-          meta={[teamOf(x)?.name, x.due ? `due ${short(x.due)}` : null, active(x).length ? `${openPlaces(x)} still needed` : "nobody yet"].filter(Boolean).join(" · ")} right={<Pill>Ask</Pill>} onPress={() => router.push(`/task/${x.id}`)} />)}
-        {unanswered.map((x) => <Row key={x.id} left={<Avatar name={name(x.owner?.reference)} photo={data?.people[x.owner?.reference]?.photo} />} title={`${name(x.owner?.reference)} hasn't replied`}
-          meta={x.title} right={<LinkText onPress={() => router.push(`/task/${x.id}`)}>Ask someone else</LinkText>} />)}
-        {leaderless.map((tm, i) => <Row key={tm.id} left={<IconCircle name="users" />} title={`${tm.name} has no lead`} meta="Work is due soon" right={<Pill>Choose</Pill>} onPress={() => router.push(`/team/${tm.id}`)} last={i === leaderless.length - 1} />)}
-      </Panel></> : event ? <View style={{ marginTop: 14 }}><Tip id="no-risk" title="On track">Nothing is at risk this week.</Tip></View> : null}
+      {risk ? <><Eyebrow right={`${risk}`}>Needs you this week</Eyebrow><Carousel>
+        {soonOpen.map((x) => <Card key={x.id} onPress={() => router.push(`/task/${x.id}`)} label={x.title}>
+          <StateChip kind="late">{x.due ? `Due ${short(x.due)}` : "Open"}</StateChip>
+          <Text numberOfLines={2} style={[t.row, { marginTop: 10 }]}>{x.title}</Text>
+          <Meta>{[teamOf(x)?.name, active(x).length ? `${openPlaces(x)} still needed` : "nobody yet"].filter(Boolean).join(" · ")}</Meta></Card>)}
+        {unanswered.map((x) => <Card key={x.id} onPress={() => router.push(`/task/${x.id}`)} label={x.title}>
+          <Avatar name={name(x.owner?.reference)} size={32} photo={data?.people[x.owner?.reference]?.photo} />
+          <Text numberOfLines={2} style={[t.row, { marginTop: 10 }]}>{`${name(x.owner?.reference)} hasn't replied`}</Text><Meta>{x.title}</Meta></Card>)}
+        {leaderless.map((tm) => <Card key={tm.id} onPress={() => router.push(`/team/${tm.id}`)} label={tm.name}>
+          <IconCircle name="users" size={32} />
+          <Text numberOfLines={2} style={[t.row, { marginTop: 10 }]}>{`${tm.name} has no lead`}</Text><Meta>Work is due soon · choose one</Meta></Card>)}
+      </Carousel></> : event ? <View style={{ marginTop: 14 }}><Tip id="no-risk" title="On track">Nothing is at risk this week.</Tip></View> : null}
 
-      {news.length ? <><Eyebrow>What's new</Eyebrow><Panel>
-        {news.slice(0, 4).map((x, i, all) => <Row key={i} left={x.who ? <Avatar name={name(x.who)} photo={data?.people[x.who]?.photo} /> : <IconCircle name="heart" />} title={x.text} meta={ago(x.at)}
-          onPress={x.go ? () => router.push(x.go as never) : undefined} last={i === all.length - 1} />)}
-      </Panel></> : null}
+      {openWork.length ? <><Eyebrow right={`${openWork.length}`}>Open work</Eyebrow><Carousel>
+        {openWork.slice(0, 8).map((x) => <Card key={x.id} w={220} onPress={() => router.push(`/task/${x.id}`)} label={x.title}>
+          <IconCircle name={teamIcon(teamOf(x)?.name ?? "")} size={36} />
+          <Text numberOfLines={2} style={[t.row, { marginTop: 10 }]}>{x.title}</Text>
+          <Meta>{[teamOf(x)?.name, x.due ? short(x.due) : null, openPlaces(x) > 1 ? `${openPlaces(x)} needed` : null].filter(Boolean).join(" · ")}</Meta></Card>)}
+      </Carousel></> : null}
+
+      {news.length ? <><Eyebrow>What's new</Eyebrow><Carousel>
+        {news.slice(0, 8).map((x, i) => <Card key={i} w={220} onPress={x.go ? () => router.push(x.go as never) : undefined} label={x.text}>
+          {x.who ? <Avatar name={name(x.who)} size={32} photo={data?.people[x.who]?.photo} /> : <IconCircle name="heart" size={32} />}
+          <Text numberOfLines={3} style={[t.row, { marginTop: 10, fontSize: 15, lineHeight: 21 }]}>{x.text}</Text><Meta>{ago(x.at)}</Meta></Card>)}
+      </Carousel></> : null}
 
       {(data?.projects.length ?? 0) > 1 ? <><Eyebrow>Other events</Eyebrow><Panel>
         {data!.projects.slice(1).map((p, i, all) => { const w = ofProject(p); const d = w.filter((x) => x.status === "completed").length;

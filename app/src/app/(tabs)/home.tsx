@@ -1,4 +1,5 @@
 import { networkUrl } from "@/lib/env";
+import { ErrorState } from "@/ui/ErrorState";
 import { router } from "expo-router";
 import { Image, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
@@ -15,6 +16,8 @@ import { KeepYourWork } from "@/ui/KeepYourWork";
 import { InstallGuide } from "@/ui/InstallGuide";
 import { CoordinatorHome } from "@/ui/CoordinatorHome";
 import { Buttons, Eyebrow, Faces, Hero, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Tip, usePhoto } from "@/ui/kit";
+import { PressScale } from "@/ui/m3";
+import { useSnackbar } from "@/ui/Snackbar";
 import { c, radius, type as t } from "@/ui/theme";
 
 /*
@@ -82,7 +85,15 @@ export default function Home() {
   const open = tasks.filter((x) => x.status === "ready" && (x.audience === "open" || x.audience === "organization" || myTeamRefs.has(x.team?.reference)))
     .sort((a, b) => (a.due ?? "9999").localeCompare(b.due ?? "9999"));
   const done = tasks.filter((x) => x.status === "completed" && going(x).some((p: any) => p.person.reference === me));
-  const answer = async (x: R, yes: boolean) => { try { await bix.commit(yes ? (places(x).shift ? act.takePlace(x, me) : act.claim(x, me)) : act.release(x)); } catch {} reload(); };
+  const { show } = useSnackbar();
+  // Saying yes or no commits at once; a yes offers Undo for 5 s (it hands the place back).
+  const answer = async (x: R, yes: boolean) => {
+    try {
+      await bix.commit(yes ? (places(x).shift ? act.takePlace(x, me) : act.claim(x, me)) : act.release(x));
+      show(yes ? "You're in. Thank you!" : "That's okay, thanks for telling us.", yes ? { undo: async () => { try { const f = await bix.get("Task", x.id); await bix.commit(places(x).shift ? act.leavePlace(f, me) : act.release(f)); show("Undone."); } catch (e) { show(e instanceof Error ? e.message : String(e), { error: true }); } reload(); } } : undefined);
+    } catch (e) { show(e instanceof Error ? e.message : String(e), { error: true }); }
+    reload();
+  };
   // Where a task comes from: the group only in the personal context, where it isn't already in the pill (UX_GAPS A5, A6).
   const from = (x: R) => [s.current ? null : groupOf(x)?.name, projOf(x)?.title, teamOf(x)?.name].filter(Boolean).join(" · ");
   const icon = (x: R) => <IconCircle name={teamIcon(teamOf(x)?.name ?? "")} size={44} tone="white" />;
@@ -99,7 +110,7 @@ export default function Home() {
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill />
         <RoundButton icon="search" label="Find groups and projects" onPress={() => router.push("/nearby")} /></View>
       <Text style={[t.title, { marginTop: 14, marginBottom: 2 }]}>{`${hello()}, ${personName(s.person)}`}</Text>
-      {error ? <Notice>{error}</Notice> : null}
+      {error ? <ErrorState message={error} /> : null}
       <InstallGuide />
       <Tip id="volunteer-home" title="Find something to do">Tap “I'm in” to take it.</Tip>
       {/* A team lead's week (navigation sketch 3): their team's open work first, soonest due. */}
@@ -126,13 +137,13 @@ export default function Home() {
       <Eyebrow right={open.length > 1 ? "See all" : undefined}>Lend a hand</Eyebrow>
       {open.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ gap: 12, paddingHorizontal: 18 }}>
         {open.slice(0, 8).map((x) => { const f = faces(x);
-          return <Pressable key={x.id} onPress={() => router.push(`/task/${x.id}`)} accessibilityRole="button" accessibilityLabel={`${x.title}, ${from(x)}`} style={{ width: open.length === 1 ? 300 : 236 }}>
+          return <PressScale key={x.id} onPress={() => router.push(`/task/${x.id}`)} label={`${x.title}, ${from(x)}`} style={{ width: open.length === 1 ? 300 : 236 }}>
             <Photo image={coverOf(x)} w="100%" h={150} r={radius.panel} chip={x.due ? short(x.due) : "Any time"} fallback={<IconCircle name={teamIcon(teamOf(x)?.name ?? "")} size={64} tone="white" />} />
             <Text style={[t.row, { marginTop: 9, marginHorizontal: 2 }]} numberOfLines={1}>{x.title}</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3, marginHorizontal: 2 }}>
               {f.length ? <Faces names={f.map((y) => y.name)} photos={f.map((y) => y.photo)} /> : null}
               <Text style={[t.meta, { flex: 1 }]} numberOfLines={1}>{places(x).shift ? `${places(x).left} of ${places(x).n} places left` : f.length ? `${f.length} going` : x.goodFirstStep ? "A good first step" : from(x) || "Be the first one in"}</Text></View>
-          </Pressable>; })}
+          </PressScale>; })}
       </ScrollView>
         : <Sand><IconCircle name="heart" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>Nothing open right now</Text><Meta>{s.groups.length ? "Your groups will post work here." : "Join a group to see their work."}</Meta></View></Sand>}
       {!s.groups.length ? <Buttons><Primary label="Join a group" onPress={() => router.push("/volunteer" as never)} /></Buttons> : null}

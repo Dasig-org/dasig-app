@@ -7,6 +7,7 @@ import { useLoad } from "@/lib/use";
 import { act, peopleFor, personName, places } from "@/lib/work";
 import { Avatar, Buttons, Check, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton, Title } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 /*
  * Event day (workspace/design/coordinator-sketches.html C10–C11): who's checked in, by team; what's still open; and
@@ -24,7 +25,8 @@ export default function EventDay() {
   const [walkin, setWalkin] = useState(false);
   const [nick, setNick] = useState("");
   const [into, setInto] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const { data, reload } = useLoad(async () => {
     const [p, teams, tasks] = await Promise.all([bix.get("Initiative", id), bix.search("Team", { initiative: `Initiative/${id}` }), bix.search("Task", { partOf: `Initiative/${id}` })]);
     const live = tasks.filter((x) => !["draft", "cancelled"].includes(x.status));
@@ -63,21 +65,21 @@ export default function EventDay() {
         <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14 }}><Text style={[t.title, { fontSize: 22 }]}>{`${here} of ${total}`}</Text><Meta>checked in</Meta></View>
         <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14 }}><Text style={[t.title, { fontSize: 22 }]}>{`${stillOpen.length}`}</Text><Meta>still open</Meta></View>
       </View>
-      {msg ? <Notice>{msg}</Notice> : null}
       <Eyebrow>Check people in</Eyebrow>
       <Chips options={[{ value: "all", label: "All" }, ...teams.map((tm) => ({ value: tm.id, label: tm.name }))]} value={team} onChange={setTeam} />
       <View style={{ marginTop: 10 }}><Panel>
         {rows.length ? rows.map((r, i) => <Row key={r.task.id + r.p.person.reference} left={<Avatar name={personName(people[r.p.person.reference])} photo={people[r.p.person.reference]?.photo} />}
           title={personName(people[r.p.person.reference])} meta={[teamName(r.task), r.task.title, r.p.attended ? `here ${new Date(r.p.attended.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}` : null].filter(Boolean).join(" · ")}
           right={<Check on={!!r.p.attended} onPress={() => toggle(r.task, r.p.person.reference)} />} last={i === rows.length - 1} />)
-          : <Row title="Nobody on today's work yet" meta="Share the open places, or add someone who just showed up" last />}
+          : <Row title="Nobody on today's work yet" meta="Share the open places, or add a walk-in volunteer" last />}
       </Panel></View>
-      <Buttons><Primary label="Someone just showed up" onPress={() => { setInto(stillOpen[0]?.id ?? today[0]?.id ?? null); setWalkin(true); }} /></Buttons>
+      <Buttons><Primary label="Add a walk-in volunteer" onPress={() => { setInto(stillOpen[0]?.id ?? today[0]?.id ?? null); setWalkin(true); }} /></Buttons>
       {stillOpen.length ? <><Eyebrow right={`${stillOpen.length}`}>Still open</Eyebrow><Panel>
         {stillOpen.map((x, i) => <Row key={x.id} left={<IconCircle name="pending" tone="grey" />} title={x.title} meta={teamName(x)} right={<Pill>{places(x).shift ? `${places(x).left} needed` : "Open"}</Pill>}
           onPress={() => router.push(`/task/${x.id}`)} last={i === stillOpen.length - 1} />)}</Panel></> : null}
       <Sheet open={walkin} onClose={() => setWalkin(false)}>
-        <Text style={[t.row, { fontSize: 18 }]}>Someone just showed up</Text>
+        <Text style={[t.row, { fontSize: 18 }]}>A walk-in volunteer</Text>
+        <Meta>{"Someone who came to help today without signing up first. Check them in on a piece of work."}</Meta>
         <Field label="Nickname" value={nick} onChangeText={setNick} placeholder="e.g. Paolo" autoFocus />
         <Eyebrow>On which work</Eyebrow>
         <Chips options={today.slice(0, 12).map((x) => ({ value: x.id, label: x.title }))} value={into ?? ""} onChange={setInto} />

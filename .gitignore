@@ -8,3 +8,26 @@ dist/
 .expo/
 *.tsbuildinfo
 .DS_Store
+
+# AI assistant and editor settings (kept local, never published)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+GEMINI.md
+.kiro/
+.cursor/
+.cursorrules
+.windsurf/
+.windsurfrules
+.continue/
+.aider*
+.clinerules
+.roo/
+.specstory/
+.codex/
+.gemini/
+.github/copilot-instructions.md
+.mcp.json
+.vscode/
+.idea/

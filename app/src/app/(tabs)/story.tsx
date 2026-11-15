@@ -1,12 +1,13 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Platform, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { personHours } from "@bayanihan/core/figures";
 import { bix } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { personName, shortRef } from "@/lib/work";
-import { Avatar, Body, Buttons, Eyebrow, IconCircle, LinkText, Meta, Notice, Outline, Panel, Primary, Row, Screen, Sheet } from "@/ui/kit";
+import { Avatar, Body, Buttons, Eyebrow, IconCircle, LinkText, Meta, Notice, Outline, Panel, Primary, Row, Screen, ScreenTitle, Sheet } from "@/ui/kit";
+import { Count } from "@/ui/m3";
 import { openSite } from "@/ui/About";
 import { c, radius, type as t } from "@/ui/theme";
 
@@ -27,21 +28,37 @@ export default function Story() {
   const [proof, setProof] = useState<any>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const saveProof = async (x: any) => { try { const b = await bix.proof("Task", x.id); const { saveJson } = await import("@/lib/save"); await saveJson(`dasig-proof-${shortRef(x) ?? x.id}.json`, b); setSaved("Saved. Anyone can check it at bayanihan.dasig.org/trust/check."); } catch (e) { setSaved(e instanceof Error ? e.message : String(e)); } };
-  const tile = (icon: any, n: string, label: string) => <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, gap: 8 }}><IconCircle name={icon} /><Text style={t.row}>{n}</Text><Meta>{label}</Meta></View>;
+  const [all, setAll] = useState(false);
+  const done = data?.done ?? [];
+  const shown = all ? done : done.slice(0, 3);
+  // Big number over a small label; three share one card, separated by hairlines.
+  const stat = (n: number, label: string, first?: boolean) => <View style={{ flex: 1, alignItems: "center", paddingVertical: 14, borderLeftWidth: first ? 0 : StyleSheet.hairlineWidth, borderLeftColor: c.s300 }}>
+    <Count value={n} style={{ fontSize: 24, fontWeight: "700", color: c.ink }} /><Text style={[t.meta, { marginTop: 2 }]}>{label}</Text></View>;
   return (
     <Screen>
-      <View style={{ alignItems: "center", marginTop: 10 }}><Avatar name={personName(s.person)} size={80} photo={s.person?.photo} /></View>
-      <Text style={[t.title, { textAlign: "center", marginTop: 10 }]}>{personName(s.person)}</Text>
-      {s.person?.description ? <Text style={[t.body, { textAlign: "center" }]}>{s.person.description}</Text> : null}
-      <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>{tile("check", `${data?.done.length ?? 0}`, "things done")}{tile("clock", `${Math.round(data?.hours ?? 0)}`, "hours")}{tile("users", `${s.groups.length}`, "groups")}</View>
-      <Eyebrow right={data?.done.length ? `${data.done.length}` : undefined}>Done</Eyebrow>
-      <Panel>{(data?.done ?? []).slice(0, 8).map((x, i, all) => <Row key={x.id} left={<IconCircle name={data?.checks[x.id]?.allValid ? "lock" : "check"} />} title={x.title}
-        meta={[shortRef(x), data?.checks[x.id]?.allValid ? "Signed by your group · unchanged" : "Recorded"].filter(Boolean).join(" · ")} onPress={() => setProof(x)} last={i === all.length - 1} />)}
-        {!data?.done.length ? <Row title="Nothing yet" meta="Work you finish shows up here, signed by your group." last /> : null}</Panel>
+      <ScreenTitle>You</ScreenTitle>
+      {/* 1 · Who you are, with the one thing you'd do here: edit it. */}
+      <View style={{ alignItems: "center", marginTop: 4 }}>
+        <Avatar name={personName(s.person)} size={96} photo={s.person?.photo} />
+        <Text style={[t.title, { marginTop: 12, textAlign: "center" }]}>{personName(s.person)}</Text>
+        {s.person?.description ? <Text style={[t.body, { textAlign: "center", marginTop: 2 }]} numberOfLines={2}>{s.person.description}</Text> : null}
+        <View style={{ marginTop: 12 }}><Outline label="Edit profile" onPress={() => router.push("/profile" as never)} /></View>
+      </View>
+      {/* 2 · What you've given: one card, three numbers. */}
+      <View style={{ flexDirection: "row", backgroundColor: c.white, borderRadius: radius.panel, marginTop: 18 }}>
+        {stat(done.length, "things done", true)}{stat(Math.round(data?.hours ?? 0), "hours")}{stat(s.groups.length, "groups")}
+      </View>
+      {/* 3 · Where to go: always above the fold, never under the list of done work. */}
+      <Eyebrow>Account</Eyebrow>
       <Panel>
-        <Row left={<IconCircle name="pen" />} title="Your profile" meta="Name, photo, skills, credit name" onPress={() => router.push("/profile" as never)} />
-        <Row left={<IconCircle name="lock" />} title="Settings" meta="Your bar, account, your data, where records live, help" onPress={() => router.push("/settings" as never)} last />
+        <Row left={<IconCircle name="swap" />} title="Settings" meta="Account, appearance, your data, help" onPress={() => router.push("/settings" as never)} />
+        <Row left={<IconCircle name="users" />} title="Your groups" meta={s.groups.length ? `${s.groups.length} group${s.groups.length === 1 ? "" : "s"}` : "Join or start one"} onPress={() => router.push("/groups" as never)} last />
       </Panel>
+      {/* 4 · Your record: the three latest, the rest on request. */}
+      <Eyebrow right={done.length > 3 ? (all ? "Show less" : `Show all ${done.length}`) : done.length ? `${done.length}` : undefined} onRightPress={done.length > 3 ? () => setAll(!all) : undefined}>Done</Eyebrow>
+      <Panel>{shown.map((x, i, list) => <Row key={x.id} left={<IconCircle name={data?.checks[x.id]?.allValid ? "lock" : "check"} />} title={x.title}
+        meta={[shortRef(x), data?.checks[x.id]?.allValid ? "Signed" : "Recorded"].filter(Boolean).join(" · ")} onPress={() => setProof(x)} last={i === list.length - 1} />)}
+        {!done.length ? <Row title="Nothing yet" meta="Work you finish shows up here, signed by your group." last /> : null}</Panel>
       <Sheet open={!!proof} onClose={() => { setProof(null); setSaved(null); }}>
         {proof ? <>
           <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><IconCircle name={data?.checks[proof.id]?.allValid ? "lock" : "check"} size={48} />

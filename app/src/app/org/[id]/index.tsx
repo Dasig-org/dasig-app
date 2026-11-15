@@ -16,6 +16,8 @@ import { label, VISIBILITY, VisibilityChoice, visibilityFields, visibilityOf } f
 import { CopyToEcosystem } from "@/ui/CopyToEcosystem";
 import { setupExt, withSetup } from "@/ui/GroupQuest";
 import { c, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
+import { SuggestionMeasure } from "@/ui/Bayani";
 
 /** A group's page: its profile (editable by officers), people, how it's run, projects, links and safety. */
 export default function Org() {
@@ -25,7 +27,8 @@ export default function Org() {
   const [privacy, setPrivacy] = useState(false);
   const [copying, setCopying] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const { data, reload } = useLoad(async () => {
     const org = await bix.get("Organization", id);
     const [roles, projects] = await Promise.all([bix.search("Role", { organization: `Organization/${id}` }), bix.search("Initiative", { organization: `Organization/${id}` })]);
@@ -50,7 +53,7 @@ export default function Org() {
   const officer = s.groups.some((g) => g.org.id === id && g.role.code?.code === "officer");
   const save = async (fields: Record<string, unknown>) => { try { await bix.commit(bix.next(org, fields)); setMsg("Saved."); setEditing(false); reload(); s.refresh(); } catch (e) { setMsg(String(e instanceof Error ? e.message : e)); } };
   return (
-    <Screen back>
+    <Screen back here={{ kind: "group", org, projects, officer }}>
       <View style={{ alignItems: "center" }}>
         <Pressable disabled={!officer} accessibilityLabel="Change your group's logo" onPress={async () => { const a = await pickPhoto(false).catch(() => null); if (a) save({ image: a }); }}>
           {logoUri ? <Image source={{ uri: logoUri }} style={{ width: 84, height: 84, borderRadius: 26 }} /> : <Logo name={org.name} size={84} />}
@@ -58,6 +61,7 @@ export default function Org() {
         <Text style={[t.title, { textAlign: "center", marginTop: 10 }]}>{org.name}</Text>
         <Meta>{[place, org.publicSummary !== false ? "Findable" : "Private"].filter(Boolean).join(" · ")}</Meta>
       </View>
+      {!editing && officer && memoryOn ? <SuggestionMeasure orgId={id} /> : null}
       {editing ? <>
         <Field label="Name" value={name} onChangeText={setName} />
         <Field label="What you do" value={about} onChangeText={setAbout} multiline />
@@ -92,9 +96,12 @@ export default function Org() {
         </Panel>
         {officer ? <Buttons><Outline flex label="Edit profile" onPress={() => setEditing(true)} /></Buttons> : null}
       </>}
-      {msg ? <Notice>{msg}</Notice> : null}
-      <Eyebrow>Your group's home</Eyebrow>
-      <Panel><Row left={<IconCircle name={where.icon} />} last={!(officer && networkOpen && s.connection?.kind !== "ecosystem")} title={where.text} meta={s.connection?.kind === "ecosystem" ? "Saved on the Bayanihan Network" : networkOpen ? "On your phones. Copy it to the Bayanihan Network to work from anywhere" : "On your phones"} onPress={() => router.push("/network" as never)} />
+      {/* Where the group's records are kept, in plain words (review 2026-11-15: "Bayanihan Network · up to date" read as
+          technical). The status words show only when something is wrong (offline, or waiting to send). */}
+      <Eyebrow>Where it's kept</Eyebrow>
+      <Panel><Row left={<IconCircle name={where.icon} />} last={!(officer && networkOpen && s.connection?.kind !== "ecosystem")}
+        title={where.warn || where.icon === "wifioff" ? where.text : s.connection?.kind === "ecosystem" ? "Kept safe online, and backed up" : s.connection?.kind === "hub" ? "Kept on your group's hub phone" : "Kept on this phone"}
+        meta={s.connection?.kind === "ecosystem" ? "Works without signal too; it catches up when you're back" : networkOpen ? "Copy it online to work from any phone" : "Nothing needs the internet"} onPress={() => router.push("/network" as never)} />
         {officer && networkOpen && s.connection?.kind !== "ecosystem" ? <Row left={<IconCircle name="cloud" />} title="Copy this group to the Bayanihan Network" meta="Work from anywhere; this phone keeps its copy" onPress={() => setCopying(true)} last /> : null}</Panel>
       <CopyToEcosystem org={org} open={copying} onClose={() => { setCopying(false); reload(); }} />
       <Eyebrow right={`${roles.length}`}>People</Eyebrow>

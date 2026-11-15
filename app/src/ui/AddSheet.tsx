@@ -14,7 +14,7 @@ import { c, type as t } from "./theme";
 export type AddContext = { kind: "home"; event?: R | null } | { kind: "project"; project: R; lead: boolean } | { kind: "team"; team: R; lead: boolean } | { kind: "task"; task: R; lead: boolean; onIt: boolean; on: (what: "step" | "photo" | "ask" | "time") => void };
 type Item = { icon: IconName; title: string; meta?: string; go: () => void };
 
-export function AddSheet({ open, onClose, ctx }: { open: boolean; onClose: () => void; ctx: AddContext }) {
+export function AddSheet({ open, onClose, ctx, onAsk }: { open: boolean; onClose: () => void; ctx: AddContext; onAsk?: () => void }) {
   const s = useSession();
   const lead = ctx.kind === "home" ? !!s.current && s.isLead : ctx.lead;
   const nav = (to: string, params?: Record<string, string>) => { onClose(); setTimeout(() => router.push((params ? { pathname: to, params } : to) as never), 50); };
@@ -54,6 +54,8 @@ export function AddSheet({ open, onClose, ctx }: { open: boolean; onClose: () =>
   }
   return <Sheet open={open} onClose={onClose}>
     <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>Add</Text>
-    <Panel style={{ backgroundColor: c.wash }}>{items.map((x, i) => <Row key={x.title} left={<IconCircle name={x.icon} tone="white" />} title={x.title} meta={x.meta} onPress={x.go} last={i === items.length - 1} />)}</Panel>
+    <Panel style={{ backgroundColor: c.wash }}>{items.map((x, i) => <Row key={x.title} left={<IconCircle name={x.icon} tone="white" />} title={x.title} meta={x.meta} onPress={x.go} last={!onAsk && i === items.length - 1} />)}
+      {/* Bayani lives here, not in a second button (2026-11-15). */}
+      {onAsk ? <Row left={<IconCircle name="spark" tone="bayani" />} title="Ask Bayani" meta="Questions about this screen, or about Dasig" onPress={onAsk} last /> : null}</Panel>
   </Sheet>;
 }

@@ -6,7 +6,11 @@ import { personName } from "@/lib/work";
 import { Avatar, Buttons, Eyebrow, IconCircle, Panel, Primary, Row, Sand, Screen } from "@/ui/kit";
 import { Icon } from "@/ui/Icon";
 import { PushToggle } from "@/ui/PushToggle";
-import { c, radius, type as t } from "@/ui/theme";
+import { useEffect, useState } from "react";
+import { Chips } from "@/ui/kit";
+import { getAppearance, reloadIfWeb, setAppearance, type Appearance } from "@/ui/scheme";
+import { useSnackbar } from "@/ui/Snackbar";
+import { c, radius, scale, tone, type as t } from "@/ui/theme";
 
 /*
  * Settings (design/account-sketches.html 8, 11): who you are and how you signed in, first; then this app, your data,
@@ -15,16 +19,22 @@ import { c, radius, type as t } from "@/ui/theme";
 export default function Settings() {
   const s = useSession();
   const a = useAccount();
+  const { show } = useSnackbar();
+  const [look, setLook] = useState<Appearance>("auto");
+  useEffect(() => { getAppearance().then(setLook); }, []);
+  const pick = async (v: Appearance) => { setLook(v); await setAppearance(v); if (!reloadIfWeb()) show("Reopen Dasig to switch the look."); };
   const web = typeof document !== "undefined";
   const meta = a.how ?? (a.loaded ? `Nickname only · this ${web ? "browser" : "phone"}` : " ");
   return (
     <Screen back>
       <Text style={t.title}>Settings</Text>
+      {/* Profile hero: a primary-container card with your face large (UI_REIMAGINE §3). */}
       <Pressable accessibilityRole="button" accessibilityLabel="Your account" onPress={() => router.push("/account" as never)}
-        style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, marginTop: 12 }}>
-        <Avatar name={personName(s.person)} photo={s.person?.photo} size={44} />
-        <View style={{ flex: 1 }}><Text style={t.row}>{personName(s.person)}</Text><Text style={[t.meta, { marginTop: 2 }]} numberOfLines={1}>{meta}</Text></View>
-        <Icon name="chevron" size={14} color={c.s400} />
+        style={{ alignItems: "center", backgroundColor: tone.primaryContainer, borderRadius: radius.panel, paddingVertical: 24, paddingHorizontal: 16, marginTop: 12 }}>
+        <Avatar name={personName(s.person)} photo={s.person?.photo} size={88} />
+        <Text style={[scale.title, { color: tone.onPrimaryContainer, marginTop: 12 }]}>{personName(s.person)}</Text>
+        <Text style={[t.meta, { marginTop: 2, color: tone.onPrimaryContainer }]} numberOfLines={1}>{meta}</Text>
+        <Text style={{ ...scale.label, color: tone.onPrimaryContainer, marginTop: 10, textDecorationLine: "underline" }}>Your account</Text>
       </Pressable>
       {a.guest ? <View style={{ marginTop: 10 }}><Sand><View style={{ flex: 1 }}>
         <Text style={t.row}>Keep your work</Text>
@@ -37,6 +47,9 @@ export default function Settings() {
         <Row left={<IconCircle name="swap" />} title="Your bar" meta="What's on the bottom bar" onPress={() => router.push("/your-bar" as never)} />
         <Row left={<IconCircle name="users" />} title="Your groups" meta="Pages, settings, joining and leaving" onPress={() => router.push("/groups" as never)} last />
       </Panel>
+      <Eyebrow>Look</Eyebrow>
+      <Panel><View style={{ paddingVertical: 10 }}><Text style={[t.row, { marginLeft: 4 }]}>Appearance</Text>
+        <Chips options={[{ value: "auto", label: "Same as phone" }, { value: "light", label: "Light" }, { value: "dark", label: "Dark" }]} value={look} onChange={pick} /></View></Panel>
       <Eyebrow>Your data</Eyebrow>
       <Panel>
         <Row left={<IconCircle name="download" />} title="Your data" meta="Download, choose what shows, delete" onPress={() => router.push("/your-data" as never)} />

@@ -9,13 +9,15 @@ import { History } from "@/ui/History";
 import { shortRef } from "@/lib/work";
 import { Avatar, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet , Skeleton} from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 /** A need and its offers (sketch: P1 #3). Accepting an offer counts it toward "covered". */
 export default function Need() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useSession();
   const me = s.person ? `Person/${s.person.id}` : "";
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const [offering, setOffering] = useState(false);
   const [amount, setAmount] = useState(""); const [note, setNote] = useState("");
   const { data, reload } = useLoad(async () => {
@@ -51,13 +53,12 @@ export default function Need() {
       {want ? <Panel style={{ marginTop: 12 }}><View style={{ paddingVertical: 12 }}><View style={{ flexDirection: "row", justifyContent: "space-between" }}><Text style={t.row}>Covered</Text><Text>{`${got} of ${want} ${want === 1 ? unit : unit === "box" ? "boxes" : /s$/.test(unit) ? unit : `${unit}s`}`}</Text></View>
         <View style={{ height: 8, borderRadius: 4, backgroundColor: c.wash, marginTop: 8, overflow: "hidden" }}><View style={{ width: `${Math.min(1, got / want) * 100}%`, height: 8, backgroundColor: c.accent }} /></View></View></Panel> : null}
       {need.status !== "met" ? <Buttons><Primary label="I can help with this" onPress={() => setOffering(true)} /></Buttons> : null}
-      {msg ? <Notice>{msg}</Notice> : null}
-      <History type="Need" id={id} version={need.meta.version} />
       <Eyebrow right={`${offers.length}`}>Offers</Eyebrow>
       <Panel>{offers.map((o, i) => { const who = o.offeredBy?.reference; const nm = people[who]?.name?.text ?? "Someone";
         return <Row key={o.id} left={<Avatar name={nm} photo={people[who]?.photo} />} title={nm} meta={[o.quantity ? `${o.quantity.value} ${o.quantity.unit}` : null, o.description].filter(Boolean).join(" · ")} last={i === offers.length - 1}
           right={o.status === "matched" ? <Pill tone="ok">Accepted</Pill> : lead ? <Outline label="Accept" onPress={() => accept(o)} /> : <Pill>Offered</Pill>} />; })}
         {!offers.length ? <Row title="No offers yet" meta="Share the project so people can help" last /> : null}</Panel>
+      <History type="Need" id={id} version={need.meta.version} />
       <Sheet open={offering} onClose={() => setOffering(false)}>
         <Text style={[t.row, { fontSize: 18 }]}>{`Offer: ${need.category?.display}`}</Text>
         {unit ? <Field label={`How many (${unit})`} value={amount} onChangeText={setAmount} keyboardType="numeric" /> : null}

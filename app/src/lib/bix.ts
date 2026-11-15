@@ -49,7 +49,9 @@ export const bix = {
   pushInfo: () => call<{ web: string | null; expo: boolean }>("GET", "/$push"),
   pushOn: (kind: "web" | "expo", target: unknown) => call<{ on: boolean }>("POST", "/$push", { kind, target }),
   pushOff: () => call<{ on: boolean }>("POST", "/$push", { off: true }),
-    storage: (orgId: string) => call<{ used: number | null; allowance: number | null }>("GET", `/Organization/${orgId}/$storage`),
+    /** The measure (BIX "Suggestions and their answers"): per question, accepted unchanged, edited, declined. Officers and core members. */
+  suggestions: (orgId: string, days = 90) => call<{ days: number; byQuestion: Record<string, { used: number; edited: number; declined: number }> }>("GET", `/Organization/${orgId}/$suggestions?days=${days}`),
+  storage: (orgId: string) => call<{ used: number | null; allowance: number | null }>("GET", `/Organization/${orgId}/$storage`),
   verify: (type: string, id: string) => call<{ allValid: boolean; signatures: { signedBy: string; when: string; unchanged: boolean }[] }>("GET", `/${type}/${id}/$verify`),
   /** Apply changes now; if there's no connection, keep them to sync later. Throws BixError if refused. */
   async commit(...records: R[]): Promise<R[]> {

@@ -11,6 +11,7 @@ import { Icon } from "@/ui/Icon";
 import { MethodIcon } from "@/ui/SignIn";
 import { SignInMethods } from "@/ui/SignInMethods";
 import { c, radius, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 const since = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 
@@ -25,7 +26,8 @@ export default function AccountScreen() {
   const { add } = useLocalSearchParams<{ add?: string }>();
   const [adding, setAdding] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const [naming, setNaming] = useState<string | null>(null);
   const handle = (s.person as any)?.handle as { value: string; findable?: boolean } | undefined;
   const saveHandle = async () => { const v = (naming ?? "").trim().toLowerCase().replace(/^@/, ""); const why = v ? handleProblem(v) : null; if (why) { setMsg(why); return; }
@@ -60,7 +62,6 @@ export default function AccountScreen() {
   return (
     <Screen back onRefresh={a.reload}>
       <Title sub="On the Bayanihan Network. Any of these gets you in.">Your account</Title>
-      {msg ? <Notice>{msg}</Notice> : null}
       {/* Username (BIX Person.handle): optional, for being invited by name. */}
       <Eyebrow>Username</Eyebrow>
       <Panel>

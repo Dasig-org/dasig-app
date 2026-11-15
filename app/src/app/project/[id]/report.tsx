@@ -10,6 +10,7 @@ import { useLoad } from "@/lib/use";
 import { peopleFor, personName } from "@/lib/work";
 import { Buttons, Check, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Primary, Row, Screen, Skeleton, Title, usePhoto } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 /*
  * The event report (workspace/design/report-sketches.html R1–R4), a BIX Report. Figures are counted from signed work,
@@ -41,7 +42,8 @@ export default function ReportScreen() {
   const [audience, setAudience] = useState("district");
   const [names, setNames] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const [sent, setSent] = useState<R | null>(null);
   const { data, reload } = useLoad(async () => {
     const [p, teams, tasks, needs] = await Promise.all([bix.get("Initiative", id), bix.search("Team", { initiative: `Initiative/${id}` }), bix.search("Task", { partOf: `Initiative/${id}` }), bix.search("Need", { initiative: `Initiative/${id}` })]);
@@ -120,7 +122,6 @@ export default function ReportScreen() {
           {g.items.map((x) => <Thumb key={x.a.hash} a={x.a} on={picked.has(x.a.hash)} onPress={() => setPicked((s0) => { const n = new Set(s0); n.has(x.a.hash) ? n.delete(x.a.hash) : n.add(x.a.hash); return n; })} />)}
         </ScrollView></View>)
         : <Meta>No photos yet. Add results on the tasks, and they'll show here grouped by milestone.</Meta>}
-      {msg ? <Notice>{msg}</Notice> : null}
       <Buttons><Primary label="Next: who it's for" onPress={() => setStep(2)} disabled={!done.length} /></Buttons>
     </Screen>
   );
@@ -138,7 +139,6 @@ export default function ReportScreen() {
       </Panel>
       <View style={{ backgroundColor: c.sand, borderRadius: radius.panel, padding: 14, marginTop: 12, flexDirection: "row", gap: 12, alignItems: "center" }}><IconCircle name="lock" tone="white" />
         <View style={{ flex: 1 }}><Text style={t.row}>Signed when you send</Text><Meta>A correction is a new version that replaces this one.</Meta></View></View>
-      {msg ? <Notice>{msg}</Notice> : null}
       <Buttons><Primary label="Send the report" onPress={send} busy={busy} /></Buttons>
       <View style={{ alignItems: "center", marginTop: 8 }}><Outline label="Back" onPress={() => setStep(1)} /></View>
     </Screen>

@@ -6,6 +6,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { Buttons, IconCircle, LinkText, Meta, Notice, Outline, Panel, Primary, Row, Screen, Skeleton, Title } from "@/ui/kit";
 import { type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 const WHAT: Record<string, string> = { volunteer: "to volunteer with the group", member: "to join the core team", "team-member": "to join the team", helper: "to help with a task" };
 
@@ -17,7 +18,8 @@ export default function Invitations() {
   const s = useSession();
   const { data, reload } = useLoad(() => myInvitations(), [s.person?.id]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const answer = async (v: Invitation, a: "accept" | "decline" | "block") => {
     setBusy(v.id); setMsg(null);
     try { const r = await answerInvitation(v.id, a); await s.refresh(); if (a === "accept" && r.target) { const [tt, id] = r.target.split("/"); router.replace((tt === "Team" ? `/team/${id}` : tt === "Task" ? `/task/${id}` : tt === "Initiative" ? `/project/${id}` : "/home") as never); return; }
@@ -26,7 +28,6 @@ export default function Invitations() {
   return (
     <Screen back onRefresh={reload}>
       <Title sub={s.connection?.kind === "ecosystem" ? "Answer them here. Nothing happens unless you join." : "Invitations come with a Bayanihan Network account. Sign in from Settings → Your account."}>Invitations</Title>
-      {msg ? <Notice>{msg}</Notice> : null}
       {!data ? <Skeleton /> : !data.length ? <Panel><Row left={<IconCircle name="check" />} title="No invitations right now" meta="When someone invites you by username or email, it shows here." last /></Panel>
         : data.map((v) => <View key={v.id} style={{ marginTop: 12 }}><Panel>
           <Row left={<IconCircle name="mail" />} title={`${v.invitedBy.name} invited you ${WHAT[v.role] ?? ""}`} meta={[v.group?.name, v.target.reference.startsWith("Organization/") ? null : v.target.title].filter(Boolean).join(" · ")} last={!v.message} />

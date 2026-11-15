@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { suggester } from "@/lib/work";
 import { router } from "expo-router";
 import { Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
@@ -7,18 +8,20 @@ import { useLoad } from "@/lib/use";
 import { act } from "@/lib/work";
 import { Avatar, Buttons, Meta, Notice, Outline, Panel, Screen, Title } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 /** Ideas from the team (sketch: P1 #5): accept, or "Not now" which keeps it as a draft with a note. */
 export default function Ideas() {
   const s = useSession();
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const { data, reload } = useLoad(async () => {
     if (!s.current) return [];
     const projects = await bix.search("Initiative", { organization: `Organization/${s.current.id}` });
     const drafts = (await Promise.all(projects.map((p) => bix.search("Task", { partOf: `Initiative/${p.id}` })))).flat().filter((x) => x.status === "draft");
     const out: { task: R; who: string; photo?: any }[] = [];
     for (const x of drafts) {
-      const by = x.note?.[0]?.author?.reference as string | undefined;
+      const by = await suggester(x);
       let who = "Someone", photo: any; if (by) { try { const p = await bix.get("Person", by.split("/")[1]!); who = p.name?.text ?? who; photo = p.photo; } catch {} }
       out.push({ task: x, who, photo });
     }
@@ -28,7 +31,6 @@ export default function Ideas() {
   return (
     <Screen back>
       <Title sub="Accepted ideas credit the person who suggested them.">Ideas from the team</Title>
-      {msg ? <Notice>{msg}</Notice> : null}
       {(data ?? []).map(({ task, who, photo }) => <View key={task.id} style={{ backgroundColor: c.white, borderRadius: radius.panel, padding: 16, marginTop: 10 }}>
         <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}><Avatar name={who} size={40} photo={photo} /><View style={{ flex: 1 }}><Text style={t.eyebrow}>{`${who} suggested`}</Text><Text style={[t.row, { marginTop: 2 }]} onPress={() => router.push(`/task/${task.id}`)}>{task.title}</Text></View></View>
         {(task.note ?? []).length ? <Meta>{task.note[task.note.length - 1].text}</Meta> : null}

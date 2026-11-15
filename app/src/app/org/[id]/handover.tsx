@@ -7,6 +7,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { peopleFor, personName } from "@/lib/work";
 import { Avatar, Buttons, Check, Eyebrow, Field, IconCircle, Meta, Notice, Panel, Primary, Row, Screen, Skeleton, Title } from "@/ui/kit";
+import { useSnackbar } from "@/ui/Snackbar";
 
 /*
  * End of term: hand the group to the next officer (coordinator sketches E16). The successor becomes an officer first,
@@ -20,7 +21,8 @@ export default function Handover() {
   const [to, setTo] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const { data } = useLoad(async () => {
     const [org, roles, projects, templates] = await Promise.all([bix.get("Organization", id), bix.search("Role", { organization: `Organization/${id}` }),
       bix.search("Initiative", { organization: `Organization/${id}` }), bix.search("InitiativeTemplate", { organization: `Organization/${id}` }).catch(() => [])]);
@@ -55,7 +57,6 @@ export default function Handover() {
         <Row left={<IconCircle name="users" />} title="People and their roles" meta={`${data.active.length} people`} last />
       </Panel>
       <Field label="A note for them" value={note} onChangeText={setNote} multiline placeholder="What I'd do differently next time…" />
-      {msg ? <Notice>{msg}</Notice> : null}
       <Buttons><Primary label={to ? `Hand over to ${personName(data.people[to])}` : "Choose who takes over"} onPress={go} busy={busy} disabled={!to || !mine} /></Buttons>
       <Text style={{ textAlign: "center", marginTop: 10 }}><Meta>You stay in the group as a core member. Nothing is lost.</Meta></Text>
     </Screen>

@@ -1,4 +1,5 @@
 import { AddPeople } from "@/ui/AddPeople";
+import { AnswerRow } from "@/ui/Answer";
 import { useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { Platform, Share, Text, View } from "react-native";
@@ -11,9 +12,11 @@ import { pairUrl } from "@/lib/pairing";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { teamIcon } from "@/lib/work";
+import { FaceGrid } from "@/ui/m3";
 import { Avatar, Buttons, LinkText, Check, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, Title } from "@/ui/kit";
 import { InviteOptions, linkOpts, type InviteOpts } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 const CORE_ROLES = [{ value: "officer", label: "Officer" }, { value: "core-member", label: "Core member" }, { value: "member", label: "Member" }] as const;
 const VOLUNTEER_ROLES = [{ value: "volunteer-regular", label: "Regular volunteer" }, { value: "volunteer-episodic", label: "Volunteer" }, { value: "service-learning", label: "Student volunteer" }] as const;
@@ -26,7 +29,8 @@ export default function People({ orgId }: { orgId?: string } = {}) {
   const params = useLocalSearchParams<{ id: string }>();
   const id = orgId ?? params.id;
   const s = useSession();
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const [inviting, setInviting] = useState<{ text: string; qr?: string } | null>(null);
   const [adding, setAdding] = useState(false);
   const [nick, setNick] = useState("");
@@ -78,12 +82,13 @@ export default function People({ orgId }: { orgId?: string } = {}) {
       <Tip id="people" title="Core team and volunteers">The core team runs the group. Volunteers help with parts of it and see their own teams' work.</Tip>
       {manage ? <Buttons><Primary label="Invite people" onPress={() => setAddPeople(true)} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}
       <Field icon="search" value={find} onChangeText={setFind} placeholder="Find someone" />
-      {msg ? <Notice>{msg}</Notice> : null}
       {requests.length && manage ? <><Eyebrow right={`${requests.length}`}>Asking to join</Eyebrow><Panel>
-        {requests.map((r, i) => <Row key={r.id} left={<Avatar name={name(r)} photo={data?.people[r.person.reference]?.photo} />} title={name(r)} meta="Wants to join as a volunteer" last={i === requests.length - 1}
-          right={<View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}><LinkText onPress={() => act(() => bix.commit(bix.next(r, { status: "ended", period: { start: now(), end: now() } })))}>Decline</LinkText>
-            <Outline label="Accept" onPress={() => act(() => bix.commit(bix.next(r, { status: "active", period: { start: now() } })))} /></View>} />)}
+        {requests.map((r, i) => <AnswerRow key={r.id} first={i === 0} left={<Avatar name={name(r)} photo={data?.people[r.person.reference]?.photo} />} title={name(r)} meta="Wants to join as a volunteer"
+          onYes={() => act(() => bix.commit(bix.next(r, { status: "active", period: { start: now() } })))} onNo={() => act(() => bix.commit(bix.next(r, { status: "ended", period: { start: now(), end: now() } })))} />)}
       </Panel></> : null}
+      {/* Everyone at a glance; tap a face for the same sheet as the list (leads and officers). */}
+      {!q && active.length > 1 ? <><Eyebrow right={`${active.length}`}>Everyone</Eyebrow><FaceGrid people={active.map((r) => ({ key: r.id, name: name(r), photo: data?.people[r.person.reference]?.photo, role: pos(r) }))}
+        onPress={manage ? (i) => setOpen({ role: active[i]!, person: data?.people[active[i]!.person.reference] ?? null }) : undefined} /></> : null}
       {/* BIX "Core team and volunteers": two kinds of people, though everyone here volunteers. */}
       {list("Core team", [...byRole(["officer"]), ...byRole(["core-member"]), ...byRole(["member"])])}
       {list("Volunteers", byRole(["volunteer-regular", "volunteer-episodic", "service-learning"]))}

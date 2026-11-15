@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Image, ScrollView, Share, Text, View } from "react-native";
+import { Share, Text, View } from "react-native";
 import { appUrl } from "@/lib/env";
 import { personName } from "@/lib/work";
-import { Sheet, usePhoto } from "@/ui/kit";
+import { Sheet } from "@/ui/kit";
 import { taskHours } from "@bayanihan/core/figures";
 import { bix, ref } from "@/lib/bix";
 import { DAY } from "@/lib/dates";
@@ -11,12 +11,15 @@ import { useLoad } from "@/lib/use";
 import { facesOf, peopleFor } from "@/lib/work";
 import { Buttons, Eyebrow, Faces, IconCircle, Meta, Notice, Panel, Primary, Row, Screen, Title, Outline , Skeleton} from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
+import { Files } from "@/ui/Files";
 
 /** The wrap-up writes itself (coordinator sketches D12–D14): figures, photos, needs met, a report and a thank-you post
  * composed from signed work, then save the event for next year. Wrapping up: finish the project, and save its teams and usual work for next time (BIX InitiativeTemplate, never shown by that name). */
 export default function Wrap() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const [busy, setBusy] = useState(false);
   const [thanking, setThanking] = useState(false);
   const { data, reload } = useLoad(async () => {
@@ -61,7 +64,7 @@ export default function Wrap() {
       <Title sub={p.status === "completed" ? "It's done. Salamat!" : "Written from what your teams did. Check it, then send."}>{`How ${p.title} went`}</Title>
       <View style={{ flexDirection: "row", gap: 10 }}>{tile(`${people.size}`, people.size === 1 ? "volunteer" : "volunteers")}{tile(`${hours} h`, "given")}{tile(`${done} of ${tasks.length}`, "done")}</View>
       {facesOf([...people], folks).names.length ? <View style={{ marginTop: 10, flexDirection: "row", alignItems: "center", gap: 8 }}><Faces {...facesOf([...people], folks)} /><Meta>{credits.map((x) => x.team).join(" · ")}</Meta></View> : null}
-      {photos.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }} contentContainerStyle={{ gap: 8 }}>{photos.map((a: any) => <WrapPhoto key={a.hash} a={a} />)}</ScrollView> : null}
+      {photos.length ? <View style={{ marginTop: 12 }}><Files items={photos} /></View> : null}
       {met.length ? <><Eyebrow>Needs met</Eyebrow><Panel>{met.map((x, i) => <Row key={x.id} left={<IconCircle name="box" />} title={x.category?.display ?? "Supplies"}
         meta={x.quantity?.value ? `${x.received?.value ?? 0} of ${x.quantity.value} ${x.quantity.unit ?? ""}` : undefined} last={i === met.length - 1} />)}</Panel></> : null}
       <Eyebrow>Send it</Eyebrow>
@@ -71,7 +74,6 @@ export default function Wrap() {
         <Row left={<IconCircle name="users" />} title="See the credits" onPress={() => router.push(`/project/${id}/credits` as never)} />
         <Row left={<IconCircle name="repeat" />} title="Save for next year" meta={`${teams.length} teams and their work, dated from the event`} onPress={save} last />
       </Panel>
-      {msg ? <Notice>{msg}</Notice> : null}
       {p.status !== "completed" ? <Buttons><Primary label="Mark the event done" onPress={finish} busy={busy} /></Buttons> : <Buttons><Outline flex label="Back to the event" onPress={() => router.back()} /></Buttons>}
       <Sheet open={thanking} onClose={() => setThanking(false)}>
         <Text style={[t.row, { fontSize: 18 }]}>Thank everyone</Text>
@@ -83,4 +85,3 @@ export default function Wrap() {
   );
 }
 
-function WrapPhoto({ a }: { a: { hash?: string } }) { const uri = usePhoto(a); return <View style={{ width: 86, height: 86, borderRadius: radius.inner, overflow: "hidden", backgroundColor: c.sand }}>{uri ? <Image source={{ uri }} style={{ width: 86, height: 86 }} /> : null}</View>; }

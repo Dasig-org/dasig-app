@@ -80,3 +80,10 @@ export function teamIcon(name: string): IconName {
   return "users";
 }
 export { ref };
+
+/** Who suggested an idea (a draft Task): its first note's author, else who made it, from its history (BIX Provenance). */
+export async function suggester(t: R): Promise<string | undefined> {
+  const by = (t.note as { author?: { reference?: string } }[] | undefined)?.[0]?.author?.reference;
+  if (by) return by;
+  try { return (await bix.history("Task", t.id)).entry.find((e) => e.by)?.by ?? undefined; } catch { return undefined; }
+}

@@ -41,8 +41,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [person, setPerson] = useState<R | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [current, setCurrent] = useState<R | null>(null);
+  const [current, setCurrentState] = useState<R | null>(null);
   const [connection, setConn] = useState<Connection | null>(null);
+  /*
+   * Which context the person last chose, remembered on this device (Don, 2026-11-15: the app always opened on the first
+   * group, not the one last worked in). A group's id, or "me" for "Just me"; kept with the person's id, so someone else
+   * signing in on this phone starts fresh. Without a choice (or after leaving that group), the first group.
+   * Before this, "Just me" (null) was also undone by the next refresh, which read null as "not chosen yet".
+   */
+  const setCurrent = useCallback((org: R | null) => {
+    chosen.context = org ? org.id : "me";
+    setCurrentState(org);
+    AsyncStorage.setItem(CONTEXT_KEY, JSON.stringify({ person: chosen.person, context: chosen.context })).catch(() => {});
+  }, []);
 
   const refresh = useCallback(async () => {
     const c = await getConnection();
@@ -64,11 +75,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
     } catch {}
     setPerson(me);
+    chosen.person = me.id;
+    if (chosen.context === undefined) {
+      const saved = await AsyncStorage.getItem(CONTEXT_KEY).catch(() => null);
+      const v = saved ? (JSON.parse(saved) as { person?: string; context?: string }) : null;
+      chosen.context = v && v.person === me.id ? v.context ?? null : null;
+    }
     const roles = (await bix.search("Role", { person: `Person/${me.id}` })).filter((r) => r.status === "active");
     const gs: Group[] = [];
     for (const role of roles) { try { gs.push({ role, org: await bix.get("Organization", role.organization.reference.split("/")[1]) }); } catch {} }
     setGroups(gs);
-    setCurrent((cur) => (cur ? gs.find((g) => g.org.id === cur.id)?.org ?? gs[0]?.org ?? null : gs[0]?.org ?? null)); // fresh record, not a stale copy
+    // The remembered choice, as a fresh record (not a stale copy); "Just me" stays "Just me".
+    const want = chosen.context;
+    setCurrentState(want === "me" ? null : gs.find((g) => g.org.id === want)?.org ?? gs[0]?.org ?? null);
   }, []);
 
   useEffect(() => { refresh().catch(() => {}).finally(() => setReady(true)); }, [refresh]);
@@ -169,7 +188,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (c.kind === "cloud") await (await sb()).auth.signOut();
     else if (c.kind === "ecosystem" && Platform.OS === "web") await setConnection({ kind: "ecosystem", url: c.url, token: "" });
     else await setConnection(c.kind === "hub" || c.kind === "ecosystem" ? { kind: "phone", token: await AsyncStorageGet() } : { kind: "phone" });
-    setPerson(null); setGroups([]); setCurrent(null); await refresh();
+    chosen.context = undefined; chosen.person = undefined; await AsyncStorage.removeItem(CONTEXT_KEY).catch(() => {});
+    setPerson(null); setGroups([]); setCurrentState(null); await refresh();
   };
 
   useEffect(() => { import("./files").then((m) => m.setUploadGroup(current?.id ?? null)).catch(() => {}); }, [current?.id]);
@@ -181,6 +201,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 /** The phone's own token, remembered when switching to a hub, so going back keeps your local records. */
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+const CONTEXT_KEY = "dasig.context";
+/** The remembered context (one session provider per app): undefined until read from storage. */
+const chosen: { context: string | null | undefined; person: string | undefined } = { context: undefined, person: undefined };
 async function AsyncStorageGet(): Promise<string | undefined> { return (await AsyncStorage.getItem("dasig.phone.token")) ?? undefined; }
 export async function rememberPhoneToken(t?: string) { if (t) await AsyncStorage.setItem("dasig.phone.token", t); }
 

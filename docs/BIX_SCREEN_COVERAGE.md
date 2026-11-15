@@ -1,6 +1,6 @@
 # BIX → screens coverage
 
-**Date:** 2026-10-28. For each BIX resource: is it used in a sketch, and which flows does it enable that no screen shows yet. Sketch files are in `apps/bayanihan/design/`.
+**Date:** 2026-10-28. For each BIX resource: is it used in a sketch, and which flows does it enable that no screen shows yet. Sketch files are in [`app/design/`](../app/design/).
 
 | BIX resource | Shown in | Flows BIX enables that aren't drawn |
 |---|---|---|

@@ -1,5 +1,5 @@
-import { MemoryCard } from "@/ui/MemoryCard";
-import { AddSheet } from "@/ui/AddSheet";
+import { PlanCheck } from "@/ui/PlanCheck";
+import { ErrorState } from "@/ui/ErrorState";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Image, Platform, Pressable, Share, Text, View } from "react-native";
@@ -12,17 +12,22 @@ import { facesOf, peopleFor, placeOf, shortRef, teamIcon } from "@/lib/work";
 import { Logo } from "@/ui/Context";
 import { History } from "@/ui/History";
 import { Files } from "@/ui/Files";
-import { Body, Buttons, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, Sheet, Skeleton, Tip, usePhoto } from "@/ui/kit";
+import { Body, Buttons, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, ScreenTitle, Sheet, Skeleton, usePhoto } from "@/ui/kit";
+import { Count, ProgressRing, SharedCover, Segmented, StateChip, TabPane } from "@/ui/m3";
+import { useSnackbar } from "@/ui/Snackbar";
 import { atMost, InviteOptions, linkOpts, VisibilityChoice, visibilityFields, visibilityOf, type Visibility } from "@/ui/Privacy";
 import { appUrl } from "@/lib/env";
-import { c, type as t } from "@/ui/theme";
+import { c, scale, tone, type as t } from "@/ui/theme";
+
+type Tab = "overview" | "work" | "teams" | "needs";
 
 /** The project page (sketch: running-sketches #1, page anatomy §1b). */
 export default function Project() {
-  const [addOpen, setAddOpen] = useState(false);
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useSession();
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
+  const [tab, setTab] = useState<Tab>("overview");
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<{ title: string; about: string; place: string; start: string; image: any; vis: Visibility }>({ title: "", about: "", place: "", start: "", image: null, vis: "invited" });
   const [addingFile, setAddingFile] = useState(false);
@@ -39,7 +44,7 @@ export default function Project() {
   }, [id]);
   const logo = usePhoto(data?.p.image);
   const formLogo = usePhoto(form.image);
-  if (error) return <Screen onRefresh={reload} back><Notice>{error}</Notice></Screen>;
+  if (error) return <Screen onRefresh={reload} back><ErrorState message={error} onRetry={reload} /></Screen>;
   if (!data) return <Screen onRefresh={reload} back><Skeleton /></Screen>;
   const { p, teams, tasks, needs, decisions, can, org, folks } = data;
   const activeOf = (tm: any) => (tm.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference as string);
@@ -65,77 +70,115 @@ export default function Project() {
     Alert.alert("Cancel this project?", "Nobody can add work to it after this. Everything done so far stays on record.", [{ text: "Keep it", style: "cancel" }, { text: "Cancel the project", style: "destructive", onPress: go }]);
   };
   const removeFile = (a: any) => run(bix.next(p, { attachment: (p.attachment ?? []).filter((x: any) => x.hash !== a.hash) }), "File removed.");
+  const live = tasks.filter((k) => k.status !== "draft" && k.status !== "cancelled");
+  const doneN = live.filter((k) => k.status === "completed").length;
+  const late = live.filter((k) => k.status !== "completed" && k.due && Date.parse(k.due) < Date.now());
+  const places = (k: any) => (k.status === "ready" ? Math.max(0, Number(k.slots ?? 1) - ((k.participant ?? []) as any[]).filter((x) => x.status === "active").length) : 0);
+  const openN = live.reduce((n, k) => n + places(k), 0);
+  const days = p.period?.start ? Math.round((new Date(p.period.start).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000) : null;
+  const teamName = (k: any) => teams.find((x) => `Team/${x.id}` === k.team?.reference)?.name;
+  const mineT = new Set(teams.filter((tm) => (tm.participant ?? []).some((x: any) => x.person.reference === `Person/${s.person?.id}` && x.status === "active")).map((tm) => `Team/${tm.id}`));
+  const openW = lead ? [] : tasks.filter((k) => k.status === "ready" && !k.basedOn && k.team?.reference && !mineT.has(k.team.reference)).slice(0, 5);
+  const workRow = (k: any, i: number, all: any[]) => <Row key={k.id} left={<IconCircle name={k.milestone ? "building" : "check"} tone={k.status === "completed" ? "grey" : "sand"} />} title={k.title}
+    meta={[teamName(k), k.due ? `due ${short(k.due)}` : null, places(k) ? `${places(k)} open` : null].filter(Boolean).join(" · ")} onPress={() => router.push(`/task/${k.id}`)} last={i === all.length - 1}
+    right={late.includes(k) ? <StateChip kind="late">Late</StateChip> : k.status === "completed" ? <StateChip kind="done">Done</StateChip> : places(k) ? <StateChip kind="open">Open</StateChip> : undefined} />;
+  const group = (label: string, list: any[]) => list.length ? <><Eyebrow right={`${list.length}`}>{label}</Eyebrow><Panel>{list.map(workRow)}</Panel></> : null;
   return (
-    <Screen onRefresh={reload} back right={<View style={{ flexDirection: "row", gap: 8 }}>{can.edit ? <RoundButton icon="pen" label="Edit project" onPress={edit} /> : null}
-      {lead ? <RoundButton icon="plus" label="Add" onPress={() => setAddOpen(true)} /> : null}</View>}>
-      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} ctx={{ kind: "project", project: p, lead }} />
-      <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>{logo ? <Image source={{ uri: logo }} style={{ width: 56, height: 56, borderRadius: 16 }} /> : <IconCircle name="flag" size={56} tone="white" />}
-        <View style={{ flex: 1 }}><Text style={[t.title, { fontSize: 24 }]}>{p.title}</Text>
-          <Meta>{[p.period?.start ? short(p.period.start) : null, placeOf(p), p.status === "completed" ? "Done" : p.status === "cancelled" ? "Cancelled" : null].filter(Boolean).join(" · ")}</Meta></View></View>
-      {/* Summary first (UX_GAPS A3): what it is, whose it is, and how it's going. Teams and files come after. */}
-      <View style={{ marginTop: 10 }}>{p.description ? <Body>{p.description}</Body> : can.edit ? <Text style={[t.meta, { color: c.accent, fontWeight: "600" }]} onPress={edit}>＋ Say what this project is about: what, for whom, and why</Text> : null}</View>
-      <View style={{ marginTop: 12 }}><Panel>
-        {org ? <Row left={<Logo name={org.name} image={org.image} size={36} />} title={org.name} meta="About the group" onPress={() => router.push(`/org/${org.id}` as never)} /> : null}
-        {(() => { const live = tasks.filter((k) => k.status !== "draft" && k.status !== "cancelled"); const d = live.filter((k) => k.status === "completed").length;
-          const f = facesOf([...people], folks);
-          return <Row left={f.names.length ? <View style={{ width: 64 }}><Faces {...f} /></View> : <IconCircle name="check" />} title={live.length ? `${d} of ${live.length} done` : "No work added yet"} meta={`${teams.length} team${teams.length === 1 ? "" : "s"} · ${people.size} ${people.size === 1 ? "person" : "people"}`} last
-            right={live.length ? <View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${(d / live.length) * 100}%`, height: 8, backgroundColor: c.accent }} /></View> : undefined} />; })()}
-      </Panel></View>
-      {msg ? <Notice>{msg}</Notice> : null}
-      <Tip id="project-page" title="The whole project">Gates, teams, needs and votes, in one place.</Tip>
+    <Screen onRefresh={reload} back here={{ kind: "project", project: p, tasks, teams, org, lead }} right={can.edit ? <RoundButton icon="pen" label="Edit project" onPress={edit} /> : undefined}
+      add={lead && p.status !== "cancelled" ? { kind: "project", project: p, lead } : undefined}>
+      <ScreenTitle>{p.title}</ScreenTitle>
+      {/* The hero: one large visual, then the numbers that matter (UI_REIMAGINE §3). */}
+      <View style={{ borderRadius: 24, overflow: "hidden", backgroundColor: c.white }}>
+        <SharedCover id={p.id} style={{ height: 150, backgroundColor: tone.primaryContainer, alignItems: "center", justifyContent: "center" }}>
+          {logo ? <Image source={{ uri: logo }} resizeMode="cover" style={{ width: "100%", height: "100%" }} /> : <IconCircle name="flag" size={72} tone="white" />}
+        </SharedCover>
+        <View style={{ padding: 16 }}>
+          <Text style={[scale.display, { color: c.ink, fontSize: 24 }]}>{p.title}</Text>
+          <Meta>{[p.period?.start ? short(p.period.start) : null, placeOf(p), p.status === "completed" ? "Done" : p.status === "cancelled" ? "Cancelled" : null].filter(Boolean).join(" · ")}</Meta>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 16, marginTop: 14 }}>
+            <ProgressRing value={live.length ? doneN / live.length : 0} label={live.length ? `${Math.round((doneN / live.length) * 100)}%` : "–"} sub="done" size={60} />
+            <View style={{ flex: 1, gap: 8 }}>
+              {live.length ? <Text style={t.row}><Count value={doneN} />{` of ${live.length} done`}</Text> : <Text style={t.row}>No work added yet</Text>}
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {days !== null && p.status === "active" ? <StateChip kind="open">{days < 0 ? `${-days} days ago` : days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days} days to go`}</StateChip> : null}
+                {late.length ? <StateChip kind="late"><Count value={late.length} suffix=" late" /></StateChip> : null}
+                {openN ? <StateChip kind="open"><Count value={openN} suffix=" open" /></StateChip> : null}
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+      <Segmented value={tab} onChange={setTab} tabs={[{ key: "overview", label: "Overview" }, { key: "work", label: "Work", count: live.length }, { key: "teams", label: "Teams", count: teams.length }, { key: "needs", label: "Needs", count: needs.length }]} />
+      <TabPane id={tab}>
+      {tab === "overview" ? <>
+        {/* Plan check (§7.2e): leads see what needs them and what would make the plan better, first. */}
+        {lead ? <PlanCheck project={p} tasks={tasks} teams={teams} org={org} onChanged={reload} /> : null}
+        <View style={{ marginTop: 14 }}>{p.description ? <Body>{p.description}</Body> : can.edit ? <Text style={[t.meta, { color: c.accent, fontWeight: "600" }]} onPress={edit}>＋ Say what this project is about: what, for whom, and why</Text> : null}</View>
+        <View style={{ marginTop: 12 }}><Panel>
+          {org ? <Row left={<Logo name={org.name} image={org.image} size={36} />} title={org.name} meta="About the group" onPress={() => router.push(`/org/${org.id}` as never)} /> : null}
+          {(() => { const f = facesOf([...people], folks);
+            return <Row left={f.names.length ? <View style={{ width: 64 }}><Faces {...f} /></View> : <IconCircle name="users" />} title={`${people.size} ${people.size === 1 ? "person" : "people"}`} meta={`${teams.length} team${teams.length === 1 ? "" : "s"}`} last onPress={() => setTab("teams")} />; })()}
+        </Panel></View>
 
-      {gates.map((g) => <View key={g.id} style={{ marginTop: 14 }}><Sand><IconCircle name="building" tone="white" />
-        <View style={{ flex: 1 }}><Text style={[t.eyebrow, { marginBottom: 2 }]}>Gate</Text><Text style={t.row}>{g.title}</Text><Meta>{`${blocked(g)} task${blocked(g) === 1 ? "" : "s"} wait on this`}</Meta></View>
-        <Text style={{ fontWeight: "600", textDecorationLine: "underline", color: c.ink }} onPress={() => router.push(`/task/${g.id}`)}>Open</Text></Sand></View>)}
+        {gates.map((g) => <View key={g.id} style={{ marginTop: 14 }}><Sand><IconCircle name="building" tone="white" />
+          <View style={{ flex: 1 }}><Text style={[t.eyebrow, { marginBottom: 2 }]}>Gate</Text><Text style={t.row}>{g.title}</Text><Meta>{`${blocked(g)} task${blocked(g) === 1 ? "" : "s"} wait on this`}</Meta></View>
+          <Text style={{ fontWeight: "600", textDecorationLine: "underline", color: c.ink }} onPress={() => router.push(`/task/${g.id}`)}>Open</Text></Sand></View>)}
+        {openVotes.map((d) => <View key={d.id} style={{ marginTop: 12 }}><Panel><Row left={<IconCircle name="flag" />} title={d.question} meta="Vote open" right={<Pill tone="state">Vote</Pill>} onPress={() => router.push(`/vote/${d.id}` as never)} last /></Panel></View>)}
+        {/* Open in other teams (teamwork D10): where help is needed, beyond your own team. */}
+        {openW.length ? <><Eyebrow right={`${openW.length}`}>Open in other teams</Eyebrow><Panel>{openW.map((k, i) => { const tm = teams.find((x) => `Team/${x.id}` === k.team.reference); const n = Number(k.slots ?? 1);
+          return <Row key={k.id} left={<IconCircle name={n > 1 ? "users" : "pen"} />} title={k.title} meta={[tm?.name, n > 1 ? `${places(k)} place${places(k) === 1 ? "" : "s"}` : k.taking === "ask" ? "lead's call" : null].filter(Boolean).join(" · ")}
+            right={<Pill>{k.taking === "ask" ? "Ask to do" : "I'm in"}</Pill>} onPress={() => router.push(`/task/${k.id}`)} last={i === openW.length - 1} />; })}</Panel></> : null}
+        {p.status === "cancelled" ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="pending" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>This project was cancelled</Text>
+          <Meta>Its work, people and history are kept, so you can look back. Nothing new can be added.</Meta></View></Sand></View> : null}
+        <Eyebrow>More</Eyebrow>
+        <Panel>
+          <Row left={<IconCircle name="cal" />} title="Timeline" meta="Work by week, with gates" onPress={() => router.push(`/project/${id}/timeline` as never)} />
+          {lead ? <Row left={<IconCircle name="check" />} title="Event day" meta="Check people in, see what's still open" onPress={() => router.push(`/project/${id}/day` as never)} /> : null}
+          {lead ? <Row left={<IconCircle name="receipt" />} title="Report" meta="How it went: figures, photos, who it's for" onPress={() => router.push(`/project/${id}/report` as never)} /> : null}
+          <Row left={<IconCircle name="heart" />} title="Credits" meta="Everyone who made it happen" onPress={() => router.push(`/project/${id}/credits` as never)} />
+          {lead && groupVis !== "group" ? <Row left={<IconCircle name="userplus" />} title="Invite volunteers" meta={visibilityOf(p) === "public" ? "A link to this project; they choose a team" : "A private link; the project stays hidden"} onPress={() => setInviteAsk(true)} /> : null}
+          {lead ? <Row left={<IconCircle name="flag" />} title="Start a vote" meta="Decide something together" onPress={() => router.push({ pathname: "/vote/new" as never, params: { project: id } })} /> : null}
+          {lead ? <Row left={<IconCircle name="repeat" />} title={p.status === "completed" ? "Wrapped up" : "Wrap up the project"} meta="Report, credits, save these teams" onPress={() => router.push(`/project/${id}/wrap` as never)} last /> : null}
+        </Panel>
+        {/* History: one quiet line at the bottom, the timeline in a sheet (2026-11-15). */}
+        <History type="Initiative" id={p.id} groupName={org?.name} version={p.meta.version} />
+      </> : null}
 
-      {openVotes.map((d) => <View key={d.id} style={{ marginTop: 12 }}><Panel><Row left={<IconCircle name="flag" />} title={d.question} meta="Vote open" right={<Pill tone="state">Vote</Pill>} onPress={() => router.push(`/vote/${d.id}` as never)} last /></Panel></View>)}
+      {tab === "work" ? <>
+        {live.length ? <>
+          {group("Late", late)}
+          {group("Open places", live.filter((k) => places(k) > 0 && !late.includes(k)))}
+          {group("In progress", live.filter((k) => k.status !== "completed" && places(k) === 0 && !late.includes(k)))}
+          {group("Done", live.filter((k) => k.status === "completed").slice(0, 10))}
+        </> : <View style={{ marginTop: 14 }}><Sand><IconCircle name="pen" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>No work added yet</Text><Meta>Add the first tasks, then teams and people fill them.</Meta></View></Sand>
+          {lead ? <Buttons><Primary label="Add work" onPress={() => router.push(`/project/${p.id}/plan` as never)} /></Buttons> : null}</View>}
+      </> : null}
 
-      {/* Open in other teams (teamwork D10): where help is needed, beyond your own team. */}
-      {(() => { const mineT = new Set(teams.filter((tm) => (tm.participant ?? []).some((x: any) => x.person.reference === `Person/${s.person?.id}` && x.status === "active")).map((tm) => `Team/${tm.id}`));
-        const openW = tasks.filter((k) => k.status === "ready" && !k.basedOn && k.team?.reference && !mineT.has(k.team.reference)).slice(0, 5);
-        if (!openW.length || lead) return null;
-        return <><Eyebrow right={`${openW.length}`}>Open in other teams</Eyebrow><Panel>{openW.map((k, i) => { const tm = teams.find((x) => `Team/${x.id}` === k.team.reference); const n = Number(k.slots ?? 1);
-          const left = n - ((k.participant ?? []) as any[]).filter((x) => x.status === "active").length;
-          return <Row key={k.id} left={<IconCircle name={n > 1 ? "users" : "pen"} />} title={k.title} meta={[tm?.name, n > 1 ? `${left} place${left === 1 ? "" : "s"}` : k.taking === "ask" ? "lead's call" : null].filter(Boolean).join(" · ")}
-            right={<Pill>{k.taking === "ask" ? "Ask to do" : "I'm in"}</Pill>} onPress={() => router.push(`/task/${k.id}`)} last={i === openW.length - 1} />; })}</Panel></>; })()}
-      {p.status === "cancelled" ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="pending" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>This project was cancelled</Text>
-        <Meta>Its work, people and history are kept, so you can look back. Nothing new can be added.</Meta></View></Sand></View> : null}
-      {/* Project memory, rules only (Bayani v0 Phase 1): leads, when the group turned it on. */}
-      {lead && ((org?.assist ?? []) as any[]).some((a) => a.code === "memory") ? <MemoryCard project={p} tasks={tasks} teams={teams} onChanged={reload} /> : null}
-      <Eyebrow right={`${teams.length}`}>Teams</Eyebrow>
-      {lead && teams.length ? <View style={{ marginBottom: 8 }}><Panel><Row left={<IconCircle name="pen" />} title="Edit the plan" meta="Add work to every team in one list" onPress={() => router.push(`/project/${p.id}/plan` as never)} last /></Panel></View> : null}
-      <Panel>
-        {teams.map((x, i) => {
-          const mine = tasks.filter((k) => k.team?.reference === `Team/${x.id}` && k.status !== "draft" && k.status !== "cancelled");
-          const doneN = mine.filter((k) => k.status === "completed").length;
-          const pct = mine.length ? doneN / mine.length : 0;
-          return <Row key={x.id} left={<IconCircle name={teamIcon(x.name)} />} title={x.name} last={i === teams.length - 1} onPress={() => router.push(`/team/${x.id}`)}
-            meta={mine.length ? `${doneN} of ${mine.length} done` : (x.participant ?? []).some((y: any) => y.role === "lead" && y.status === "active") ? "Add its first task" : "Ask someone to lead"}
-            right={<View style={{ alignItems: "flex-end", gap: 6 }}>{facesOf(activeOf(x), folks).names.length ? <Faces {...facesOf(activeOf(x), folks)} /> : null}{mine.length ? <View style={{ width: 60, height: 8, borderRadius: 4, backgroundColor: c.wash, overflow: "hidden" }}><View style={{ width: `${pct * 100}%`, height: 8, backgroundColor: c.accent }} /></View> : null}</View>} />;
-        })}
-      </Panel>
+      {tab === "teams" ? <>
+        {lead && teams.length ? <View style={{ marginTop: 14 }}><Panel><Row left={<IconCircle name="pen" />} title="Edit the plan" meta="Add work to every team in one list" onPress={() => router.push(`/project/${p.id}/plan` as never)} last /></Panel></View> : null}
+        <Panel style={{ marginTop: 14 }}>
+          {teams.map((x, i) => {
+            const mine = tasks.filter((k) => k.team?.reference === `Team/${x.id}` && k.status !== "draft" && k.status !== "cancelled");
+            const dn = mine.filter((k) => k.status === "completed").length;
+            const fc = facesOf(activeOf(x), folks);
+            return <Row key={x.id} left={mine.length ? <ProgressRing size={44} value={dn / mine.length} label={`${dn}/${mine.length}`} /> : <IconCircle name={teamIcon(x.name)} />} title={x.name} last={i === teams.length - 1} onPress={() => router.push(`/team/${x.id}`)}
+              meta={mine.length ? `${dn} of ${mine.length} done` : (x.participant ?? []).some((y: any) => y.role === "lead" && y.status === "active") ? "Add its first task" : "Ask someone to lead"}
+              right={fc.names.length ? <Faces {...fc} /> : undefined} />;
+          })}
+        </Panel>
+      </> : null}
 
-      {(p.attachment ?? []).length || can.edit ? <><Eyebrow right={(p.attachment ?? []).length ? `${(p.attachment ?? []).length}` : undefined}>Files</Eyebrow><Files hint="Add a brief, budget or photo for the project" items={p.attachment ?? []} onAdd={can.edit ? () => setAddingFile(true) : undefined} onRemove={can.edit ? removeFile : undefined} /></> : null}
-
-      <Eyebrow right={needs.length ? `${needs.length}` : undefined}>What we need</Eyebrow>
-      <Panel>
-        {needs.map((n) => { const got = n.received?.value ?? 0, want = n.quantity?.value ?? 0;
-          return <Row key={n.id} left={<IconCircle name="box" />} title={n.category?.display ?? "Something"} meta={[want ? `${got} of ${want} ${n.quantity?.unit ?? ""}` : null, n.neededBy ? `by ${short(n.neededBy)}` : null, shortRef(n)].filter(Boolean).join(" · ")}
-            right={<Pill tone={n.status === "met" ? "ok" : "neutral"}>{n.status === "met" ? "Covered" : n.status === "partially-met" ? "Partly" : "Open"}</Pill>} onPress={() => router.push(`/need/${n.id}` as never)} />; })}
-        <Row left={<IconCircle name="plus" tone="grey" />} title={lead ? "Post a need" : "See what's needed"} meta="Goods, a venue, a skill, people" onPress={() => router.push({ pathname: "/need/new" as never, params: { project: id } })} last />
-      </Panel>
-
-      <History type="Initiative" id={p.id} groupName={org?.name} version={p.meta.version} />
-      <Eyebrow>More</Eyebrow>
-      <Panel>
-        <Row left={<IconCircle name="cal" />} title="Timeline" meta="Work by week, with gates" onPress={() => router.push(`/project/${id}/timeline` as never)} />
-        {lead ? <Row left={<IconCircle name="check" />} title="Event day" meta="Check people in, see what's still open" onPress={() => router.push(`/project/${id}/day` as never)} /> : null}
-        {lead ? <Row left={<IconCircle name="receipt" />} title="Report" meta="How it went: figures, photos, who it's for" onPress={() => router.push(`/project/${id}/report` as never)} /> : null}
-        <Row left={<IconCircle name="heart" />} title="Credits" meta="Everyone who made it happen" onPress={() => router.push(`/project/${id}/credits` as never)} />
-        {lead && groupVis !== "group" ? <Row left={<IconCircle name="userplus" />} title="Invite volunteers" meta={visibilityOf(p) === "public" ? "A link to this project; they choose a team" : "A private link; the project stays hidden"} onPress={() => setInviteAsk(true)} /> : null}
-        {lead ? <Row left={<IconCircle name="flag" />} title="Start a vote" meta="Decide something together" onPress={() => router.push({ pathname: "/vote/new" as never, params: { project: id } })} /> : null}
-        {lead ? <Row left={<IconCircle name="repeat" />} title={p.status === "completed" ? "Wrapped up" : "Wrap up the project"} meta="Report, credits, save these teams" onPress={() => router.push(`/project/${id}/wrap` as never)} last /> : null}
-      </Panel>
+      {tab === "needs" ? <>
+        <Eyebrow right={needs.length ? `${needs.length}` : undefined}>What we need</Eyebrow>
+        <Panel>
+          {needs.map((n) => { const got = n.received?.value ?? 0, want = n.quantity?.value ?? 0;
+            return <Row key={n.id} left={<IconCircle name="box" />} title={n.category?.display ?? "Something"} meta={[want ? `${got} of ${want} ${n.quantity?.unit ?? ""}` : null, n.neededBy ? `by ${short(n.neededBy)}` : null, shortRef(n)].filter(Boolean).join(" · ")}
+              right={<StateChip kind={n.status === "met" ? "done" : "open"}>{n.status === "met" ? "Covered" : n.status === "partially-met" ? "Partly" : "Open"}</StateChip>} onPress={() => router.push(`/need/${n.id}` as never)} />; })}
+          <Row left={<IconCircle name="plus" tone="grey" />} title={lead ? "Post a need" : "See what's needed"} meta="Goods, a venue, a skill, people" onPress={() => router.push({ pathname: "/need/new" as never, params: { project: id } })} last />
+        </Panel>
+        {(p.attachment ?? []).length || can.edit ? <><Eyebrow right={(p.attachment ?? []).length ? `${(p.attachment ?? []).length}` : undefined}>Files</Eyebrow><Files hint="Add a brief, budget or photo for the project" items={p.attachment ?? []} onAdd={can.edit ? () => setAddingFile(true) : undefined} onRemove={can.edit ? removeFile : undefined} /></> : null}
+      </> : null}
+      </TabPane>
 
       <Sheet open={inviteAsk} onClose={() => setInviteAsk(false)}>
         <InviteOptions what={p.title} onCreate={async (o) => { setInviteAsk(false); try {

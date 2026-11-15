@@ -12,6 +12,7 @@ import { useSession } from "@/lib/session";
 import { Logo } from "@/ui/Context";
 import { Body, Buttons, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Primary, Row, Sand, Screen, Sheet, Skeleton, Title } from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 type Found = { groups: R[]; projects: (R & { groupName?: string })[] };
 const placeOf = (r?: R | null) => (r?.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value as string | undefined;
@@ -29,7 +30,8 @@ export default function Nearby() {
   const [place, setPlace] = useState("");
   const [found, setFound] = useState<Found | null>(null);
   const [open, setOpen] = useState<{ group?: R; project?: R & { groupName?: string } } | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const search = async () => {
     setStatus("checking");
     const net = await Network.getNetworkStateAsync().catch(() => null);
@@ -66,7 +68,6 @@ export default function Nearby() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18 }}>
         <Chips options={[{ value: "all", label: "All" }, ...CAUSES.slice(0, 9).map((x) => ({ value: x.code, label: x.label }))]} value={cause} onChange={setCause} />
       </ScrollView></>}
-      {msg ? <Notice>{msg}</Notice> : null}
       {status === "checking" && !found ? <Skeleton /> : null}
       {status === "offline" || status === "down" ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="wifioff" tone="white" />
         <View style={{ flex: 1 }}><Text style={t.row}>{status === "offline" ? "You're offline" : "Couldn't reach the Bayanihan Network"}</Text>

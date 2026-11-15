@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ErrorState } from "@/ui/ErrorState";
 import { router, useLocalSearchParams } from "expo-router";
 import { Text, View } from "react-native";
 import { bix, ref, type R } from "@/lib/bix";
@@ -29,7 +30,7 @@ export default function AddWork() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const gate = milestone === "1";
-  if (!data) return <Screen back>{error ? <Notice>{error}</Notice> : <Skeleton />}</Screen>;
+  if (!data) return <Screen back>{error ? <ErrorState message={error} /> : <Skeleton />}</Screen>;
   const { p, teams, tasks } = data;
   const date = p.period?.start ? new Date(p.period.start) : null;
   const add = (team: string) => {

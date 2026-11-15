@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { useBar } from "@/lib/bar";
 import { loadInbox, onInboxCount } from "@/lib/inbox";
 import { Tabs } from "expo-router";
-import { PanResponder, View } from "react-native";
+import { PanResponder, Platform, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Fab } from "@/ui/Fab";
+import { useSnackbar } from "@/ui/Snackbar";
+import { useBayani } from "@/ui/Bayani";
 import { useSession } from "@/lib/session";
 import { personName } from "@/lib/work";
 import { AddSheet } from "@/ui/AddSheet";
 import { bix, type R } from "@/lib/bix";
-import { TabBar, type TabKey } from "@/ui/TabBar";
+import { TAB_BAR_HEIGHT, TabBar, type TabKey } from "@/ui/TabBar";
 
 /**
  * The four destinations and the centre "+", as in Dasig Fundraising: a Tabs navigator (switching tabs
@@ -18,6 +23,12 @@ export default function TabsLayout() {
   const s = useSession();
   const [adding, setAdding] = useState(false);
   const bar = useBar();
+  const inset = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const { show } = useSnackbar();
+  const bayani = useBayani();
+  // The "+" moved from the middle of the bar to the corner (2026-11-15): say so once.
+  useEffect(() => { AsyncStorage.getItem("dasig.tip.fab").then((v) => { if (v) return; AsyncStorage.setItem("dasig.tip.fab", "1").catch(() => {}); show("The + is now the orange button in the corner.", { ms: 6000 }); }).catch(() => {}); }, []);
   const items = ["home", bar.slots[0], "add", bar.slots[1], bar.slots[2]] as TabKey[];
   const [badge, setBadge] = useState(0);
   // The next event in this group, so "+" can offer "Add work to <event>".
@@ -43,8 +54,9 @@ export default function TabsLayout() {
       tabBar={({ state, navigateToTab }) => {
         const activeRoute = state.routes[state.index]?.name ?? "home";
         nav.current = { active: activeRoute, go: (name) => { const r = state.routes.find((x) => x.name === name); if (r) navigateToTab(r.key); } };
-        return <TabBar active={activeRoute as TabKey} items={items} badge={badge} me={{ name: personName(s.person), photo: s.person?.photo }}
-          onSelect={(k) => { if (k === "add") return setAdding(true); const r = state.routes.find((x) => x.name === k); if (r && k !== activeRoute) navigateToTab(r.key); }} />;
+        const props = { active: activeRoute as TabKey, items, badge, me: { name: personName(s.person), photo: s.person?.photo },
+          onSelect: (k: TabKey) => { if (k === "add") return setAdding(true); const r = state.routes.find((x) => x.name === k); if (r && k !== activeRoute) navigateToTab(r.key); } };
+        return <TabBar {...props} />;
       }}>
       <Tabs.Screen name="home" />
       <Tabs.Screen name="nearby" />
@@ -55,6 +67,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="people" />
       <Tabs.Screen name="team" />
     </Tabs>
-    <AddSheet open={adding} onClose={() => setAdding(false)} ctx={{ kind: "home", event: nextEvent }} />
+    <Fab onPress={() => setAdding(true)} style={{ position: "absolute", right: Math.max(18, (width - 520) / 2 + 18), bottom: TAB_BAR_HEIGHT + inset.bottom + 16 }} />
+    <AddSheet open={adding} onClose={() => setAdding(false)} ctx={{ kind: "home", event: nextEvent }} onAsk={() => { setAdding(false); setTimeout(bayani.open, 260); }} />
   </View>;
 }

@@ -2,16 +2,16 @@
   "expo": {
     "name": "Dasig",
     "slug": "dasig",
-    "version": "0.17.0",
+    "version": "0.18.0",
     "orientation": "portrait",
     "icon": "./assets/brand/icon.png",
     "scheme": [
       "dasig",
       "org.dasig.bayanihan"
     ],
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/brand/icon.png",
       "bundleIdentifier": "org.dasig.bayanihan"
     },
     "android": {
@@ -19,7 +19,7 @@
         "foregroundImage": "./assets/brand/adaptive-foreground.png",
         "backgroundColor": "#FFFFFF"
       },
-      "predictiveBackGestureEnabled": false,
+      "predictiveBackGestureEnabled": true,
       "package": "org.dasig.bayanihan",
       "permissions": [
         "android.permission.ACCESS_NETWORK_STATE",
@@ -28,7 +28,7 @@
         "android.permission.INTERNET",
         "android.permission.RECORD_AUDIO"
       ],
-      "versionCode": 18,
+      "versionCode": 19,
       "googleServicesFile": "./google-services.json"
     },
     "web": {

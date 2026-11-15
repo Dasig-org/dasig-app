@@ -1,14 +1,12 @@
-import { useState } from "react";
 /**
- * The bottom bar (2026-11-11): a floating, fully rounded light pill, after Netflix's bar, in Dasig's colours. Five
- * equal slots, each an icon over a short label; the active one sits in a soft pill of its own. Me shows the person's
- * face. It floats on the page's wash with a soft shadow; the bar never changes shape between roles.
+ * The bottom bar (2026-11-15, UI_REIMAGINE §2.1): an iOS-style tab bar, full width with a hairline on top, the active destination tinted orange. Me shows the person's face. The "+" is a FAB (ui/Fab.tsx), not in the bar.
  */
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
-import { Avatar } from "./kit";
-import { c } from "./theme";
+import Svg, { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
+import { Avatar, usePress } from "./kit";
+import { c, tone } from "./theme";
 
 export type TabKey = "home" | "nearby" | "add" | "groups" | "story" | "projects" | "inbox" | "people" | "team";
 export const TAB_BAR_HEIGHT = 64;
@@ -25,23 +23,10 @@ const PATHS: Partial<Record<TabKey, string[]>> = {
   story: ["M5.5 20c0-3.4 2.9-5.8 6.5-5.8s6.5 2.4 6.5 5.8"],
 };
 const CIRCLES: Partial<Record<TabKey, [number, number, number]>> = { nearby: [12, 10, 2.3], people: [9, 8.5, 3], groups: [9, 8.5, 3], team: [12, 8, 3.2], story: [12, 8, 3.2] };
-function Glyph({ name, color, strokeWidth }: { name: TabKey; color: string; strokeWidth: number }) {
+export function Glyph({ name, color, strokeWidth }: { name: TabKey; color: string; strokeWidth: number }) {
   const p = { stroke: color, strokeWidth, fill: "none", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   const ci = CIRCLES[name];
   return <Svg width={23} height={23} viewBox="0 0 24 24">{(PATHS[name] ?? []).map((d) => <Path key={d} d={d} {...p} />)}{ci ? <Circle cx={ci[0]} cy={ci[1]} r={ci[2]} {...p} /> : null}</Svg>;
-}
-/** The orange round "+" in the middle: the bar's one orange. */
-function Plus() {
-  return <View style={st.plusShadow}><Svg width={46} height={46} viewBox="0 0 46 46">
-    <Defs><LinearGradient id="tabplus" x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor="#F47C26" /><Stop offset="1" stopColor="#E85C21" /></LinearGradient></Defs>
-    <Circle cx={23} cy={23} r={23} fill="url(#tabplus)" /><Path d="M23 14v18M14 23h18" stroke="#fff" strokeWidth={2.6} strokeLinecap="round" /></Svg></View>;
-}
-/** The active tab's soft grey pill, as a rounded shape that fills the item. */
-function ActivePill() {
-  const [w, setW] = useState(0);
-  return <View pointerEvents="none" style={StyleSheet.absoluteFill} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
-    {w ? <Svg width={w} height={52}><Rect x={0} y={0} width={w} height={52} rx={26} ry={26} fill="rgba(15,23,42,0.06)" /></Svg> : null}
-  </View>;
 }
 /** Me: your photo, or your initial on a warm circle. */
 function MeDot({ name, photo }: { name: string; photo?: any }) {
@@ -50,48 +35,36 @@ function MeDot({ name, photo }: { name: string; photo?: any }) {
     <Circle cx={12} cy={12} r={12} fill="url(#tabme)" /></Svg><Text style={st.meText}>{(name.trim()[0] ?? "?").toUpperCase()}</Text></View>;
 }
 
-const LABEL: Record<TabKey, string> = { home: "Home", nearby: "Nearby", add: "Add", groups: "Groups", story: "Me", projects: "Projects", inbox: "Inbox", people: "People", team: "Team" };
+export const LABEL: Record<TabKey, string> = { home: "Home", nearby: "Nearby", add: "Add", groups: "Groups", story: "Me", projects: "Projects", inbox: "Inbox", people: "People", team: "Team" };
 
-export function TabBar({ active, onSelect, me, items, badge = 0 }: { active: TabKey; onSelect: (k: TabKey) => void; me: { name: string; photo?: any }; items: TabKey[]; badge?: number }) {
-  const ITEMS = items.map((key) => ({ key, label: LABEL[key] }));
-  const inset = useSafeAreaInsets();
-  return (
-    <View style={[st.wrap, { paddingBottom: Math.max(inset.bottom, 10) }]}>
-      <View style={st.dock} accessibilityRole="tablist">
-        {ITEMS.map((i) => {
-          const on = i.key === active, action = i.key === "add";
-          const tint = on ? c.ink : c.s500;
-          return (
-            <Pressable key={i.key} onPress={() => onSelect(i.key)} style={({ pressed }) => [st.button, { opacity: pressed ? 0.6 : 1 }]} accessibilityRole={action ? "button" : "tab"} accessibilityLabel={i.label}
-              accessibilityState={action ? undefined : { selected: on }}>
-              {action ? <Plus /> : <View style={st.item}>
-                {/* The active pill is drawn, not a View background: some Android builds showed it square (2026-11-13). */}
-                {on ? <ActivePill /> : null}
-                {i.key === "story" ? <MeDot name={me.name} photo={me.photo} /> : <Glyph name={i.key} color={tint} strokeWidth={on ? 2.1 : 1.9} />}
-                {i.key === "inbox" && badge > 0 ? <View style={st.badge}><Text style={st.badgeText}>{badge > 9 ? "9+" : String(badge)}</Text></View> : null}
-                <Text numberOfLines={1} style={[st.label, { color: tint }]}>{i.label}</Text>
-              </View>}
-            </Pressable>
-          );
-        })}
+
+function Destination({ k, on, me, badge, onPress }: { k: TabKey; on: boolean; me: { name: string; photo?: any }; badge: number; onPress: () => void }) {
+  const pr = usePress();
+  // iOS-style: the selected destination is simply tinted in the brand orange (icon and label); the rest are grey.
+  const tint = on ? c.accent : c.s500;
+  return <Pressable onPress={onPress} onPressIn={pr.onPressIn} onPressOut={pr.onPressOut} accessibilityRole="tab" accessibilityLabel={LABEL[k]} accessibilityState={{ selected: on }}
+    style={{ flex: 1, height: TAB_BAR_HEIGHT, alignItems: "center", justifyContent: "center" }}>
+    <Animated.View style={[{ alignItems: "center", gap: 3 }, pr.style]}>
+      <View style={{ width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
+        {k === "story" ? <View style={{ borderRadius: 14, borderWidth: on ? 2 : 0, borderColor: c.accent, padding: on ? 1 : 0 }}><MeDot name={me.name} photo={me.photo} /></View> : <Glyph name={k} color={tint} strokeWidth={on ? 2.2 : 1.8} />}
+        {k === "inbox" && badge > 0 ? <View style={st.badge}><Text style={st.badgeText}>{badge > 9 ? "9+" : String(badge)}</Text></View> : null}
       </View>
-    </View>
-  );
+      <Text numberOfLines={1} style={{ fontSize: 11, lineHeight: 14, fontWeight: on ? "700" : "500", color: tint }}>{LABEL[k]}</Text>
+    </Animated.View>
+  </Pressable>;
 }
 
+/** Material 3 navigation bar: full width, edge to edge, the destinations only (the "+" is the FAB now, ui/Fab.tsx). */
+/** `preview`: drawn inside a page (Me → Your bar), without the safe-area padding. */
+export function TabBar({ active, onSelect, me, items, badge = 0, preview }: { active: TabKey; onSelect: (k: TabKey) => void; me: { name: string; photo?: any }; items: TabKey[]; badge?: number; preview?: boolean }) {
+  const inset = useSafeAreaInsets();
+  return <View accessibilityRole="tablist" style={{ flexDirection: "row", backgroundColor: tone.surfaceHigh, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.s300, paddingBottom: preview ? 0 : inset.bottom, paddingHorizontal: 8 }}>
+    {items.filter((k) => k !== "add").map((k) => <Destination key={k} k={k} on={k === active} me={me} badge={badge} onPress={() => onSelect(k)} />)}
+  </View>;
+}
 const st = StyleSheet.create({
-  wrap: { backgroundColor: c.wash, paddingHorizontal: 14, paddingTop: 6 },
-  // Radius is half the height, not 999, so Android draws it round.
-  dock: { flexDirection: "row", alignItems: "center", height: TAB_BAR_HEIGHT, borderRadius: TAB_BAR_HEIGHT / 2, backgroundColor: c.white, paddingHorizontal: 6,
-    ...(Platform.OS === "web" ? { boxShadow: "0px 8px 24px rgba(15, 23, 42, 0.10)" } as object : { shadowColor: "#0F172A", shadowOpacity: 0.1, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8 }) },
-  button: { flex: 1, height: TAB_BAR_HEIGHT, alignItems: "center", justifyContent: "center" },
-  // Android draws borderRadius 999 on a stretched View as square; use half the height and clip (2026-11-12).
-  item: { alignItems: "center", justifyContent: "center", gap: 2, height: 52, minWidth: 58, paddingHorizontal: 10, borderRadius: 26 },
-  label: { fontSize: 11, fontWeight: "600" },
   me: { width: 24, height: 24, alignItems: "center", justifyContent: "center" },
   meText: { color: "#fff", fontSize: 11, fontWeight: "800" },
-  plusShadow: { width: 46, height: 46, borderRadius: 23,
-    ...(Platform.OS === "web" ? { boxShadow: "0px 6px 16px rgba(244, 124, 38, 0.30)" } as object : { shadowColor: "#F47C26", shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 6 }, elevation: 6 }) },
-  badge: { position: "absolute", top: 3, right: 10, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4, backgroundColor: c.accent, alignItems: "center", justifyContent: "center" },
+  badge: { position: "absolute", top: -2, right: 8, minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4, backgroundColor: c.accent, alignItems: "center", justifyContent: "center" },
   badgeText: { color: c.white, fontSize: 10.5, fontWeight: "800" },
 });

@@ -6,6 +6,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { Buttons, Check, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Panel, Primary, Row, Screen, Sheet, Title } from "@/ui/kit";
 import { type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 const PERMS = [{ code: "initiative.plan", label: "Plan projects" }, { code: "task.assign", label: "Hand out work" }, { code: "task.confirm", label: "Confirm work" }, { code: "report.submit", label: "Send reports" }, { code: "member.manage", label: "Manage people" }, { code: "org.manage", label: "Manage the group" }];
 
@@ -15,7 +16,8 @@ export default function Structure() {
   const s = useSession();
   const [open, setOpen] = useState<any>(null);
   const [title, setTitle] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const { data, reload } = useLoad(async () => {
     const [positions, roles] = await Promise.all([bix.search("Position", { organization: `Organization/${id}` }), bix.search("Role", { organization: `Organization/${id}` })]);
     const names: Record<string, string> = {};
@@ -35,7 +37,6 @@ export default function Structure() {
       </Panel>
       {officer ? <><Field value={title} onChangeText={setTitle} placeholder="Add a position, e.g. Auditor" onSubmitEditing={() => { if (title.trim()) { save(bix.create("Position", { organization: { reference: `Organization/${id}` }, title: title.trim(), kind: "officer", seats: 1, term: "P1Y", status: "active", permissions: [] })); setTitle(""); } }} returnKeyType="done" />
         <Meta>{"Give someone a position from People."}</Meta></> : null}
-      {msg ? <Notice>{msg}</Notice> : null}
       <Sheet open={!!open} onClose={() => setOpen(null)}>
         {open ? <>
           <Text style={[t.row, { fontSize: 18 }]}>{open.title}</Text>

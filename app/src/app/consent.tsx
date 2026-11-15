@@ -5,6 +5,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { Check, Eyebrow, IconCircle, Meta, Notice, Panel, Row, Screen, Title } from "@/ui/kit";
 import { type as t } from "@/ui/theme";
+import { useSnackbar } from "@/ui/Snackbar";
 
 const SCOPES = [
   { scope: "share-messages-for-bayani", icon: "spark", title: "Help Bayani learn", meta: "Share messages you pick, names removed first. Off by default." },
@@ -17,7 +18,8 @@ const SCOPES = [
 export default function ConsentScreen() {
   const s = useSession();
   const me = s.person ? `Person/${s.person.id}` : "";
-  const [msg, setMsg] = useState<string | null>(null);
+  const { show } = useSnackbar();
+  const setMsg = (m: string | null) => { if (m) show(m); };
   const { data, reload } = useLoad(async () => (me ? bix.search("Consent", { person: me }) : []), [me]);
   const find = (scope: string) => (data ?? []).find((c) => c.scope === scope);
   const toggle = async (scope: string) => {
@@ -36,7 +38,6 @@ export default function ConsentScreen() {
         return <Row key={x.scope} left={<IconCircle name={x.icon as never} tone={x.scope === "share-messages-for-bayani" ? "bayani" : "sand"} />} title={x.title} meta={x.meta} right={<Check on={!!on} onPress={() => toggle(x.scope)} />} last={i === SCOPES.length - 1} />; })}</Panel>
       <Eyebrow>Photos that show children</Eyebrow>
       <Text style={t.body}>Mark them when you add them. They never leave the group: no link previews, no public pages, no profiles.</Text>
-      {msg ? <Notice>{msg}</Notice> : null}
       <Meta>{"\nBayani reads messages on your phone. Nothing is sent anywhere unless you turn on sharing above."}</Meta>
     </Screen>
   );
