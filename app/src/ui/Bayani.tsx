@@ -5,7 +5,7 @@ import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-nati
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { evidence, type Observed } from "@bayanihan/core/memory";
-import { ask, modelDownloaded, modelSupported } from "@/lib/bayani";
+import { ask, downloadModel, modelReady, removeModel, retryModel, startModel, useModel, type ModelState } from "@/lib/bayani";
 import { intentOf, movesFor, noticed, NOTHING, pick, STARTERS, type Intent, type Move } from "@/lib/copilot";
 import { MoveList, useMoves } from "./Moves";
 import { bix, refId, type R } from "@/lib/bix";
@@ -83,10 +83,47 @@ export function FactAnswers({ q, onPick, onSheet }: { q: string; onPick: (q: str
   ))}</>;
 }
 
-function useModelHere() {
-  const [has, setHas] = useState<boolean | null>(null);
-  useEffect(() => { modelDownloaded().then(setHas).catch(() => setHas(false)); }, []);
-  return has;
+const pctOf = (s: { got: number; total: number }) => Math.min(99, Math.floor((s.got / Math.max(1, s.total)) * 100));
+const gb = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : `${Math.round(n / 1e6)} MB`);
+/** A thin progress bar, in the accent. */
+export function ProgressBar({ share }: { share: number }) {
+  return <View style={{ height: 6, borderRadius: 3, backgroundColor: c.s200, overflow: "hidden" }} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(share * 100) }}>
+    <View style={{ height: 6, width: `${Math.max(2, Math.min(100, share * 100))}%`, borderRadius: 3, backgroundColor: c.accent }} /></View>;
+}
+/** One line for the model's state, in words: downloading, paused, starting, or couldn't start (with what to do). */
+export function modelWords(s: ModelState): string {
+  switch (s.phase) {
+    case "web": return "Bayani-1 runs in the Android and iPhone apps";
+    case "checking": return " ";
+    case "none": return "Bayani-1 isn't on this phone yet";
+    case "downloading": return `Downloading Bayani-1 · ${pctOf(s)}%`;
+    case "paused": return `Bayani-1's download is paused at ${pctOf(s)}%`;
+    case "loading": return "Starting Bayani-1…";
+    case "failed": return "Bayani-1 couldn't start";
+    default: return "Bayani-1 is on this phone · works offline";
+  }
+}
+/**
+ * Where Bayani-1's work shows (the sheet, Plan check): what's in the way, if anything. Nothing when it's ready.
+ * Device pass v0.19: when it failed, nothing said so anywhere.
+ */
+export function ModelLine() {
+  const s = useModel();
+  if (s.phase === "loading") return <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginVertical: 6 }}><Thinking on><BayaniMark size={22} /></Thinking>
+    <Text style={[t.meta, { flex: 1 }]}>Starting Bayani-1. The first time after opening the app takes a few seconds.</Text></View>;
+  if (s.phase === "failed") return <View style={{ marginVertical: 6, gap: 8 }}>
+    <Text style={t.body}>{s.damaged ? "Bayani-1 couldn't start. Its download looks damaged." : "Bayani-1 couldn't start on this phone."}</Text>
+    <Text style={t.meta} selectable>{s.error}</Text>
+    <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+      <Outline label="Try again" onPress={retryModel} />
+      {s.damaged ? <Outline label="Download it again" onPress={() => { removeModel().then(() => downloadModel()).catch(() => {}); }} /> : null}
+    </View></View>;
+  if (s.phase === "downloading" || s.phase === "paused") return <View style={{ marginVertical: 6, gap: 6 }}>
+    <Text style={t.meta}>{s.phase === "downloading" ? `Downloading Bayani-1: ${gb(s.got)} of ${gb(s.total)}. It keeps going while you use the app.` : `Paused at ${pctOf(s)}%. ${s.why}`}</Text>
+    <ProgressBar share={s.got / Math.max(1, s.total)} />
+    {s.phase === "paused" ? <View style={{ alignSelf: "flex-start" }}><Outline label="Continue" onPress={() => { void downloadModel(); }} /></View> : null}
+  </View>;
+  return null;
 }
 
 type Line = { icon: "check" | "book" | "clock" | "pending" | "flag" | "pen" | "users"; title: string; meta?: string; go?: () => void };
@@ -151,7 +188,9 @@ function Thinking({ on, children }: { on: boolean; children: ReactNode }) {
  * runnable, with Not now. "Do all" runs the runnable ones together with one Undo. A question picks what to show
  * (late, who's needed, what's missing); any other question goes to the facts library.
  */
-export function AskBox({ here, mem, onSheet, onClose, noticed = [], checking = 0 }: { here?: Here; mem?: Memory | null; onSheet?: boolean; onClose?: () => void; noticed?: Move[]; checking?: number }) {
+export function AskBox({ here, mem, onSheet, onClose, noticed = [], checking = 0, why = null }: { here?: Here; mem?: Memory | null; onSheet?: boolean; onClose?: () => void; noticed?: Move[]; checking?: number; why?: string | null }) {
+  const ms = useModel();
+  const modelBusy = ms.phase === "loading" || ms.phase === "failed";
   const [q, setQ] = useState("");
   const [asked, setAsked] = useState<{ q: string; intent: Intent | null } | null>(null);
   const api = useMoves();
@@ -174,9 +213,11 @@ export function AskBox({ here, mem, onSheet, onClose, noticed = [], checking = 0
       : here ? <Animated.View key={intent + String(!!asked)} layout={listLayout} entering={FadeIn.duration(motion.fade)} style={{ marginTop: 12 }}>
         <Eyebrow>{asked ? "What needs doing" : "What needs doing, right now"}</Eyebrow>
         <Panel style={{ backgroundColor: onSheet ? c.wash : c.white }}>{rules.length ? <MoveList moves={rules} api={api} onOpen={onClose} /> : <Text style={[t.body, { paddingVertical: 14 }]}>{NOTHING[intent]}</Text>}</Panel>
-        {model.length || checking > 0 ? <View style={{ marginTop: 12 }}><BayaniSurface label="Bayani noticed">
-          {checking > 0 ? <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: model.length ? 8 : 0 }}><Thinking on><BayaniMark size={24} /></Thinking>
+        {model.length || checking > 0 || modelBusy || (why && !asked) ? <View style={{ marginTop: 12 }}><BayaniSurface label="Bayani noticed">
+          <ModelLine />
+          {checking > 0 && !modelBusy ? <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: model.length ? 8 : 0 }}><Thinking on><BayaniMark size={24} /></Thinking>
             <Text style={[t.meta, { flex: 1 }]}>{`Bayani-1 is checking ${checking} more step${checking === 1 ? "" : "s"}…`}</Text></View> : null}
+          {why && !model.length && checking === 0 && !modelBusy ? <Text style={t.meta}>{why}</Text> : null}
           {model.length ? <View style={{ backgroundColor: c.white, borderRadius: radius.inner, paddingHorizontal: 12 }}><MoveList moves={model} api={api} onOpen={onClose} /></View> : null}
           <OnThisPhone />
         </BayaniSurface></View> : null}
@@ -188,10 +229,12 @@ export function AskBox({ here, mem, onSheet, onClose, noticed = [], checking = 0
 }
 
 export function BayaniSheet({ open, onClose, here }: { open: boolean; onClose: () => void; here?: Here }) {
-  const has = useModelHere();
+  const ms = useModel();
+  const has = modelReady(ms);
   const [mem, setMem] = useState<Memory | null>(null);
   const [found, setFound] = useState<Move[]>([]);
   const [checking, setChecking] = useState(0);
+  const [why, setWhy] = useState<string | null>(null);
   const memoryOn = here?.kind === "project" && ((here.org?.assist ?? []) as { code?: string }[]).some((a) => a.code === "memory");
   // Project memory, for leads when the group turned it on. Bayani-1 sharpens it when it's on this phone.
   useEffect(() => {
@@ -201,18 +244,20 @@ export function BayaniSheet({ open, onClose, here }: { open: boolean; onClose: (
   // Bayani-1's own moves, one question at a time, shown as they're found; stops when the sheet closes.
   useEffect(() => {
     let stop = false;
-    Promise.resolve().then(() => { setFound([]); setChecking(0); });
-    if (open && has) noticed(here, { onMove: (m) => setFound((f) => [...f.filter((x) => x.id !== m.id), m]), onProgress: setChecking, cancelled: () => stop }).catch(() => {}).finally(() => { if (!stop) setChecking(0); });
+    Promise.resolve().then(() => { setFound([]); setChecking(0); setWhy(null); });
+    if (open && has) noticed(here, { onMove: (m) => setFound((f) => [...f.filter((x) => x.id !== m.id), m]), onProgress: setChecking, cancelled: () => stop })
+      .then((w) => { if (!stop) setWhy(w); }).catch(() => {}).finally(() => { if (!stop) setChecking(0); });
     return () => { stop = true; };
   }, [open, here, has]);
-  const status = !modelSupported ? "Works on this page's records · Bayani-1 runs in the Android and iPhone apps" : has === null ? " " : has ? "Bayani-1 is on this phone · works offline" : "Bayani-1 isn't on this phone yet";
+  const status = ms.phase === "web" ? "Works on this page's records · Bayani-1 runs in the Android and iPhone apps" : modelWords(ms);
   return <Sheet open={open} onClose={onClose} snap>
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
       <BayaniMark size={44} />
       <View style={{ flex: 1 }}><Text style={[t.row, { fontSize: 18 }]}>Bayani</Text><Text style={[t.meta, { marginTop: 2 }]}>{status}</Text></View>
-      {modelSupported && has === false ? <Outline label="Get it" onPress={() => { onClose(); router.push("/ask-bayani"); }} /> : null}
+      {ms.phase === "none" || ms.phase === "paused" ? <Outline label={ms.phase === "paused" ? "Continue" : "Get it"} onPress={() => { onClose(); router.push("/ask-bayani"); }} /> : null}
     </View>
-    <AskBox here={here} mem={mem} onSheet onClose={onClose} noticed={found} checking={checking} />
+    {ms.phase === "downloading" ? <View style={{ marginTop: 10 }}><ProgressBar share={ms.got / Math.max(1, ms.total)} /></View> : null}
+    <AskBox here={here} mem={mem} onSheet onClose={onClose} noticed={found} checking={checking} why={why} />
     <View style={{ marginTop: 18 }}>{here?.kind === "project" ? <HereProject h={here} mem={mem} onClose={onClose} /> : here?.kind === "task" ? <HereTask h={here} onClose={onClose} /> : here?.kind === "group" ? <HereGroup h={here} />
       : <Sand><IconCircle name="book" tone="white" /><Text style={[t.body, { flex: 1 }]}>{"Open a project or a step and I can say what's late, who's needed and what it usually needs."}</Text></Sand>}</View>
     <View style={{ marginTop: 14, gap: 2 }}>
@@ -250,6 +295,8 @@ export const useBayani = () => useContext(BayaniCtx);
 export function BayaniProvider({ children }: { children: ReactNode }) {
   const ref = useRef<Here | undefined>(undefined);
   const [state, setState] = useState<{ open: boolean; here?: Here }>({ open: false });
+  // Bayani-1's state for the whole app, and a download that was going on when the app was stopped continues (on Wi-Fi).
+  useEffect(() => { void startModel(); }, []);
   const api = useMemo<BayaniApi>(() => ({
     register: (h) => { ref.current = h; },
     open: () => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); setState({ open: true, here: ref.current }); },

@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { modelDownloaded, modelSupported } from "@/lib/bayani";
+import { modelReady, useModel } from "@/lib/bayani";
 import type { R } from "@/lib/bix";
 import { movesFor, noticed, type Move } from "@/lib/copilot";
 import { addFromMemory, loadMemory } from "@/lib/memory";
 import { useLoad } from "@/lib/use";
-import { BayaniMark, BayaniSurface, OnThisPhone } from "./Bayani";
+import { BayaniMark, BayaniSurface, ModelLine, OnThisPhone } from "./Bayani";
 import { Icon } from "./Icon";
 import { LinkText, listLayout, Meta, Primary } from "./kit";
 import { MoveList, useMoves } from "./Moves";
@@ -63,20 +63,20 @@ export function PlanCheck({ project, tasks, teams, org, onChanged }: { project: 
  * out (so a lead can disagree), and, on request, its check of the plan (links, teams). Only when it's on this phone.
  */
 function BayaniPart({ project, tasks, teams, org, judged, mem, onChanged }: { project: R; tasks: R[]; teams: R[]; org: R | null; judged: Move[]; mem: Awaited<ReturnType<typeof loadMemory>> | null; onChanged: () => void }) {
-  const [has, setHas] = useState(false);
+  const ms = useModel();
   const [found, setFound] = useState<Move[]>([]);
   const [checking, setChecking] = useState<number | null>(null);
+  const [why, setWhy] = useState<string | null>(null);
   const api = useMoves(onChanged);
   const { show } = useSnackbar();
-  useEffect(() => { if (modelSupported) modelDownloaded().then(setHas).catch(() => setHas(false)); }, []);
   const check = () => {
-    setFound([]); setChecking(0);
+    setFound([]); setChecking(0); setWhy(null);
     noticed({ kind: "project", project, tasks, teams, org, lead: true }, { onMove: (m) => setFound((f) => [...f.filter((x) => x.id !== m.id), m]), onProgress: setChecking })
-      .catch(() => {}).finally(() => setChecking(null));
+      .then(setWhy).catch(() => {}).finally(() => setChecking(null));
   };
   const same = mem?.bayani.same ?? [], out = mem?.bayani.notHere ?? [];
   const moves = [...judged, ...found];
-  if (!has) return null;
+  if (!modelReady(ms) && ms.phase !== "failed") return null;
   const add = async (practice: R) => { try { await addFromMemory(project, teams, { practice, starter: !!mem?.usingStarters }); show(`Added “${practice.title}”.`); onChanged(); } catch (e) { show(e instanceof Error ? e.message : String(e), { error: true }); } };
   return <View style={{ marginTop: 12 }}><BayaniSurface label="Bayani noticed">
     {moves.length ? <View style={{ backgroundColor: c.white, borderRadius: radius.inner, paddingHorizontal: 12, marginBottom: 8 }}><MoveList moves={moves} api={api} max={4} /></View> : null}
@@ -84,8 +84,10 @@ function BayaniPart({ project, tasks, teams, org, judged, mem, onChanged }: { pr
       sub={`Bayani is ${Math.round(x.judgment.confidence * 100)}% sure`} act="Not the same, add it" onAct={() => add(x.practice)} onOpen={() => router.push(`/task/${x.task.id}`)} />)}</Small> : null}
     {out.length ? <Small title="Left out: doesn't seem to belong here">{out.map((x) => <Line key={x.practice.id} text={String(x.practice.title)}
       sub={`Bayani is ${Math.round(x.judgment.confidence * 100)}% sure`} act="It belongs, add it" onAct={() => add(x.practice)} />)}</Small> : null}
-    {checking !== null ? <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginVertical: 6 }}><BayaniMark size={22} />
-      <Text style={[t.meta, { flex: 1 }]}>{checking ? `Checking ${checking} more step${checking === 1 ? "" : "s"}…` : "Reading the plan…"}</Text></View>
+    <ModelLine />
+    {why && ms.phase !== "failed" ? <Text style={[t.meta, { marginVertical: 6 }]}>{why}</Text> : null}
+    {ms.phase === "failed" ? null : checking !== null ? <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginVertical: 6 }}><BayaniMark size={22} />
+      <Text style={[t.meta, { flex: 1 }]}>{ms.phase === "loading" ? "Starting Bayani-1…" : checking ? `Checking ${checking} more step${checking === 1 ? "" : "s"}…` : "Reading the plan…"}</Text></View>
       : <Pressable onPress={check} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingHorizontal: 12, borderRadius: radius.inner, backgroundColor: pressed ? "#FFE9DC" : c.white, marginTop: 2 })}>
         <BayaniMark size={28} /><View style={{ flex: 1 }}><Text style={t.row}>{found.length ? "Check again" : "Check the plan with Bayani"}</Text>
           <Text style={t.meta}>Links steps to your usual ones and suggests teams. About a second a step.</Text></View>

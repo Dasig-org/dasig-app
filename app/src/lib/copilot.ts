@@ -211,13 +211,18 @@ const ext = (p: R, url: string) => ((p.extension ?? []) as { url: string; value?
 /**
  * Bayani-1's moves for this screen, found one at a time (each call a second or two on a phone): `onMove` is called as
  * each is found, `onProgress` with how many questions are left. At most `budget` questions per opening.
+ * Returns, when Bayani-1 had nothing to show, why in plain words (device pass v0.19: with nothing shown, it looked
+ * broken). Null when the model isn't on this phone (the sheet says that already).
  */
-export async function noticed(here: Here | undefined, o: { onMove: (m: Move) => void; onProgress?: (left: number) => void; budget?: number; cancelled?: () => boolean }): Promise<void> {
-  if (!here || here.kind === "group" || !modelSupported || !(await modelDownloaded().catch(() => false))) return;
+export async function noticed(here: Here | undefined, o: { onMove: (m: Move) => void; onProgress?: (left: number) => void; budget?: number; cancelled?: () => boolean }): Promise<string | null> {
+  if (!here || !modelSupported || !(await modelDownloaded().catch(() => false))) return null;
+  if (here.kind === "group") return "On a group, Bayani works from your projects' records. Open a project or a step and Bayani-1 checks its steps.";
   const project = here.kind === "project" ? here.project : here.project;
   const org = here.kind === "project" ? here.org : here.org;
   const lead = here.kind === "project" ? here.lead : !!here.lead;
-  if (!project || !org || !lead || !assistOn(org, "memory")) return;
+  if (!project || !org) return "Bayani-1 checks the steps of a group's projects. This step isn't in one.";
+  if (!lead) return "Bayani-1's suggestions go to the project's leads, who can act on them.";
+  if (!assistOn(org, "memory")) return `Bayani-1 works from ${org.name}'s project memory, which is off. An officer can turn it on, on the group's page.`;
   const orgRef = `Organization/${org.id}`;
   const [practices, teams, tasks, proposals] = await Promise.all([
     practicesFor(project),
@@ -291,13 +296,18 @@ export async function noticed(here: Here | undefined, o: { onMove: (m: Move) => 
       decline: decline(t, j, [{ op: "replace", path: "/team", value: tref }], `Bayani suggested ${team.name}`) };
   });
 
+  if (!jobs.length) return closing
+    ? "Every step is already one of your usual steps. Nothing to keep."
+    : "Every step here is linked to a usual step and has a team. Nothing for Bayani-1 to check.";
   const budget = o.budget ?? 10;
-  let left = Math.min(jobs.length, budget);
+  let left = Math.min(jobs.length, budget), shown = 0;
   o.onProgress?.(left);
   for (const job of jobs.slice(0, budget)) {
-    if (o.cancelled?.()) return;
+    if (o.cancelled?.()) return null;
     const m = await job().catch(() => null);
     o.onProgress?.(--left);
-    if (m && !o.cancelled?.()) o.onMove(m);
+    if (m && !o.cancelled?.()) { o.onMove(m); shown++; }
   }
+  const n = Math.min(jobs.length, budget);
+  return shown ? null : `Bayani-1 checked ${n} step${n === 1 ? "" : "s"} and wasn't sure enough to suggest anything.`;
 }

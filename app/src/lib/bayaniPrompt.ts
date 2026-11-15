@@ -26,7 +26,7 @@ export function confidenceOf(pack: Pack, steps: TokenProbs | undefined): number 
   if (!fixed) return NaN;
   let confidence = 1, prefix = "";
   for (const st of steps ?? []) {
-    const ok = st.probs.filter((p) => fixed.some((a) => a.startsWith(prefix + p.tok_str)));
+    const ok = (st.probs ?? []).filter((p) => fixed.some((a) => a.startsWith(prefix + p.tok_str)));
     const total = ok.reduce((n, p) => n + p.prob, 0), mine = ok.find((p) => p.tok_str === st.content)?.prob ?? 0;
     confidence *= total > 0 ? mine / total : 0;
     prefix += st.content;
