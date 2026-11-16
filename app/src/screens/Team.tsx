@@ -161,7 +161,9 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
             const org = team.organization?.reference;
             const roles = org ? (await bix.search("Role", { organization: org })).filter((r) => r.status === "active") : [];
             const ps: R[] = [];
-            for (const r of roles) { try { ps.push(await bix.get("Person", r.person.reference.split("/")[1])); } catch {} }
+            // One row per person: someone can hold more than one Role in the group (an officer who also volunteers).
+            const refs = [...new Set(roles.map((r) => r.person.reference as string))];
+            for (const ref of refs) { try { ps.push(await bix.get("Person", ref.split("/")[1]!)); } catch {} }
             setChoosing(ps);
           } : undefined} />
         <Row left={who(byRole("member"), photosOf("member"))} title="Members" meta={byRole("member").join(", ") || "None yet"} />

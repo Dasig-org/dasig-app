@@ -47,7 +47,8 @@ export default function NewEvent() {
     if (!orgId) return [];
     const roles = (await bix.search("Role", { organization: `Organization/${orgId}` })).filter((r) => r.status === "active" && isCoreTeam(r.code?.code));
     const ppl = await peopleFor(roles.map((r) => r.person.reference), 20);
-    return roles.map((r) => ({ ref: r.person.reference as string, p: ppl[r.person.reference] }));
+    // One per person: someone may hold two core-team Roles (officer and core member).
+    return [...new Set(roles.map((r) => r.person.reference as string))].map((ref) => ({ ref, p: ppl[ref] }));
   }, [orgId]);
   const nameOf = (r: string | null) => (r === me ? "You" : personName(core?.find((x) => x.ref === r)?.p));
   const date = parseTime(when);

@@ -146,9 +146,17 @@ export function Row({ left, title, meta, right, onPress, last }: { left?: ReactN
   // A row without its own action must not be a (disabled) button: that would mark buttons inside it as disabled for screen readers.
   if (!onPress) return <View style={style}>{body}</View>;
   // Press feedback is a rounded wash inside the panel, never a square ripple to its edges (2026-11-13).
+  const pressStyle = ({ pressed }: { pressed: boolean }) => ({ ...style, borderBottomWidth: 0, marginHorizontal: -8, paddingHorizontal: 8, marginVertical: 2, paddingVertical: 11, borderRadius: radius.inner, backgroundColor: pressed ? "rgba(15,23,42,0.06)" : "transparent" });
+  const label = meta ? `${title}, ${meta}` : title;
+  // A row that opens something AND has its own control on the right (Assign, a switch, Accept): the control sits beside
+  // the row's button, not inside it. A button inside a button is invalid HTML on the web (2026-11-16, team page) and
+  // makes screen readers read both as one.
+  if (right) return <View style={{ flexDirection: "row", alignItems: "center", gap: 8, borderBottomWidth: last ? 0 : 1, borderBottomColor: c.s200 }}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={(st) => ({ ...pressStyle(st), flex: 1, marginRight: 0 })}>
+      {left}<View style={{ flex: 1 }}><Text style={type.row}>{title}</Text>{meta ? <Text style={[type.meta, { marginTop: 2 }]}>{meta}</Text> : null}</View></Pressable>
+    {right}</View>;
   return <View style={{ borderBottomWidth: last ? 0 : 1, borderBottomColor: c.s200 }}>
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={meta ? `${title}, ${meta}` : title}
-      style={({ pressed }) => ({ ...style, borderBottomWidth: 0, marginHorizontal: -8, paddingHorizontal: 8, marginVertical: 2, paddingVertical: 11, borderRadius: radius.inner, backgroundColor: pressed ? "rgba(15,23,42,0.06)" : "transparent" })}>{body}</Pressable></View>;
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={pressStyle}>{body}</Pressable></View>;
 }
 export function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "ok" | "state" }) {
   const s = { neutral: { bg: c.wash, fg: c.ink, b: c.wash }, ok: { bg: c.white, fg: c.slate, b: c.s200 }, state: { bg: c.accent, fg: c.white, b: c.accent } }[tone];

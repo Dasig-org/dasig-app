@@ -139,7 +139,17 @@ export function reportHtml(m: ReportModel, w: ReportWords): string {
   const facts = [["When", m.when], ["Where", m.place], ["Group", m.group], ["Teams", m.teams.length ? `${m.teams.length}` : undefined], ["Partners", m.partners.join(", ") || undefined], ["As of", day(m.asOf)]].filter((x) => x[1]) as [string, string][];
   const kind = m.state === "finished" ? "Project report" : "Status report";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(m.title)} · report</title><style>
-@page { size: A4; margin: 13mm 13mm 15mm; }
+/* Margins that survive any printer setting (Don, 2026-11-16: the PDF had none). Browsers drop @page margins when
+   the print window says "Margins: None", and Android's print (expo-print) ignores them. So the page itself has no
+   margin and the document makes its own: side padding on the body, and a top and bottom spacer that repeat on every
+   printed page (a table's head and foot repeat on each page). */
+@page { size: A4; margin: 0; }
+@media print { body { padding: 0 13mm; } }
+.sheet { width: 100%; border-collapse: collapse; }
+.sheet > thead > tr > td, .sheet > tfoot > tr > td, .sheet > tbody > tr > td { padding: 0; border: 0; }
+.sheet > tbody > tr { break-inside: auto; }
+.sheet .top { height: 13mm; }
+.sheet .bottom { height: 15mm; }
 * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 html { font: 10pt/1.5 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #0F172A; }
 body { margin: 0; }
@@ -208,7 +218,7 @@ figcaption { font-size: 8.3pt; color: #5B6472; margin-top: 3px; line-height: 1.3
 .callout { background: #FFF6EE; border: 1px solid #F6DFCB; border-radius: 13px; padding: 12px 14px; font-size: 10.2pt; }
 .callout p:last-child { margin-bottom: 0; }
 footer { margin-top: 20px; padding-top: 9px; border-top: 1px solid #E6E8EC; color: #6B7280; font-size: 8.3pt; display: flex; justify-content: space-between; gap: 12px; break-inside: avoid; }
-</style></head><body>
+</style></head><body><table class="sheet"><thead><tr><td><div class="top"></div></td></tr></thead><tfoot><tr><td><div class="bottom"></div></td></tr></tfoot><tbody><tr><td>
 <div class="cover"><div class="words"><div class="who">${w.logo ? `<img src="${w.logo}" alt="">` : ""}<span>${esc(m.group || "Project")} · ${kind}</span></div>
 <div><h1>${esc(m.title)}</h1><div class="sub">${esc([m.when, m.place].filter(Boolean).join(" · "))}</div></div><span class="pill">${esc(m.stateLabel)}</span></div>
 ${hero ? `<div class="shot" style="background-image:url('${hero.src}')"></div>` : ""}</div>
@@ -229,5 +239,5 @@ ${section("What we learned, and next time", w.lessons?.trim() ? `<div class="cal
 ${section("With thanks to", w.names && m.credits.length ? m.credits.map((x) => `<p><b>${esc(x.team)}:</b> ${esc(x.names.join(", "))}</p>`).join("") + (m.anonymous ? `<p class="meta">And ${plural(m.anonymous, "helper")} who chose not to be named.</p>` : "")
   : !w.names && m.figures[0]?.value ? `<p>${plural(m.figures[0].value, "volunteer")} across ${plural(m.teams.length, "team")}.</p>` : "")}
 <footer><span>Figures are counted from work recorded in Dasig, not typed. As of ${esc(day(m.asOf))}.</span><span>${w.preparedBy ? `Prepared by ${esc(w.preparedBy)}` : ""}${m.group ? `${w.preparedBy ? " for " : ""}${esc(m.group)}` : ""}</span></footer>
-</body></html>`;
+</td></tr></tbody></table></body></html>`;
 }
