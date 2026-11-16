@@ -3,6 +3,9 @@
  * server standing in for llama.rn. The base model only (the add-on is off for answers, as in the app):
  *   llama-server -m ../../bayani/models/base-q4_k_m.gguf -c 2048 --port 8099
  *   npx tsx scripts/bayani-answer-check.ts
+ * With a Bayani add-on trained to sort questions (v1, 2026-11-16), start the server with `--lora` too.
+ * MODEL_ONLY=1 skips word matching, so every question is sorted by the model (the questions word matching misses are
+ * the ones that reach it in the app).
  */
 import { INTENT_SETTINGS, answerFor, asIntent, intentByWords, intentGrammar, intentMessages, type ScreenRecords } from "../src/lib/bayaniAnswer";
 
@@ -34,7 +37,7 @@ const ask = (body: Record<string, unknown>) => fetch(`${SERVER}/completion`, { m
 for (const q of ["What should we do this week?", "Who is leading the water team?", "Anything overdue?", "Which steps still need people?", "How much money did we raise?", "Who's doing the bibs?", "When is the run?",
   "Are we on schedule?", "What has the team been saying?", "Give me the big picture", "Do we have enough bottles?", "How do I invite someone?", "Is first aid covered?", "Which committee is struggling?"]) {
   const t0 = Date.now();
-  const byWords = intentByWords(q, screen);
+  const byWords = process.env.MODEL_ONLY ? null : intentByWords(q, screen);
   const intent = byWords ?? asIntent((await ask({ prompt: await template(intentMessages(q)), grammar: intentGrammar(), ...INTENT_SETTINGS })).content);
   const a = answerFor(intent, q, screen, NOW);
   console.log(`Q: ${q}  → ${intent} (${byWords ? "words" : `Bayani-1, ${Date.now() - t0} ms`})\nA: ${a.text}${a.lines?.length ? "\n   " + a.lines.join("\n   ") : ""}\n`);
