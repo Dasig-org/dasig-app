@@ -1,0 +1,3 @@
+# Every change to main needs a review from a maintainer (enforced by branch protection).
+# To add a maintainer, add them to the Dasig-org/maintainers team; no change here is needed.
+* @Dasig-org/maintainers
