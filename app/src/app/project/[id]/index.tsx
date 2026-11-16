@@ -7,12 +7,13 @@ import { bix } from "@/lib/bix";
 import { parseDate, short } from "@/lib/dates";
 import { pickDocument, pickPhoto } from "@/lib/files";
 import { useSession } from "@/lib/session";
-import { useLoad } from "@/lib/use";
+import { useLoad, useNow } from "@/lib/use";
 import { facesOf, peopleFor, placeOf, shortRef, teamIcon } from "@/lib/work";
 import { Logo } from "@/ui/Context";
 import { History } from "@/ui/History";
 import { Files } from "@/ui/Files";
-import { Body, Buttons, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, ScreenTitle, Sheet, Skeleton, usePhoto } from "@/ui/kit";
+import { Updates } from "@/ui/Updates";
+import { Body, Buttons, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, ScreenTitle, Sheet, Skeleton, usePhoto } from "@/ui/kit";
 import { Count, ProgressRing, SharedCover, Segmented, StateChip, TabPane } from "@/ui/m3";
 import { useSnackbar } from "@/ui/Snackbar";
 import { atMost, InviteOptions, linkOpts, VisibilityChoice, visibilityFields, visibilityOf, type Visibility } from "@/ui/Privacy";
@@ -23,6 +24,7 @@ type Tab = "overview" | "work" | "teams" | "needs";
 
 /** The project page (sketch: running-sketches #1, page anatomy §1b). */
 export default function Project() {
+  const now = useNow();
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useSession();
   const { show } = useSnackbar();
@@ -72,7 +74,7 @@ export default function Project() {
   const removeFile = (a: any) => run(bix.next(p, { attachment: (p.attachment ?? []).filter((x: any) => x.hash !== a.hash) }), "File removed.");
   const live = tasks.filter((k) => k.status !== "draft" && k.status !== "cancelled");
   const doneN = live.filter((k) => k.status === "completed").length;
-  const late = live.filter((k) => k.status !== "completed" && k.due && Date.parse(k.due) < Date.now());
+  const late = live.filter((k) => k.status !== "completed" && k.due && Date.parse(k.due) < now);
   const places = (k: any) => (k.status === "ready" ? Math.max(0, Number(k.slots ?? 1) - ((k.participant ?? []) as any[]).filter((x) => x.status === "active").length) : 0);
   const openN = live.reduce((n, k) => n + places(k), 0);
   const days = p.period?.start ? Math.round((new Date(p.period.start).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000) : null;
@@ -113,7 +115,7 @@ export default function Project() {
       {tab === "overview" ? <>
         {/* Plan check (§7.2e): leads see what needs them and what would make the plan better, first. */}
         {lead ? <PlanCheck project={p} tasks={tasks} teams={teams} org={org} onChanged={reload} /> : null}
-        <View style={{ marginTop: 14 }}>{p.description ? <Body>{p.description}</Body> : can.edit ? <Text style={[t.meta, { color: c.accent, fontWeight: "600" }]} onPress={edit}>＋ Say what this project is about: what, for whom, and why</Text> : null}</View>
+        <View style={{ marginTop: 14 }}>{p.description ? <Body>{p.description}</Body> : can.edit ? <Text accessibilityRole="button" style={[t.meta, { color: c.accent, fontWeight: "600" }]} onPress={edit}>＋ Say what this project is about: what, for whom, and why</Text> : null}</View>
         <View style={{ marginTop: 12 }}><Panel>
           {org ? <Row left={<Logo name={org.name} image={org.image} size={36} />} title={org.name} meta="About the group" onPress={() => router.push(`/org/${org.id}` as never)} /> : null}
           {(() => { const f = facesOf([...people], folks);
@@ -122,7 +124,7 @@ export default function Project() {
 
         {gates.map((g) => <View key={g.id} style={{ marginTop: 14 }}><Sand><IconCircle name="building" tone="white" />
           <View style={{ flex: 1 }}><Text style={[t.eyebrow, { marginBottom: 2 }]}>Gate</Text><Text style={t.row}>{g.title}</Text><Meta>{`${blocked(g)} task${blocked(g) === 1 ? "" : "s"} wait on this`}</Meta></View>
-          <Text style={{ fontWeight: "600", textDecorationLine: "underline", color: c.ink }} onPress={() => router.push(`/task/${g.id}`)}>Open</Text></Sand></View>)}
+          <Text accessibilityRole="button" style={{ fontWeight: "600", textDecorationLine: "underline", color: c.ink }} onPress={() => router.push(`/task/${g.id}`)}>Open</Text></Sand></View>)}
         {openVotes.map((d) => <View key={d.id} style={{ marginTop: 12 }}><Panel><Row left={<IconCircle name="flag" />} title={d.question} meta="Vote open" right={<Pill tone="state">Vote</Pill>} onPress={() => router.push(`/vote/${d.id}` as never)} last /></Panel></View>)}
         {/* Open in other teams (teamwork D10): where help is needed, beyond your own team. */}
         {openW.length ? <><Eyebrow right={`${openW.length}`}>Open in other teams</Eyebrow><Panel>{openW.map((k, i) => { const tm = teams.find((x) => `Team/${x.id}` === k.team.reference); const n = Number(k.slots ?? 1);
@@ -130,11 +132,15 @@ export default function Project() {
             right={<Pill>{k.taking === "ask" ? "Ask to do" : "I'm in"}</Pill>} onPress={() => router.push(`/task/${k.id}`)} last={i === openW.length - 1} />; })}</Panel></> : null}
         {p.status === "cancelled" ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="pending" tone="white" /><View style={{ flex: 1 }}><Text style={t.row}>This project was cancelled</Text>
           <Meta>Its work, people and history are kept, so you can look back. Nothing new can be added.</Meta></View></Sand></View> : null}
+        {/* Photos, files and updates, in sight (Don, 2026-11-16): they were under everything else, or behind the round +. */}
+        {(p.attachment ?? []).length || can.edit ? <><Eyebrow right={(p.attachment ?? []).length ? `${(p.attachment ?? []).length}` : undefined}>Photos and files</Eyebrow><Files hint="Add a photo, a brief or a document for the project" items={p.attachment ?? []} onAdd={can.edit ? () => setAddingFile(true) : undefined} onRemove={can.edit ? removeFile : undefined} /></> : null}
+        {(p.note ?? []).length || can.edit ? <><Eyebrow right={(p.note ?? []).length ? `${(p.note ?? []).length}` : undefined}>Updates</Eyebrow>
+          <Updates notes={p.note ?? []} hint="Say how the project is going" onPost={can.edit && s.person ? (text) => run(bix.next(p, { note: [...(p.note ?? []), { author: { reference: `Person/${s.person!.id}` }, time: new Date().toISOString(), text }] }), "Posted.") : undefined} /></> : null}
         <Eyebrow>More</Eyebrow>
         <Panel>
           <Row left={<IconCircle name="cal" />} title="Timeline" meta="Work by week, with gates" onPress={() => router.push(`/project/${id}/timeline` as never)} />
           {lead ? <Row left={<IconCircle name="check" />} title="Event day" meta="Check people in, see what's still open" onPress={() => router.push(`/project/${id}/day` as never)} /> : null}
-          {lead ? <Row left={<IconCircle name="receipt" />} title="Report" meta="How it went: figures, photos, who it's for" onPress={() => router.push(`/project/${id}/report` as never)} /> : null}
+          {lead ? <Row left={<IconCircle name="receipt" />} title="Report" meta="Where it stands or how it went, with photos; saves as a PDF" onPress={() => router.push(`/project/${id}/report` as never)} /> : null}
           <Row left={<IconCircle name="heart" />} title="Credits" meta="Everyone who made it happen" onPress={() => router.push(`/project/${id}/credits` as never)} />
           {lead && groupVis !== "group" ? <Row left={<IconCircle name="userplus" />} title="Invite volunteers" meta={visibilityOf(p) === "public" ? "A link to this project; they choose a team" : "A private link; the project stays hidden"} onPress={() => setInviteAsk(true)} /> : null}
           {lead ? <Row left={<IconCircle name="flag" />} title="Start a vote" meta="Decide something together" onPress={() => router.push({ pathname: "/vote/new" as never, params: { project: id } })} /> : null}
@@ -176,7 +182,6 @@ export default function Project() {
               right={<StateChip kind={n.status === "met" ? "done" : "open"}>{n.status === "met" ? "Covered" : n.status === "partially-met" ? "Partly" : "Open"}</StateChip>} onPress={() => router.push(`/need/${n.id}` as never)} />; })}
           <Row left={<IconCircle name="plus" tone="grey" />} title={lead ? "Post a need" : "See what's needed"} meta="Goods, a venue, a skill, people" onPress={() => router.push({ pathname: "/need/new" as never, params: { project: id } })} last />
         </Panel>
-        {(p.attachment ?? []).length || can.edit ? <><Eyebrow right={(p.attachment ?? []).length ? `${(p.attachment ?? []).length}` : undefined}>Files</Eyebrow><Files hint="Add a brief, budget or photo for the project" items={p.attachment ?? []} onAdd={can.edit ? () => setAddingFile(true) : undefined} onRemove={can.edit ? removeFile : undefined} /></> : null}
       </> : null}
       </TabPane>
 
@@ -210,10 +215,10 @@ export default function Project() {
       </Sheet>
 
       <Sheet open={addingFile} onClose={() => setAddingFile(false)}>
-        <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>Add to the project's files</Text>
+        <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>Add to the project&apos;s files</Text>
         <Panel style={{ backgroundColor: c.wash }}>
-          <Row left={<IconCircle name="camera" tone="white" />} title="Photo" onPress={() => addFile(() => pickPhoto(false))} />
-          <Row left={<IconCircle name="receipt" tone="white" />} title="Document" meta="Brief, budget, deck" onPress={() => addFile(pickDocument)} last />
+          <Row left={<IconCircle name="camera" tone="white" />} title="Photo" onPress={() => addFile(() => pickPhoto(false, org?.id))} />
+          <Row left={<IconCircle name="receipt" tone="white" />} title="Document" meta="Brief, budget, deck" onPress={() => addFile(() => pickDocument(org?.id))} last />
         </Panel>
       </Sheet>
     </Screen>

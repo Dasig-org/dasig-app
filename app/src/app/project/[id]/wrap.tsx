@@ -1,15 +1,12 @@
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Share, Text, View } from "react-native";
-import { appUrl } from "@/lib/env";
-import { personName } from "@/lib/work";
-import { Sheet } from "@/ui/kit";
+import { personName, facesOf, peopleFor } from "@/lib/work";
+import { Sheet, Buttons, Eyebrow, Faces, IconCircle, Meta, Panel, Primary, Row, Screen, Title, Outline, Skeleton } from "@/ui/kit";
 import { taskHours } from "@bayanihan/core/figures";
-import { bix, ref } from "@/lib/bix";
+import { bix } from "@/lib/bix";
 import { DAY } from "@/lib/dates";
 import { useLoad } from "@/lib/use";
-import { facesOf, peopleFor } from "@/lib/work";
-import { Buttons, Eyebrow, Faces, IconCircle, Meta, Notice, Panel, Primary, Row, Screen, Title, Outline , Skeleton} from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
 import { useSnackbar } from "@/ui/Snackbar";
 import { Files } from "@/ui/Files";
@@ -69,7 +66,7 @@ export default function Wrap() {
         meta={x.quantity?.value ? `${x.received?.value ?? 0} of ${x.quantity.value} ${x.quantity.unit ?? ""}` : undefined} last={i === met.length - 1} />)}</Panel></> : null}
       <Eyebrow>Send it</Eyebrow>
       <Panel>
-        <Row left={<IconCircle name="share" />} title="Check and send the report" meta="Figures, summary, photos by milestone, who it's for" onPress={() => router.push(`/project/${id}/report` as never)} />
+        <Row left={<IconCircle name="share" />} title="Check and send the report" meta="Figures, progress by team, photos; saves as a PDF" onPress={() => router.push(`/project/${id}/report` as never)} />
         <Row left={<IconCircle name="heart" />} title="Thank everyone" meta="Writes the thank-you post, with credits by team" onPress={() => setThanking(true)} />
         <Row left={<IconCircle name="users" />} title="See the credits" onPress={() => router.push(`/project/${id}/credits` as never)} />
         <Row left={<IconCircle name="repeat" />} title="Save for next year" meta={`${teams.length} teams and their work, dated from the event`} onPress={save} last />

@@ -28,7 +28,7 @@ export default function Timeline() {
   const order = (x: any) => x.due ?? x.restriction?.period?.end ?? "9999";
   const sorted = [...data.tasks].sort((a, b) => String(order(a)).localeCompare(String(order(b))));
   const groups: { label: string; items: any[] }[] = [];
-  for (const x of sorted) { const l = weekLabel(x.due); const g = groups.find((y) => y.label === l); g ? g.items.push(x) : groups.push({ label: l, items: [x] }); }
+  for (const x of sorted) { const l = weekLabel(x.due); const g = groups.find((y) => y.label === l); if (g) g.items.push(x); else groups.push({ label: l, items: [x] }); }
   const team = (x: any) => data.teams.find((y) => `Team/${y.id}` === x.team?.reference);
   const owner = (x: any) => { const r = x.owner?.reference as string | undefined; return r?.startsWith("Person/") ? data.people[r] : undefined; };
   const late = (x: any) => x.status !== "completed" && x.due && Date.parse(x.due) < now;

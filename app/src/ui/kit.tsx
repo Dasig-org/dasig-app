@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { createContext, createElement, useContext, useEffect, useEffectEvent, useState, type ComponentType, type ReactNode } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fileUri } from "@/lib/files";
 import * as Haptics from "expo-haptics";
 import { ActivityIndicator, Image, Keyboard, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, useWindowDimensions, View, type TextInputProps, type ViewStyle } from "react-native";
@@ -38,7 +39,7 @@ export function Screen({ children, bottom, back, onRefresh, dock, right, where, 
       {/* The bottom padding leaves room for the round action button (56px, 16px above the bar or the action bar), so it
           never covers the last row (review 2026-11-15: it hid chips and rows on most pages). */}
       <KScroll bottomOffset={dock ? 96 : 24} contentContainerStyle={{ paddingTop: inset.top + bar + 8, paddingHorizontal: 18, paddingBottom: (bottom || dock ? 96 : 0) + 104 + inset.bottom, maxWidth: 520, width: "100%", alignSelf: "center" }}
-        keyboardShouldPersistTaps="handled" scrollEventThrottle={16} onScroll={(e) => { scrollY.value = e.nativeEvent.contentOffset.y; }}
+        keyboardShouldPersistTaps="handled" scrollEventThrottle={16} onScroll={(e) => { scrollY.set(e.nativeEvent.contentOffset.y); }}
         refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} colors={[c.accent]} tintColor={c.accent} progressViewOffset={inset.top + bar}
           onRefresh={async () => { setRefreshing(true); try { await onRefresh(); } finally { setRefreshing(false); } }} /> : undefined}>
         <SyncBar />
@@ -57,7 +58,7 @@ export function Screen({ children, bottom, back, onRefresh, dock, right, where, 
       {dock ? <KSticky offset={{ closed: 0, opened: inset.bottom }} style={{ position: "absolute", left: 0, right: 0, bottom: 0 }}>
         <View style={{ backgroundColor: c.wash, paddingHorizontal: 18, paddingTop: 8, paddingBottom: inset.bottom + 10, maxWidth: 520, width: "100%", alignSelf: "center" }}>{dock}</View>
       </KSticky> : null}
-      {where === false || bayani === false || !Fab ? null : <Fab here={here} add={add} lifted={!!dock || !!bottom} />}
+      {where === false || bayani === false || !Fab ? null : createElement(Fab, { here, add, lifted: !!dock || !!bottom })}
     </View>
     </ScrollCtx.Provider></TitleCtx.Provider>
   );
@@ -91,7 +92,7 @@ export function usePress() {
   const k = useSharedValue(1);
   const reduce = useReducedMotion();
   const style = useAnimatedStyle(() => ({ transform: [{ scale: k.value }] }));
-  return { style, onPressIn: () => { if (!reduce) k.value = withTiming(motion.press.scale, { duration: motion.press.in }); }, onPressOut: () => { k.value = withSpring(1, motion.spring); } };
+  return { style, onPressIn: () => { if (!reduce) k.set(withTiming(motion.press.scale, { duration: motion.press.in })); }, onPressOut: () => { k.set(withSpring(1, motion.spring)); } };
 }
 const APressable = Animated.createAnimatedComponent(Pressable);
 export const Hero = ({ children }: { children: ReactNode }) => <View style={{ backgroundColor: c.white, borderRadius: radius.hero, padding: 18 }}>{children}</View>;
@@ -106,13 +107,15 @@ export function IconCircle({ name, size = 40, tone = "sand" }: { name: IconName;
 }
 /** A photo's displayable URI, or null while it loads (or when there is none). Cached per file. */
 export function usePhoto(a?: { hash?: string } | null) {
-  const [uri, setUri] = useState<string | null>(null);
-  useEffect(() => {
-    let on = true; setUri(null);
-    if (a?.hash) fileUri(a as never).then((u) => on && setUri(u)).catch(() => {});
-    return () => { on = false; };
-  }, [a?.hash]);
-  return uri;
+  const [got, setGot] = useState<{ hash: string; uri: string } | null>(null);
+  const hash = a?.hash;
+  // Fetched again only when the file changes (its hash), with the whole attachment (fileUri needs its url).
+  const fetchPhoto = useEffectEvent((on: () => boolean) => {
+    const h = a?.hash;
+    if (h) fileUri(a as never).then((uri) => { if (on()) setGot({ hash: h, uri }); }).catch(() => {});
+  });
+  useEffect(() => { let on = true; fetchPhoto(() => on); return () => { on = false; }; }, [hash]);
+  return got && got.hash === hash ? got.uri : null;
 }
 /** A person's face: their photo when they have one, otherwise their initial on a warm colour. */
 export function Avatar({ name, size = 30, index, photo }: { name: string; size?: number; index?: number; photo?: { hash?: string } | null }) {
@@ -230,27 +233,33 @@ export function Sheet({ open, onClose, children, tall, snap }: { open: boolean; 
     const hide = Keyboard.addListener(ios ? "keyboardWillHide" : "keyboardDidHide", () => setKb(0));
     return () => { show.remove(); hide.remove(); };
   }, []);
-  useEffect(() => { if (open && kb > 0 && snap) y.value = withSpring(0, motion.sheet); }, [kb]);
+  const onKeyboard = useEffectEvent((up: boolean) => { if (open && up && snap) y.set(withSpring(0, motion.sheet)); });
+  useEffect(() => { onKeyboard(kb > 0); }, [kb]);
   // Some phones already shrink the Modal's window for the keyboard; then we must not lift the sheet a second time.
   const [room, setRoom] = useState(0);
-  const base = useRef(0);
-  const lift = kb > 0 && base.current > 0 && room > 0 && room < base.current - kb * 0.5 ? 0 : kb;
+  const [base, setBase] = useState(0);
+  const lift = kb > 0 && base > 0 && room > 0 && room < base - kb * 0.5 ? 0 : kb;
   const close = () => {
-    y.value = withTiming(height, { duration: reduce ? 100 : 220, easing: Easing.in(Easing.quad) }, (done) => { if (done) scheduleOnRN(finish); });
+    y.set(withTiming(height, { duration: reduce ? 100 : 220, easing: Easing.in(Easing.quad) }, (done) => { if (done) scheduleOnRN(finish); }));
     onClose();
   };
-  useEffect(() => {
-    if (open) { setShown(true); y.value = height; y.value = reduce ? withTiming(half, { duration: 120 }) : withSpring(half, motion.sheet); }
-    else if (shown) { y.value = withTiming(height, { duration: 200 }, (done) => { if (done) scheduleOnRN(finish); }); }
-  }, [open]);
+  // Shown from the moment it opens; hidden only once the closing animation ends (finish).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) { setWasOpen(open); if (open) setShown(true); }
+  const onOpen = useEffectEvent((o: boolean) => {
+    if (o) { y.set(height); y.set(reduce ? withTiming(half, { duration: 120 }) : withSpring(half, motion.sheet)); }
+    else if (shown) y.set(withTiming(height, { duration: 200 }, (done) => { if (done) scheduleOnRN(finish); }));
+  });
+  useEffect(() => { onOpen(open); }, [open]);
   const drag = Gesture.Pan().activeOffsetY([-8, 8]).failOffsetX([-24, 24])
-    .onBegin(() => { start.value = y.value; })
-    .onUpdate((e) => { y.value = Math.max(0, start.value + e.translationY); })
+    .onBegin(() => { start.set(y.get()); })
+    .onUpdate((e) => { y.set(Math.max(0, start.get() + e.translationY)); })
     .onEnd((e) => {
-      const closing = y.value > half + 100 || (e.velocityY > 1200 && y.value >= half);
-      if (closing) { y.value = withTiming(height, { duration: 180 }, (done) => { if (done) scheduleOnRN(finish); }); scheduleOnRN(onClose); }
-      else if (snap) y.value = withSpring(e.velocityY < -800 || y.value < half * 0.5 ? 0 : half, motion.sheet);
-      else y.value = withSpring(0, motion.sheet);
+      const at = y.get();
+      const closing = at > half + 100 || (e.velocityY > 1200 && at >= half);
+      if (closing) { y.set(withTiming(height, { duration: 180 }, (done) => { if (done) scheduleOnRN(finish); })); scheduleOnRN(onClose); }
+      else if (snap) y.set(withSpring(e.velocityY < -800 || at < half * 0.5 ? 0 : half, motion.sheet));
+      else y.set(withSpring(0, motion.sheet));
     });
   const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
   const backdrop = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [0, height * 0.5], [1, 0], "clamp") }));
@@ -259,7 +268,7 @@ export function Sheet({ open, onClose, children, tall, snap }: { open: boolean; 
       <Animated.View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(15,23,42,.38)" }, backdrop]}>
         <Pressable accessibilityLabel="Close" onPress={close} style={{ flex: 1 }} />
       </Animated.View>
-      <View onLayout={(e) => { const h = e.nativeEvent.layout.height; if (kb === 0) base.current = h; setRoom(h); }} style={{ flex: 1, justifyContent: "flex-end", paddingBottom: lift }} pointerEvents="box-none">
+      <View onLayout={(e) => { const h = e.nativeEvent.layout.height; if (kb === 0) setBase(h); setRoom(h); }} style={{ flex: 1, justifyContent: "flex-end", paddingBottom: lift }} pointerEvents="box-none">
         <Animated.View style={[{ backgroundColor: c.white, borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingHorizontal: 22, paddingTop: 12,
           paddingBottom: (lift ? 12 : inset.bottom + 22), maxWidth: 560, width: "100%", alignSelf: "center", maxHeight: "92%", ...(full ? { height: "92%" as const } : null),
           shadowColor: "#0F172A", shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: -6 }, elevation: 24 }, sheetStyle]}>
@@ -276,7 +285,7 @@ export function Sheet({ open, onClose, children, tall, snap }: { open: boolean; 
 /** Calm placeholder while a screen loads. */
 export function Skeleton({ rows = 4 }: { rows?: number }) {
   const pulse = useSharedValue(0.5);
-  useEffect(() => { pulse.value = withRepeat(withSequence(withTiming(1, { duration: 700 }), withTiming(0.5, { duration: 700 })), -1); }, []);
+  useEffect(() => { pulse.set(withRepeat(withSequence(withTiming(1, { duration: 700 }), withTiming(0.5, { duration: 700 })), -1)); }, [pulse]);
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
   return <Animated.View accessibilityLabel="Loading" style={pulseStyle}>
     <View style={{ width: "60%", height: 26, borderRadius: 13, backgroundColor: c.s200, marginBottom: 16 }} />
@@ -289,28 +298,10 @@ export function Skeleton({ rows = 4 }: { rows?: number }) {
 export const Loading = () => <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.wash }}><ActivityIndicator color={c.accent} /></View>;
 export const Notice = ({ children }: { children: ReactNode }) => <Text role="alert" style={{ fontSize: 13, fontWeight: "600", color: c.ink, marginTop: 8, marginHorizontal: 4 }}>{children}</Text>;
 
-/** Bottom navigation. Volunteers: Today · Groups · Nearby · Your story. Coordinators: This week · Plan · People · Nearby. */
-export function Nav({ active }: { active: string }) {
-  const inset = useSafeAreaInsets();
-  const { useSession } = require("@/lib/session") as typeof import("@/lib/session");
-  const s = useSession();
-  const lead = !!s.current && s.groups.some((g) => g.org.id === s.current!.id && ["officer", "core-member"].includes(g.role.code?.code));
-  const items: { k: string; label: string; icon: IconName; to: string }[] = lead
-    ? [{ k: "home", label: "This week", icon: "cal", to: "/home" }, { k: "plan", label: "Plan", icon: "flag", to: "/projects" }, { k: "people", label: "People", icon: "users", to: `/org/${s.current!.id}/people` }, { k: "nearby", label: "Nearby", icon: "pin", to: "/nearby" }]
-    : [{ k: "home", label: "Today", icon: "check", to: "/home" }, { k: "groups", label: "Groups", icon: "users", to: "/groups" }, { k: "nearby", label: "Nearby", icon: "pin", to: "/nearby" }, { k: "story", label: "Your story", icon: "heart", to: "/story" }];
-  return <View accessibilityRole="tablist" style={{ position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: c.white, paddingBottom: inset.bottom + 8, paddingTop: 10, flexDirection: "row", justifyContent: "space-around" }}>
-    {items.map((i) => <Pressable key={i.k} onPress={() => router.replace(i.to as never)} accessibilityRole="tab" accessibilityState={{ selected: i.k === active }} accessibilityLabel={i.label} style={{ alignItems: "center", gap: 4, minWidth: 64, minHeight: 44 }}>
-      <Icon name={i.icon} size={22} color={i.k === active ? c.accent : c.s400} />
-      <Text style={{ fontSize: 11.5, fontWeight: "600", color: i.k === active ? c.accent : c.s400 }}>{i.label}</Text></Pressable>)}
-  </View>;
-}
-
 /** A first-time tip (guides). One line or two, dismissed with ×, remembered. */
 export function Tip({ id, title, children, onPress }: { id: string; title: string; children: ReactNode; onPress?: () => void }) {
-  const { useState } = require("react") as typeof import("react");
-  const AsyncStorage = (require("@react-native-async-storage/async-storage") as { default: { getItem(k: string): Promise<string | null>; setItem(k: string, v: string): Promise<void> } }).default;
   const [show, setShow] = useState(false);
-  useEffect(() => { AsyncStorage.getItem(`dasig.tip.${id}`).then((v) => { setShow(!v); if (!v) AsyncStorage.setItem(`dasig.tip.${id}`, "1"); }); }, [id]);
+  useEffect(() => { AsyncStorage.getItem(`dasig.tip.${id}`).then((v) => { setShow(!v); if (!v) void AsyncStorage.setItem(`dasig.tip.${id}`, "1"); }).catch(() => {}); }, [id]);
   if (!show) return null;
   return <View accessibilityRole="summary" style={{ backgroundColor: c.sand, borderRadius: radius.tile, paddingVertical: 10, paddingLeft: 12, paddingRight: 6, marginTop: 10, flexDirection: "row", gap: 10, alignItems: "center" }}>
     <Icon name="spark" size={18} />
@@ -321,6 +312,5 @@ export function Tip({ id, title, children, onPress }: { id: string; title: strin
 }
 /** The Dasig mark (the hands emblem, as on dasig.org), used on boot, welcome and the app bar. */
 export function Mark({ size = 72 }: { size?: number }) {
-  const { Image } = require("react-native") as typeof import("react-native");
   return <Image source={require("../../assets/brand/emblem.png")} accessibilityLabel="Dasig" style={{ width: size, height: size }} />;
 }

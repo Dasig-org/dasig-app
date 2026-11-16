@@ -17,7 +17,7 @@ await don.getByPlaceholder(/e\.g\./).first().fill("Meetup 12"); await don.getByT
 await don.getByText("Your group's setting doesn't allow this").waitFor(); log("project can't be more open than its group");
 await don.getByText(/^Keep these \d+ teams$/).click(); await don.getByText("Ask someone to lead").first().waitFor();
 await don.getByText("Communications", { exact: true }).click(); await don.getByText("You lead it").waitFor().catch(() => {});
-await don.getByPlaceholder("Add something to do").fill("Bring chairs"); await don.getByPlaceholder("Add something to do").press("Enter");
+await don.getByPlaceholder("Add a task for this team").fill("Bring chairs"); await don.getByPlaceholder("Add a task for this team").press("Enter");
 await don.getByText("Bring chairs").click(); await tap(don, "Plan this task");
 await don.getByText(/isn't public\. Invite volunteers with a link instead/).waitFor(); log("'Anyone can help' is off in a private project"); await shot(don, "p-task");
 await don.goBack(); await don.goBack(); await don.getByText("Communications", { exact: true }).click();

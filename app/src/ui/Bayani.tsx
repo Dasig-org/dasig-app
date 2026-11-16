@@ -27,7 +27,12 @@ import { c, motion, radius, tone, type as t } from "./theme";
 export type Here =
   | { kind: "project"; project: R; tasks: R[]; teams: R[]; org: R | null; lead: boolean }
   | { kind: "task"; task: R; project: R | null; team: R | null; siblings: R[]; org?: R | null; lead?: boolean; subs?: R[] }
-  | { kind: "group"; org: R; projects: R[]; officer: boolean };
+  /*
+   * A group. With `tasks` and `teams` (the coordinator's Home loads them), Bayani looks across every project on the go:
+   * what's late, who's needed, which team has no lead; `requests` (people who asked to join), `unreported` (events that
+   * happened with no report sent) and `needs` (what projects are still short of) add what waits on an officer.
+   */
+  | { kind: "group"; org: R; projects: R[]; officer: boolean; tasks?: R[]; teams?: R[]; needs?: R[]; requests?: number; unreported?: R[] };
 
 const SPARK = ["M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z", "M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"];
 const Grad = ({ id, down }: { id: string; down?: boolean }) => (
@@ -128,7 +133,6 @@ export function ModelLine() {
 
 type Line = { icon: "check" | "book" | "clock" | "pending" | "flag" | "pen" | "users"; title: string; meta?: string; go?: () => void };
 const Lines = ({ lines }: { lines: Line[] }) => lines.length ? <Panel style={{ backgroundColor: c.wash }}>{lines.map((l, i) => <Row key={l.title} left={<IconCircle name={l.icon} tone="white" />} title={l.title} meta={l.meta} onPress={l.go} last={i === lines.length - 1} />)}</Panel> : null;
-const few = (xs: R[]) => xs.slice(0, 3).map((x) => String(x.title)).join(" · ") + (xs.length > 3 ? ` · +${xs.length - 3} more` : "");
 const live = (tasks: R[]) => tasks.filter((k) => k.status !== "draft" && k.status !== "cancelled");
 
 /** A project: what's open, then what project memory found (leads, when the group turned it on). */
@@ -171,6 +175,10 @@ function HereGroup({ h }: { h: Extract<Here, { kind: "group" }> }) {
   const active = h.projects.filter((p) => p.status === "active").length, done = h.projects.filter((p) => p.status === "completed").length;
   const lines: Line[] = [{ icon: "flag", title: active ? `${active} project${active === 1 ? "" : "s"} on the go` : "No project on the go", meta: done ? `${done} done, which is what project memory learns from` : "Project memory learns from finished projects" },
     { icon: "book", title: `Project memory is ${on ? "on" : "off"}`, meta: on ? "Projects show what projects like them usually need" : h.officer ? "Officers can turn it on, under How it's run on this page" : "An officer can turn it on" }];
+  const [now] = useState(() => Date.now());
+  const open = live(h.tasks ?? []).filter((k) => k.status !== "completed");
+  const late = open.filter((k) => k.due && Date.parse(k.due) < now).length;
+  if (h.tasks) lines.splice(1, 0, { icon: "check", title: open.length ? `${open.length} step${open.length === 1 ? "" : "s"} still open across them` : "No open steps", meta: late ? `${late} late` : open.length ? "None late" : undefined });
   return <><Eyebrow>{h.org.name}</Eyebrow><Lines lines={lines} /></>;
 }
 

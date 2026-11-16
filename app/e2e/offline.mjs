@@ -10,7 +10,7 @@ await ana.getByText("Start a group").click(); await ana.getByPlaceholder("e.g. L
 await ana.getByText("Create group", { exact: true }).click();
 await ana.getByPlaceholder("e.g. Lahug Uplands Fun Run 2027").fill("Coastal cleanup"); await ana.getByText("Next", { exact: true }).click(); await ana.getByText("Next", { exact: true }).click(); await ana.getByText(/Keep these/).click();
 await ana.getByText("Ask someone to lead").first().waitFor(); await ana.getByText("Communications", { exact: true }).click();
-await ana.getByPlaceholder("Add something to do").fill("Marshal, km 3"); await ana.getByPlaceholder("Add something to do").press("Enter");
+await ana.getByPlaceholder("Add a task for this team").fill("Marshal, km 3"); await ana.getByPlaceholder("Add a task for this team").press("Enter");
 await ana.getByText("Marshal, km 3").waitFor();
 await ana.getByText("Invite your team").click(); const invite = await ana.getByText(/\/join\//).textContent();
 const join = async (p, nick) => { await p.goto(invite); await p.getByPlaceholder("e.g. Mia").fill(nick); await p.getByText("Join the team", { exact: true }).click(); await p.getByText("Marshal, km 3").click(); await p.getByText("I'll take it").waitFor(); };

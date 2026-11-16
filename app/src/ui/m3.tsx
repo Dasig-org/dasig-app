@@ -16,8 +16,8 @@ const ACircle = Animated.createAnimatedComponent(Circle);
 export function ProgressRing({ value, size = 72, label, sub }: { value: number; size?: number; label: string; sub?: string }) {
   const r = (size - 8) / 2, len = 2 * Math.PI * r;
   const k = useSharedValue(0);
-  useEffect(() => { k.value = withTiming(Math.max(0, Math.min(1, value)), { duration: 600 }); }, [value]);
-  const props = useAnimatedProps(() => ({ strokeDashoffset: len * (1 - k.value) }));
+  useEffect(() => { k.set(withTiming(Math.max(0, Math.min(1, value)), { duration: 600 })); }, [value, k]);
+  const props = useAnimatedProps(() => ({ strokeDashoffset: len * (1 - k.get()) }));
   return <View accessibilityRole="progressbar" accessibilityLabel={`${label}${sub ? ` ${sub}` : ""}`} style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
     <Svg width={size} height={size} style={{ position: "absolute", transform: [{ rotate: "-90deg" }] }}>
       <Circle cx={size / 2} cy={size / 2} r={r} stroke={tone.primaryContainer} strokeWidth={6} fill="none" />
@@ -34,8 +34,8 @@ export function Segmented<T extends string>({ tabs, value, onChange }: { tabs: {
   const i = Math.max(0, tabs.findIndex((x) => x.key === value));
   const x = useSharedValue(0);
   const seg = w / tabs.length;
-  useEffect(() => { x.value = withSpring(i * seg, motion.spring); }, [i, seg]);
-  const bar = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
+  useEffect(() => { x.set(withSpring(i * seg, motion.spring)); }, [i, seg, x]);
+  const bar = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
   return <View accessibilityRole="tablist" onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ flexDirection: "row", borderBottomWidth: 1, borderBottomColor: c.s300, marginTop: 14 }}>
     {tabs.map((t) => <Pressable key={t.key} onPress={() => onChange(t.key)} accessibilityRole="tab" accessibilityState={{ selected: t.key === value }} style={{ flex: 1, minHeight: 48, alignItems: "center", justifyContent: "center" }}>
       <Text numberOfLines={1} style={{ ...scale.label, color: t.key === value ? c.ink : c.s500 }}>{t.label}{t.count ? <Text style={{ fontWeight: "500" }}>{`  ${t.count}`}</Text> : null}</Text></Pressable>)}

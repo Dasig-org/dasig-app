@@ -48,9 +48,8 @@ export function Intro({ onDone }: { onDone: () => void }) {
   const reduceMotion = useReduceMotion();
   const { width: W, height: H, s } = useMockupScale();
   const scrollRef = useRef<ScrollViewInstance>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const [scrollX] = useState(() => new Animated.Value(0));
   const [index, setIndex] = useState(0);
-  const indexRef = useRef(0);
   const [stage, setStage] = useState({ w: W, h: Math.round(H * 0.52) });
 
   const pageHeights = useRef<number[]>([]);
@@ -60,7 +59,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
     setCopyH(Math.max(COPY_H, Math.ceil(Math.max(0, ...pageHeights.current.map((h) => h ?? 0)))));
   }, []);
 
-  const draw = useRef(new Animated.Value(0)).current;
+  const [draw] = useState(() => new Animated.Value(0));
   useEffect(() => {
     if (reduceMotion) { draw.setValue(1); return; }
     const a = Animated.timing(draw, { toValue: 1, duration: 1350, useNativeDriver: false });
@@ -74,8 +73,8 @@ export function Intro({ onDone }: { onDone: () => void }) {
       const x = e.nativeEvent.contentOffset.x, w = e.nativeEvent.layoutMeasurement.width;
       if (w <= 0) return;
       const i = Math.min(LAST, Math.max(0, Math.round(x / w)));
-      if (Math.abs(x - i * w) > 1 || i === indexRef.current) return;
-      indexRef.current = i; setIndex(i);
+      if (Math.abs(x - i * w) > 1) return;
+      setIndex(i); // React skips the render when the page didn't change
     },
   }), [scrollX]);
 
@@ -113,7 +112,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
       drawOffset: draw.interpolate({ inputRange: [0, 1], outputRange: [DASH, 0] }),
       drawStroke: draw.interpolate({ inputRange: [0, 0.85, 1], outputRange: [1, 1, 0] }),
     };
-  }, [scrollX, draw, W, s, stageH, reduceMotion]);
+  }, [scrollX, draw, W, reduceMotion]);
 
   const fit = (l: { top: number; height: number }) => Math.min(1, stageH / s(l.top + l.height));
   const frame = (l: { top: number; height: number }) => [st.prop, { top: s(l.top) }, fit(l) < 1 && { transform: [{ scale: fit(l) }], transformOrigin: "top" as const }];

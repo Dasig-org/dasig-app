@@ -1,4 +1,4 @@
-import { createElement, useEffect, useRef, useState, type ComponentRef } from "react";
+import { createElement, useEffect, useEffectEvent, useRef, useState, type ComponentRef } from "react";
 import { Alert, Image, Modal, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -86,12 +86,16 @@ function Page({ a, active, zoomed, onZoom, onOpen }: { a: Attachment; active: bo
   const [src, setSrc] = useState<string | null>(null);
   const [text, setText] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  // Loads again only when the file itself changes (its hash), not when the same file's record is re-read.
+  const load = useEffectEvent((on: () => boolean) => {
+    const fail = () => { if (on()) setFailed(true); };
+    if (k === "image") fileUri(a).then((u) => { if (on()) setSrc(u); }).catch(fail);
+    else if (k === "text") fileText(a).then((x) => { if (on()) setText(x); }).catch(fail);
+    else if (k === "pdf" && Platform.OS === "web") webPreviewUrl(a).then((u) => { if (on()) setSrc(u); }).catch(fail);
+  });
   useEffect(() => {
     let on = true;
-    const fail = () => on && setFailed(true);
-    if (k === "image") fileUri(a).then((u) => on && setSrc(u)).catch(fail);
-    else if (k === "text") fileText(a).then((x) => on && setText(x)).catch(fail);
-    else if (k === "pdf" && Platform.OS === "web") webPreviewUrl(a).then((u) => on && setSrc(u)).catch(fail);
+    load(() => on);
     return () => { on = false; };
   }, [a.hash, k]);
   if (failed) return <DocCard a={a} note="This file didn't load. Check your connection, or open it in another app." onOpen={onOpen} />;
@@ -123,18 +127,18 @@ function DocCard({ a, note, onOpen }: { a: Attachment; note: string; onOpen: () 
 /** An image you can pinch, double-tap and drag when zoomed (Reanimated + gesture-handler, on the UI thread). */
 function Zoomable({ uri, active, zoomed, onZoom }: { uri: string; active: boolean; zoomed: boolean; onZoom: (z: boolean) => void }) {
   const scale = useSharedValue(1), base = useSharedValue(1), x = useSharedValue(0), y = useSharedValue(0), sx = useSharedValue(0), sy = useSharedValue(0);
-  useEffect(() => { if (!active) { scale.value = withTiming(1); base.value = 1; x.value = withTiming(0); y.value = withTiming(0); } }, [active]);
+  useEffect(() => { if (!active) { scale.set(withTiming(1)); base.set(1); x.set(withTiming(0)); y.set(withTiming(0)); } }, [active, scale, base, x, y]);
   const settle = (s: number) => { "worklet"; scheduleOnRN(onZoom, s > 1.01); };
   const pinch = Gesture.Pinch()
-    .onUpdate((e) => { scale.value = Math.max(1, Math.min(5, base.value * e.scale)); })
-    .onEnd(() => { base.value = scale.value; if (scale.value <= 1.01) { x.value = withTiming(0); y.value = withTiming(0); } settle(scale.value); });
+    .onUpdate((e) => { scale.set(Math.max(1, Math.min(5, base.get() * e.scale))); })
+    .onEnd(() => { const z = scale.get(); base.set(z); if (z <= 1.01) { x.set(withTiming(0)); y.set(withTiming(0)); } settle(z); });
   // Dragging only while zoomed; otherwise a swipe goes to the pager (the next file).
   const pan = Gesture.Pan().enabled(zoomed).averageTouches(true)
-    .onBegin(() => { sx.value = x.value; sy.value = y.value; })
-    .onUpdate((e) => { if (scale.value > 1.01) { x.value = sx.value + e.translationX; y.value = sy.value + e.translationY; } });
+    .onBegin(() => { sx.set(x.get()); sy.set(y.get()); })
+    .onUpdate((e) => { if (scale.get() > 1.01) { x.set(sx.get() + e.translationX); y.set(sy.get() + e.translationY); } });
   const twice = Gesture.Tap().numberOfTaps(2).onEnd(() => {
-    const to = scale.value > 1.01 ? 1 : 2.5;
-    scale.value = withTiming(to); base.value = to; if (to === 1) { x.value = withTiming(0); y.value = withTiming(0); }
+    const to = scale.get() > 1.01 ? 1 : 2.5;
+    scale.set(withTiming(to)); base.set(to); if (to === 1) { x.set(withTiming(0)); y.set(withTiming(0)); }
     settle(to);
   });
   const st = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value }] }));

@@ -36,13 +36,17 @@ export function useBar() {
     read(); listeners.add(read); return () => { live = false; listeners.delete(read); };
   }, [k]);
   // A team lead who isn't on the core team gets Team in slot 2.
-  const [leadsTeam, setLeadsTeam] = useState(false);
+  // Answered for one group and person at a time, so switching groups never shows another's answer.
+  const asked = s.current && !s.isLead && s.person ? `${s.current.id}|${s.person.id}` : null;
+  const [leads, setLeads] = useState<{ for: string; yes: boolean } | null>(null);
   useEffect(() => {
-    if (!s.current || s.isLead || !s.person) { setLeadsTeam(false); return; }
-    const me = `Person/${s.person.id}`, org = `Organization/${s.current.id}`;
-    bix.search("Team", { participant: me }).then((ts) => setLeadsTeam(ts.some((t) => t.organization?.reference === org && t.status !== "inactive"
-      && (t.participant ?? []).some((p: any) => p.person.reference === me && p.role === "lead" && p.status === "active")))).catch(() => {});
-  }, [s.current?.id, s.isLead, s.person?.id]);
+    if (!asked) return;
+    const [orgId, personId] = asked.split("|");
+    const me = `Person/${personId}`, org = `Organization/${orgId}`;
+    bix.search("Team", { participant: me }).then((ts) => setLeads({ for: asked, yes: ts.some((t) => t.organization?.reference === org && t.status !== "inactive"
+      && (t.participant ?? []).some((p: any) => p.person.reference === me && p.role === "lead" && p.status === "active")) })).catch(() => {});
+  }, [asked]);
+  const leadsTeam = !!asked && leads?.for === asked && leads.yes;
   const slots = chosen ?? defaultSlots(s, leadsTeam);
   const save = async (next: [Slot, Slot, Slot] | null) => { if (next) await AsyncStorage.setItem(k, JSON.stringify(next)); else await AsyncStorage.removeItem(k); listeners.forEach((l) => l()); };
   return { slots, custom: !!chosen, save, defaults: defaultSlots(s, leadsTeam) };

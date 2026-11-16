@@ -3,6 +3,7 @@ import { Redirect } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { Image, Platform, Text, View } from "react-native";
 import { useSession } from "@/lib/session";
+import { ErrorState } from "@/ui/ErrorState";
 import { c, type as t } from "@/ui/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -19,6 +20,8 @@ export default function Boot() {
       <Text style={[t.meta, { marginTop: 18 }]}>Doing good work, together</Text>
     </View>
   );
+  // Signed in but out of reach, with nothing saved yet: say so, rather than showing the sign-in screen.
+  if (s.unreachable) return <View style={{ flex: 1, backgroundColor: c.sand, justifyContent: "center" }}><ErrorState message="offline" onRetry={() => { s.refresh().catch(() => {}); }} /></View>;
   if (!s.person) return <Redirect href={"/start" as never} />;
   if (!s.profileDone) return <Redirect href={"/profile?first=1" as never} />;
   if (!s.groups.length) return <Redirect href={"/paths" as never} />;

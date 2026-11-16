@@ -1,7 +1,7 @@
 import { METHOD_LABEL } from "@/lib/signin";
 import { useAccount } from "@/lib/account";
 import { MethodIcon } from "@/ui/SignIn";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useEffectEvent } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
 import { bix } from "@/lib/bix";
@@ -34,7 +34,8 @@ export default function Profile() {
   const [uri, setUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => { if (photo) fileUri(photo).then(setUri).catch(() => {}); }, [photo?.hash]);
+  const showPhoto = useEffectEvent(() => { if (photo) fileUri(photo).then(setUri).catch(() => {}); });
+  useEffect(() => { showPhoto(); }, [photo?.hash]);
   const save = async () => {
     if (!p) return;
     setBusy(true); setErr(null);
@@ -72,7 +73,7 @@ export default function Profile() {
         {SKILLS.map((k) => { const on = skills.includes(k); return <Pressable key={k} onPress={() => setSkills(on ? skills.filter((x) => x !== k) : [...skills, k])} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
           style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 999, backgroundColor: on ? c.accent : c.white, justifyContent: "center" }}><Text style={{ fontWeight: "600", color: on ? c.white : c.ink }}>{k}</Text></Pressable>; })}
       </View>
-      <Eyebrow>When you're usually free</Eyebrow>
+      <Eyebrow>When you&apos;re usually free</Eyebrow>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         {FREE.map((k) => { const on = free.includes(k); return <Pressable key={k} onPress={() => setFree(on ? free.filter((x) => x !== k) : [...free, k])} accessibilityRole="checkbox" accessibilityState={{ checked: on }}
           style={{ minHeight: 40, paddingHorizontal: 14, borderRadius: 999, backgroundColor: on ? c.accent : c.white, justifyContent: "center" }}><Text style={{ fontWeight: "600", color: on ? c.white : c.ink }}>{k}</Text></Pressable>; })}

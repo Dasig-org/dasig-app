@@ -4,7 +4,7 @@ import { Text, View } from "react-native";
 import { bix } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { Buttons, Check, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Panel, Primary, Row, Screen, Sheet, Title } from "@/ui/kit";
+import { Buttons, Check, Eyebrow, Faces, Field, IconCircle, Meta, Panel, Primary, Row, Screen, Sheet, Title } from "@/ui/kit";
 import { type as t } from "@/ui/theme";
 import { useSnackbar } from "@/ui/Snackbar";
 

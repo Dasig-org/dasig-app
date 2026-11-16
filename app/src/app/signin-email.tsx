@@ -40,7 +40,7 @@ export default function SignInEmail() {
     <Screen where={false}>
       {back}
       <Text style={[t.title, { marginTop: 14 }]}>{adding ? "Add email" : "Continue with email"}</Text>
-      <Text style={[t.body, { color: c.s500, marginTop: 2 }]}>We'll send a 6-digit code. No password to remember.</Text>
+      <Text style={[t.body, { color: c.s500, marginTop: 2 }]}>We&apos;ll send a 6-digit code. No password to remember.</Text>
       <Field label="Email" value={email} onChangeText={setEmail} placeholder="you@example.org" autoFocus keyboardType="email-address" autoCapitalize="none" autoComplete="email" onSubmitEditing={send} returnKeyType="send" />
       {err ? <Notice>{err}</Notice> : null}
       <Buttons><Primary label="Send the code" onPress={send} busy={busy} disabled={!/.+@.+\..+/.test(email.trim())} /></Buttons>

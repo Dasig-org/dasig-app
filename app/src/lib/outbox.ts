@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { send } from "./transport";
 import type { R } from "./bix";
+import { Offline } from "./reach";
 
 /** Changes made while offline, replayed in order when back online (BIX rule 10). */
 const KEY = "dasig.outbox.v1";
@@ -18,10 +19,13 @@ export function onSynced(l: () => void) { syncedListeners.add(l); return () => {
 
 export async function pending(): Promise<Pending[]> { return JSON.parse((await AsyncStorage.getItem(KEY)) ?? "[]"); }
 async function save(p: Pending[]) { await AsyncStorage.setItem(KEY, JSON.stringify(p)); listeners.forEach((l) => l(p.length)); }
-export async function enqueue(resources: R[]) { const p = await pending(); await save([...p, ...resources.map((resource) => ({ resource, occurredAt: new Date().toISOString() }))]); }
+/** One read-then-write of the queue at a time, so a change added while another is saving (or sending) is never lost. */
+let chain: Promise<unknown> = Promise.resolve();
+const locked = <T,>(f: () => Promise<T>): Promise<T> => { const r = chain.then(f, f); chain = r.catch(() => {}); return r; };
+export const enqueue = (resources: R[]) => locked(async () => save([...(await pending()), ...resources.map((resource) => ({ resource, occurredAt: new Date().toISOString() }))]));
 export function onPending(l: Listener) { listeners.add(l); pending().then((p) => l(p.length)); return () => { listeners.delete(l); }; }
 
-export const isNetworkError = (e: unknown) => e instanceof TypeError || /network|fetch|Failed to fetch/i.test(String(e));
+export const isNetworkError = (e: unknown) => e instanceof Offline;
 
 /** Send everything waiting. Returns what the server refused (e.g. someone else took the slot first). */
 let flushing: Promise<{ sent: number; refused: Refusal[] }> | null = null;
@@ -32,7 +36,8 @@ async function doFlush(): Promise<{ sent: number; refused: Refusal[] }> {
   const res = await send("POST", "/", JSON.stringify({ type: "sync", entry: p }));
   if (!res.ok) throw new Error(`sync failed: ${res.status}`);
   const out = (await res.json()) as { accepted: R[]; refused: Refusal[] };
-  await save([]);
+  // Only what was sent leaves the queue (it's append-only): anything added while sending stays for the next round.
+  await locked(async () => save((await pending()).slice(p.length)));
   if (out.refused.length) { refusedNow = [...refusedNow, ...out.refused]; refusedListeners.forEach((l) => l(refusedNow)); }
   syncedListeners.forEach((l) => l());
   return { sent: p.length, refused: out.refused };

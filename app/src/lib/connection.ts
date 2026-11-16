@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import { clearCache } from "./cache";
 import { networkUrl } from "./env";
 
 /**
@@ -25,5 +26,8 @@ export async function getConnection(): Promise<Connection> {
 }
 export async function setConnection(c: Connection) {
   if (c.kind === "phone" && c.token) await AsyncStorage.setItem("dasig.phone.token", c.token);
+  // Someone else's saved records are never shown to the next person on this device.
+  const was = current as { kind: string; url?: string; token?: string } | null, is = c as { kind: string; url?: string; token?: string };
+  if (!was || was.kind !== is.kind || was.url !== is.url || was.token !== is.token) await clearCache();
   current = c; await AsyncStorage.setItem(KEY, JSON.stringify(c)); listeners.forEach((l) => l(c)); }
 export function onConnection(l: (c: Connection) => void) { listeners.add(l); return () => { listeners.delete(l); }; }

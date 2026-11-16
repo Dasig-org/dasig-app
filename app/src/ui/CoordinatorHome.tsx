@@ -1,18 +1,18 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { router } from "expo-router";
 import { Image, Pressable, Share, Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
 import { short } from "@/lib/dates";
 import { appUrl } from "@/lib/env";
 import { useSession } from "@/lib/session";
-import { useLoad } from "@/lib/use";
+import { useLoad, useNow } from "@/lib/use";
 import { peopleFor, personName, teamIcon } from "@/lib/work";
 import { ContextPill } from "./Context";
 import { GroupQuest } from "./GroupQuest";
 import { InstallGuide } from "./InstallGuide";
-import { Avatar, Buttons, Check, Eyebrow, Faces, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Screen, Sheet, Tip, usePhoto } from "./kit";
+import { Avatar, Buttons, Check, Eyebrow, Faces, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, usePhoto } from "./kit";
 import { Card, Carousel, Count, ProgressRing, SharedCover, StateChip } from "./m3";
-import { c, radius, scale, tone, type as t } from "./theme";
+import { c, radius, scale, type as t } from "./theme";
 
 /*
  * The coordinator's home, built around the next event (workspace/design/coordinator-sketches.html, A1–A2):
@@ -40,7 +40,8 @@ async function load(orgId: string) {
     Promise.all(projects.map((p) => bix.search("Task", { partOf: `Initiative/${p.id}` }))).then((x) => x.flat()),
     Promise.all(projects.map((p) => bix.search("Need", { initiative: `Initiative/${p.id}` }))).then((x) => x.flat()),
   ]);
-  const roles = (await bix.search("Role", { organization: `Organization/${orgId}` }).catch(() => [] as R[])).filter((r) => r.status === "active");
+  const everyRole = await bix.search("Role", { organization: `Organization/${orgId}` }).catch(() => [] as R[]);
+  const roles = everyRole.filter((r) => r.status === "active"), requests = everyRole.filter((r) => r.status === "requested").length;
   const reports = await bix.search("Report", { owedBy: `Organization/${orgId}` }).catch(() => [] as R[]);
   const offers = (await Promise.all(needs.slice(0, 10).map((n) => bix.search("Offer", { matchedTo: `Need/${n.id}` }).catch(() => [])))).flat();
   const refs = [...tasks.flatMap((x) => active(x).map((p: any) => p.person.reference)), ...teams.flatMap((tm) => ((tm.participant ?? []) as any[]).map((p) => p.person.reference)),
@@ -48,7 +49,7 @@ async function load(orgId: string) {
   // The event that just happened (within 14 days) and has no report sent yet.
   const past = (await bix.search("Initiative", { organization: `Organization/${orgId}` })).filter((p) => p.status !== "cancelled" && p.period?.start && Date.parse(p.period.start) < Date.now() - 12 * 3600000 && Date.now() - Date.parse(p.period.start) < 14 * 86400000
     && !reports.some((r) => (r.scope?.initiative ?? []).some((x: any) => x.reference === `Initiative/${p.id}`)));
-  return { projects, teams, tasks, needs, offers, past, roles, people: await peopleFor(refs, 40) };
+  return { projects, teams, tasks, needs, offers, past, roles, requests, people: await peopleFor(refs, 40) };
 }
 
 function Cover({ image, h, chip }: { image?: R["image"]; h: number; chip: string }) {
@@ -61,9 +62,14 @@ function Cover({ image, h, chip }: { image?: R["image"]; h: number; chip: string
 }
 
 export function CoordinatorHome() {
+  const now = useNow();
   const s = useSession();
   const orgId = s.current!.id;
   const { data, error, reload } = useLoad(() => load(orgId), [orgId]);
+  // What Bayani sees here: every project on the go with its steps, teams and needs, and what waits on an officer.
+  const officer = s.groups.some((g) => g.org.id === orgId && g.role.code?.code === "officer");
+  const group = s.current;
+  const here = useMemo(() => (data && group ? { kind: "group" as const, org: group, projects: data.projects, tasks: data.tasks, teams: data.teams, needs: data.needs, requests: data.requests, unreported: data.past, officer } : undefined), [data, group, officer]);
   const [sharing, setSharing] = useState<R | null>(null);
   const [skip, setSkip] = useState<Set<string>>(new Set());
   const [remind, setRemind] = useState<string | null>(null);
@@ -76,7 +82,7 @@ export function CoordinatorHome() {
   const done = work.filter((x) => x.status === "completed").length;
   const onIt = new Set(work.flatMap((x) => active(x).map((p: any) => p.person.reference)));
   const faces = [...onIt].slice(0, 5);
-  const week = Date.now() + 7 * DAY;
+  const week = now + 7 * DAY;
 
   // At risk this week: open and due soon; asked with no answer; a team with work due but no lead.
   const soonOpen = openWork.filter((x) => x.due && Date.parse(x.due) < week).slice(0, 3);
@@ -90,7 +96,7 @@ export function CoordinatorHome() {
   for (const tm of data?.teams ?? []) for (const p of (tm.participant ?? []) as any[]) if (p.status === "active" && p.role !== "lead" && (tm.meta as any)?.lastUpdated) news.push({ at: (tm.meta as any).lastUpdated, who: p.person.reference, text: `${name(p.person.reference)} is on ${tm.name}`, go: `/team/${tm.id}` });
   for (const x of data?.tasks ?? []) {
     const at = (x.meta as any)?.lastUpdated ?? x.executionPeriod?.end ?? x.executionPeriod?.start;
-    if (!at || Date.now() - Date.parse(at) > 7 * DAY) continue;
+    if (!at || now - Date.parse(at) > 7 * DAY) continue;
     const last = active(x).at(-1) as any;
     if (x.status === "completed" && last) news.push({ at, who: last.person.reference, text: `${name(last.person.reference)} finished “${x.title}”`, go: `/task/${x.id}` });
     else if (last) news.push({ at, who: last.person.reference, text: `${name(last.person.reference)} took “${x.title}”`, go: `/task/${x.id}` });
@@ -105,7 +111,7 @@ export function CoordinatorHome() {
   };
 
   return (
-    <Screen onRefresh={reload}>
+    <Screen onRefresh={reload} here={here}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><ContextPill />
         <Pressable accessibilityRole="button" accessibilityLabel="Your story and settings" onPress={() => router.push("/story")}><Avatar name={personName(s.person)} size={40} photo={s.person?.photo} /></Pressable></View>
       <Text style={[t.title, { marginTop: 14 }]}>{`Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}, ${personName(s.person).split(/\s+/)[0]}`}</Text>
@@ -137,13 +143,13 @@ export function CoordinatorHome() {
                 <Text style={[t.meta, { flex: 1 }]}>{onIt.size ? `${onIt.size} ${onIt.size === 1 ? "person" : "people"} on it` : "Nobody yet"}</Text></View>
             </View>
           </View>
-          {event.period?.start && Math.abs(Date.parse(event.period.start) - Date.now()) < DAY ? <Buttons><Primary label="Event day: check people in" onPress={() => router.push(`/project/${event.id}/day` as never)} /></Buttons> : null}
+          {event.period?.start && Math.abs(Date.parse(event.period.start) - now) < DAY ? <Buttons><Primary label="Event day: check people in" onPress={() => router.push(`/project/${event.id}/day` as never)} /></Buttons> : null}
           <Buttons>{openWork.length ? <Primary label="Share open slots" onPress={() => { setSkip(new Set()); setSharing(event); }} /> : null}<Outline flex label="Open" onPress={() => router.push(`/project/${event.id}`)} /></Buttons>
         </View>
       </View> : null}
 
       {/* Reminders without push (E15): two days before, write each team's reminder for the chat. */}
-      {event?.period?.start && Date.parse(event.period.start) > Date.now() && Date.parse(event.period.start) - Date.now() < 3 * DAY ? <View style={{ marginTop: 14 }}>
+      {event?.period?.start && Date.parse(event.period.start) > now && Date.parse(event.period.start) - now < 3 * DAY ? <View style={{ marginTop: 14 }}>
         <Panel><Row left={<IconCircle name="send" />} title={`${event.title} is ${inDays(event.period.start)}`} meta="Remind each team who's on what" right={<Pill>Remind</Pill>}
           onPress={() => setRemind((data?.teams ?? []).find((tm) => tm.initiative?.reference === `Initiative/${event.id}`)?.id ?? null)} last /></Panel></View> : null}
       {risk ? <><Eyebrow right={`${risk}`}>Needs you this week</Eyebrow><Carousel>
@@ -166,7 +172,7 @@ export function CoordinatorHome() {
           <Meta>{[teamOf(x)?.name, x.due ? short(x.due) : null, openPlaces(x) > 1 ? `${openPlaces(x)} needed` : null].filter(Boolean).join(" · ")}</Meta></Card>)}
       </Carousel></> : null}
 
-      {news.length ? <><Eyebrow>What's new</Eyebrow><Carousel>
+      {news.length ? <><Eyebrow>What&apos;s new</Eyebrow><Carousel>
         {news.slice(0, 8).map((x, i) => <Card key={i} w={220} onPress={x.go ? () => router.push(x.go as never) : undefined} label={x.text}>
           {x.who ? <Avatar name={name(x.who)} size={32} photo={data?.people[x.who]?.photo} /> : <IconCircle name="heart" size={32} />}
           <Text numberOfLines={3} style={[t.row, { marginTop: 10, fontSize: 15, lineHeight: 21 }]}>{x.text}</Text><Meta>{ago(x.at)}</Meta></Card>)}
@@ -203,7 +209,7 @@ export function CoordinatorHome() {
           <Text style={[t.row, { fontSize: 18 }]}>Share open slots</Text>
           <Meta>One message for the group chat. Each line is still open.</Meta>
           <Panel style={{ backgroundColor: c.wash, marginTop: 10 }}>
-            {openWork.slice(0, 10).map((x, i, all) => <Row key={x.id} left={<Check on={!skip.has(x.id)} onPress={() => setSkip((k) => { const n = new Set(k); n.has(x.id) ? n.delete(x.id) : n.add(x.id); return n; })} />}
+            {openWork.slice(0, 10).map((x, i, all) => <Row key={x.id} left={<Check on={!skip.has(x.id)} onPress={() => setSkip((k) => { const n = new Set(k); if (n.has(x.id)) n.delete(x.id); else n.add(x.id); return n; })} />}
               title={x.title} meta={[teamOf(x)?.name, x.due ? short(x.due) : null, openPlaces(x) > 1 ? `${openPlaces(x)} needed` : null].filter(Boolean).join(" · ")} last={i === all.length - 1} />)}
           </Panel>
           <View style={{ backgroundColor: c.sand, borderRadius: radius.inner, padding: 14, marginTop: 10 }}><Text style={[t.body, { fontSize: 13.5 }]}>{message(sharing)}</Text></View>

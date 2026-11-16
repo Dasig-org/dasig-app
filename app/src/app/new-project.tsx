@@ -123,7 +123,7 @@ export default function NewEvent() {
     <Screen>
       {head(2, "When and where?", "You can change these later. Task dates count from the event's date.")}
       <Field label="When" value={when} onChangeText={setWhen} placeholder="e.g. 2027-03-06 05:00" />
-      {when.trim() && !date ? <Notice>That date didn't read right. Try 2027-03-06 05:00.</Notice> : null}
+      {when.trim() && !date ? <Notice>That date didn&apos;t read right. Try 2027-03-06 05:00.</Notice> : null}
       <PlaceField label="Where" value={where} onChange={setWhere} placeholder="e.g. IT Park, Cebu City" />
       <Field label="What it's about" value={about} onChangeText={setAbout} multiline placeholder="What it is, who it's for. Volunteers read this first." />
       <Text style={[t.eyebrow, { marginTop: 18, marginBottom: 8, marginHorizontal: 4 }]}>Cover picture</Text>

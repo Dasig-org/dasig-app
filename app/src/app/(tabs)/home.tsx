@@ -1,12 +1,10 @@
 import { networkUrl } from "@/lib/env";
 import { ErrorState } from "@/ui/ErrorState";
 import { router } from "expo-router";
-import { Image, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
 import { short } from "@/lib/dates";
-import { appUrl } from "@/lib/env";
 import { useEffect, useState } from "react";
-import { Platform } from "react-native";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, personName, places, teamIcon } from "@/lib/work";
@@ -15,7 +13,7 @@ import { ZeroHome } from "@/ui/ZeroHome";
 import { KeepYourWork } from "@/ui/KeepYourWork";
 import { InstallGuide } from "@/ui/InstallGuide";
 import { CoordinatorHome } from "@/ui/CoordinatorHome";
-import { Buttons, Eyebrow, Faces, Hero, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Tip, usePhoto } from "@/ui/kit";
+import { Buttons, Eyebrow, Faces, Hero, IconCircle, Meta, Outline, Panel, Pill, Primary, Row, RoundButton, Sand, Screen, Skeleton, Tip, usePhoto } from "@/ui/kit";
 import { PressScale } from "@/ui/m3";
 import { useSnackbar } from "@/ui/Snackbar";
 import { c, radius, type as t } from "@/ui/theme";
@@ -30,7 +28,6 @@ import { c, radius, type as t } from "@/ui/theme";
 type Img = { hash?: string; contentType?: string } | null | undefined;
 const imagesOf = (x: R): Img[] => [...(x.output ?? []).flatMap((o: any) => o.attachment ?? []), ...(x.attachment ?? [])].filter((a: any) => a?.contentType?.startsWith("image/"));
 const hello = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; };
-const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { weekday: "short" }).toUpperCase().slice(0, 3);
 
 /** A photo, or a fallback picture: the team's icon on sand. Rounded on the image itself, never boxed (DESIGN_STANDARD §4). */
 function Photo({ image, fallback, w, h, r = radius.inner, chip }: { image?: Img; fallback?: React.ReactNode; w: number | "100%"; h: number; r?: number; chip?: string }) {
@@ -69,6 +66,7 @@ export default function Home() {
     .filter((x: any) => x.work.length);
   // Near you (navigation sketch 2): how many groups chose to be found on the network.
   const [near, setNear] = useState(0);
+  const [all, setAll] = useState(false);
   useEffect(() => { fetch(`${networkUrl.replace(/\/$/, "")}/$directory`).then((r) => r.json()).then((d) => setNear((d.groups ?? []).length)).catch(() => {}); }, []);
   // A nickname on the web lives in this browser only: offer a Dasig account once they've joined or taken something.
   const tasks = data?.tasks ?? [];
@@ -100,6 +98,8 @@ export default function Home() {
 
   // Coordinators get the event home (workspace/design/coordinator-sketches.html A1).
   if (s.isLead && s.current) return <CoordinatorHome />;
+  // Still loading: a placeholder, never "Nothing open right now" for a moment.
+  if (!data && !error) return <Screen><ContextPill /><Skeleton /></Screen>;
 
   // Zero state: no group and no work yet. A starter home, never "nothing here" (design/home-sketches.html).
   if (data && !asked.length && !mine.length && !done.length && !open.length) return <ZeroHome />;
@@ -112,7 +112,7 @@ export default function Home() {
       <Text style={[t.title, { marginTop: 14, marginBottom: 2 }]}>{`${hello()}, ${personName(s.person)}`}</Text>
       {error ? <ErrorState message={error} /> : null}
       <InstallGuide />
-      <Tip id="volunteer-home" title="Find something to do">Tap “I'm in” to take it.</Tip>
+      <Tip id="volunteer-home" title="Find something to do">Tap “I&apos;m in” to take it.</Tip>
       {/* A team lead's week (navigation sketch 3): their team's open work first, soonest due. */}
       {led.map(({ team, work }) => <View key={team.id}>
         <Eyebrow right={`${work.length}`}>{`${team.name} · you lead`}</Eyebrow>
@@ -134,9 +134,9 @@ export default function Home() {
       {mine.length ? <><Eyebrow>Yours now</Eyebrow><Panel>{mine.map((x, i) =>
         <Row key={x.id} left={<Photo image={coverOf(x)} w={44} h={44} fallback={icon(x)} />} title={x.title} meta={from(x)} right={x.due ? <Pill tone="ok">{`Due ${short(x.due)}`}</Pill> : undefined} onPress={() => router.push(`/task/${x.id}`)} last={i === mine.length - 1} />)}</Panel></> : null}
 
-      <Eyebrow right={open.length > 1 ? "See all" : undefined}>Lend a hand</Eyebrow>
+      <Eyebrow right={open.length > 8 ? (all ? "Show fewer" : `See all ${open.length}`) : undefined} onRightPress={() => setAll(!all)}>Lend a hand</Eyebrow>
       {open.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ gap: 12, paddingHorizontal: 18 }}>
-        {open.slice(0, 8).map((x) => { const f = faces(x);
+        {(all ? open : open.slice(0, 8)).map((x) => { const f = faces(x);
           return <PressScale key={x.id} onPress={() => router.push(`/task/${x.id}`)} label={`${x.title}, ${from(x)}`} style={{ width: open.length === 1 ? 300 : 236 }}>
             <Photo image={coverOf(x)} w="100%" h={150} r={radius.panel} chip={x.due ? short(x.due) : "Any time"} fallback={<IconCircle name={teamIcon(teamOf(x)?.name ?? "")} size={64} tone="white" />} />
             <Text style={[t.row, { marginTop: 9, marginHorizontal: 2 }]} numberOfLines={1}>{x.title}</Text>
@@ -154,9 +154,9 @@ export default function Home() {
         <Meta>{mine.length ? `${mine.length} thing${mine.length === 1 ? "" : "s"} in progress` : done.length ? "Thanked and recorded" : "Every step you take is kept, and it's yours"}</Meta>
         {storyPhotos.length ? <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>{storyPhotos.map((a, i) => <Photo key={a?.hash ?? i} image={a} w={78} h={78} />)}</View> : null}
       </View>
-      <Eyebrow>Near you</Eyebrow>
-      <Pressable accessibilityRole="button" accessibilityLabel="Groups and projects near you" onPress={() => router.push("/nearby")}>
-        <Photo image={null} w="100%" h={130} r={radius.panel} chip={near ? `${near} group${near === 1 ? "" : "s"} nearby` : "Find groups nearby"} fallback={<Image source={NEAR} style={{ width: "100%", height: 130, borderRadius: radius.panel }} />} />
+      <Eyebrow>On the Bayanihan Network</Eyebrow>
+      <Pressable accessibilityRole="button" accessibilityLabel="Find groups and projects" onPress={() => router.push("/nearby")}>
+        <Photo image={null} w="100%" h={130} r={radius.panel} chip={near ? `${near} group${near === 1 ? "" : "s"} to find` : "Find groups"} fallback={<Image source={NEAR} style={{ width: "100%", height: 130, borderRadius: radius.panel }} />} />
       </Pressable>
     </Screen>
   );

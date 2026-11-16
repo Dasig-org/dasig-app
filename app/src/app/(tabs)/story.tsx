@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { personHours } from "@bayanihan/core/figures";
 import { bix } from "@/lib/bix";

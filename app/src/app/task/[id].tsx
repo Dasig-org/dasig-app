@@ -1,20 +1,19 @@
 import { appUrl } from "@/lib/env";
 import { ErrorState } from "@/ui/ErrorState";
 import { AddPeople } from "@/ui/AddPeople";
-import { useEffect, useState, type ReactNode } from "react";
-import { router } from "expo-router";
+import { useState, type ReactNode } from "react";
+import { router, useLocalSearchParams } from "expo-router";
 import { parseDate, quick, short } from "@/lib/dates";
-import { onSynced } from "@/lib/outbox";
 import { pickDocument, pickPhoto, type Attachment } from "@/lib/files";
 import { Files } from "@/ui/Files";
-import { useLocalSearchParams } from "expo-router";
+import { Updates } from "@/ui/Updates";
 import { Alert, Linking, Platform, Pressable, Share, Text, View } from "react-native";
 import { bix, BixError, type R } from "@/lib/bix";
 import { useSession } from "@/lib/session";
-import { useLoad } from "@/lib/use";
+import { useLoad, useNow } from "@/lib/use";
 import { act, peopleFor, placeOf, places, stateLabel } from "@/lib/work";
 import { History } from "@/ui/History";
-import { Avatar, Body, Buttons, Check, Chips, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, ScreenTitle, Sheet, Skeleton } from "@/ui/kit";
+import { Avatar, Body, Buttons, Check, Chips, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Outline, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, ScreenTitle, Sheet, Skeleton } from "@/ui/kit";
 import { ActionBar, StateChip } from "@/ui/m3";
 import { useSnackbar } from "@/ui/Snackbar";
 import { Icon, type IconName } from "@/ui/Icon";
@@ -25,6 +24,7 @@ import { c, tone, type as t } from "@/ui/theme";
 
 /** One template for every Task: the state decides the action (DESIGN_STANDARD §1a, §1b). */
 export default function Task() {
+  const now = useNow();
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useSession();
   const me = s.person ? `Person/${s.person.id}` : "";
@@ -44,8 +44,6 @@ export default function Task() {
   const [given, setGiven] = useState("");
   const [word, setWord] = useState("");
   const [stepFocus, setStepFocus] = useState(0);
-  const [now] = useState(() => Date.now());
-  useEffect(() => onSynced(() => setMsg(null)), []);
   const { data, error, reload } = useLoad(async () => {
     const task = await bix.get("Task", id);
     const team = task.team ? await bix.get("Team", task.team.reference.split("/")[1]).catch(() => null) : null;
@@ -120,7 +118,7 @@ export default function Task() {
   // Planned and given time (BIX 2026-11-11): the estimate, and a measured default from a check-in.
   const estH = task.estimate ? (task.estimate.unit === "min" ? task.estimate.value / 60 : task.estimate.value) / (task.estimate.per === "task" ? Math.max(1, parts.length) : 1) : null;
   const myPart = parts.find((x: any) => x.person.reference === me) as any;
-  const measured = myPart?.attended ? Math.round(((Date.now() - Date.parse(myPart.attended.at)) / 3600000) * 2) / 2 : null;
+  const measured = myPart?.attended ? Math.round(((now - Date.parse(myPart.attended.at)) / 3600000) * 2) / 2 : null;
   const hrs = (h: number) => (h < 1 ? `${Math.round(h * 60)} min` : `${Math.round(h * 10) / 10} h`);
   const finish = async (value: number | null, source: "planned" | "stated" | "measured") => {
     setFinishing(false);
@@ -138,7 +136,7 @@ export default function Task() {
   const lead = (team?.participant ?? []).find((p: any) => p.role === "lead" && p.status === "active");
   const askers = (task.participant ?? []).filter((x: any) => x.status === "requested" && x.person.reference !== me && !x.replaces);
   if (waitingOn.length && ["ready", "requested"].includes(task.status)) actions = <View style={{ marginTop: 14 }}><Sand><IconCircle name="pending" tone="white" />
-    <View style={{ flex: 1 }}><Text style={t.row}>{`Waiting on ${waitingOn[0]!.title}`}</Text><Meta>You can prepare now. It can be taken once that's done.</Meta></View></Sand></View>;
+    <View style={{ flex: 1 }}><Text style={t.row}>{`Waiting on ${waitingOn[0]!.title}`}</Text><Meta>You can prepare now. It can be taken once that&apos;s done.</Meta></View></Sand></View>;
   // A shift (Task.slots > 1): "I'm in" takes a place; full shifts take backups (BIX 2026-11-09).
   else if (pl.shift && (task.status === "ready" || task.status === "accepted") && onIt) actions = <Buttons>{isLead ? <Primary label="Mark done" busy={busy} onPress={() => (onIt ? setFinishing(true) : finish(null, "stated"))} /> : null}<Outline flex label="Can't make it" onPress={() => setLeaving(true)} /></Buttons>;
   else if (pl.shift && task.status === "ready") actions = <Buttons><Primary label="I'm in" busy={busy} onPress={() => run(act.takePlace(task, me), "You're in.", (f) => act.leavePlace(f, me))} />{isLead ? <Outline label="Ask someone" onPress={() => setAsking(true)} /> : null}</Buttons>;
@@ -218,11 +216,11 @@ export default function Task() {
       {naming !== null ? <><Field value={naming} onChangeText={setNaming} placeholder="What needs doing" autoFocus /><Buttons><Primary label="Save" disabled={!naming.trim()} onPress={() => { run(bix.next(task, { title: naming.trim() })); setNaming(null); }} /><Outline label="Cancel" onPress={() => setNaming(null)} /></Buttons></>
         : <Text style={[t.title, { fontSize: 26, lineHeight: 32, marginTop: 8 }]}>{task.title}</Text>}
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 2, marginHorizontal: 2 }}>
-        {team ? <Text style={[t.meta, { fontWeight: "700", color: c.ink }]} onPress={() => router.push(`/team/${team.id}` as never)}>{team.name}</Text> : null}
+        {team ? <Text accessibilityRole="button" style={[t.meta, { fontWeight: "700", color: c.ink }]} onPress={() => router.push(`/team/${team.id}` as never)}>{team.name}</Text> : null}
         {team && project ? <Text style={[t.meta, { color: c.s300 }]}>{"  ·  "}</Text> : null}
-        {parent ? <Text style={[t.meta, { fontWeight: "600" }]} onPress={() => router.push(`/task/${parent.id}`)}>{`Part of “${parent.title}” ›`}</Text>
-          : project ? <Text style={[t.meta, { fontWeight: "600" }]} onPress={() => router.push(`/project/${project.id}`)}>{`${project.title} ›`}</Text>
-          : org ? <Text style={[t.meta, { fontWeight: "600" }]} onPress={() => router.push(`/org/${org.id}` as never)}>{`${org.name} ›`}</Text> : null}
+        {parent ? <Text accessibilityRole="button" style={[t.meta, { fontWeight: "600" }]} onPress={() => router.push(`/task/${parent.id}`)}>{`Part of “${parent.title}” ›`}</Text>
+          : project ? <Text accessibilityRole="button" style={[t.meta, { fontWeight: "600" }]} onPress={() => router.push(`/project/${project.id}`)}>{`${project.title} ›`}</Text>
+          : org ? <Text accessibilityRole="button" style={[t.meta, { fontWeight: "600" }]} onPress={() => router.push(`/org/${org.id}` as never)}>{`${org.name} ›`}</Text> : null}
       </View>
 
       {/* 2 · Where it stands: who, when, how far, what it waits on, and for a lead how to move it along. */}
@@ -287,11 +285,14 @@ export default function Task() {
       {task.status === "completed" && task.milestone && unblocks.length ? <><Eyebrow>{`The gate is open: ${unblocks.length} can go ahead`}</Eyebrow>
         <Panel>{unblocks.map((x, i) => <Row key={x.id} left={<IconCircle name="check" />} title={x.title} right={<Pill tone="ok">Ready</Pill>} onPress={() => router.push(`/task/${x.id}`)} last={i === unblocks.length - 1} />)}</Panel></> : null}
 
-      {/* 8 · Files only when there are some; the round + adds them. */}
-      {(task.attachment ?? []).length ? <><Eyebrow right={`${(task.attachment ?? []).length}`}>Files</Eyebrow>
-        <Files hint="Add a file the team needs" items={task.attachment ?? []} onAdd={canAdd && open ? () => setAdding(true) : undefined} onRemove={canEdit && open ? (a) => run(bix.next(task, { attachment: (task.attachment ?? []).filter((x: any) => x.hash !== a.hash) }), "File removed.") : undefined} /></> : null}
+      {/* 8 · Photos, files and updates, always in sight for whoever is on it (Don, 2026-11-16: adding a photo was lost
+          behind the round +). Before it's done they're its files; after, what came out of it. Both go in the report. */}
+      {(task.attachment ?? []).length || (canAdd && open) ? <><Eyebrow right={(task.attachment ?? []).length ? `${(task.attachment ?? []).length}` : undefined}>Photos and files</Eyebrow>
+        <Files hint="Add a photo, a file or a document" items={task.attachment ?? []} onAdd={canAdd && open ? () => setAdding(true) : undefined} onRemove={canEdit && open ? (a) => run(bix.next(task, { attachment: (task.attachment ?? []).filter((x: any) => x.hash !== a.hash) }), "File removed.") : undefined} /></> : null}
       {outputs.length || (canAdd && task.status === "completed") ? <><Eyebrow>What came out of it</Eyebrow>
         <Files hint="Add a photo or result of the work" items={outputs} onAdd={canAdd ? () => setAdding(true) : undefined} /></> : null}
+      {(task.note ?? []).length || canAdd ? <><Eyebrow right={(task.note ?? []).length ? `${(task.note ?? []).length}` : undefined}>Updates</Eyebrow>
+        <Updates notes={task.note ?? []} onPost={canAdd ? (text) => run(bix.next(task, { note: [...(task.note ?? []), { author: { reference: me }, time: new Date().toISOString(), text }] }), "Posted.") : undefined} /></> : null}
 
       {/* 9 · History: one quiet line; the timeline opens in a sheet. */}
       <History type="Task" id={task.id} groupName={org?.name} version={task.meta.version} />
@@ -335,29 +336,29 @@ export default function Task() {
       </Sheet>
 
       <Sheet open={adding} onClose={() => setAdding(false)}>
-        <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>{task.status === "completed" ? "Add what came out of it" : "Add to Files"}</Text>
+        <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>{task.status === "completed" ? "Add what came out of it" : "Add a photo or file"}</Text>
         <Panel style={{ backgroundColor: c.wash }}>
-          <Row left={<IconCircle name="camera" tone="white" />} title="Photo" meta="Kept by your group" onPress={() => pickPhoto(false).then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
-          <Row left={<IconCircle name="smile" tone="white" />} title="Photo that shows children" meta="Never leaves the group" onPress={() => pickPhoto(true).then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
-          <Row left={<IconCircle name="receipt" tone="white" />} title="Document" meta="PDF, Word, Excel, text" last onPress={() => pickDocument().then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
+          <Row left={<IconCircle name="camera" tone="white" />} title="Photo" meta="Kept by your group" onPress={() => pickPhoto(false, orgOfTask).then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
+          <Row left={<IconCircle name="smile" tone="white" />} title="Photo that shows children" meta="Never leaves the group" onPress={() => pickPhoto(true, orgOfTask).then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
+          <Row left={<IconCircle name="receipt" tone="white" />} title="Document" meta="PDF, Word, Excel, text" last onPress={() => pickDocument(orgOfTask).then(attach).catch((e) => { setAdding(false); setMsg(String(e.message ?? e)); })} />
         </Panel>
       </Sheet>
 
       <Sheet open={finishing} onClose={() => setFinishing(false)}>
         <Text style={[t.row, { fontSize: 18 }]}>About how long did you give?</Text>
-        <Meta>Your hours count in your story and the group's report.</Meta>
+        <Meta>Your hours count in your story and the group&apos;s report.</Meta>
         <View style={{ marginTop: 12, gap: 8 }}>
           {measured ? <Primary label={`${hrs(measured)} since you checked in`} onPress={() => finish(measured, "measured")} /> : null}
           {estH ? <Primary label={`${hrs(estH)}, as planned`} onPress={() => finish(estH, "planned")} /> : null}
         </View>
         <Chips options={[0.5, 1, 2, 3, 4].map((h) => ({ value: String(h), label: hrs(h) }))} value={given} onChange={(v) => finish(Number(v), "stated")} />
         <Field value={given} onChangeText={setGiven} keyboardType="numeric" placeholder="Or type hours, e.g. 1.5" onSubmitEditing={() => { const n = Number(given); if (n > 0) finish(n, "stated"); }} returnKeyType="done" />
-        <View style={{ marginTop: 10 }}><LinkText onPress={() => finish(null, "stated")}>Skip, don't count hours</LinkText></View>
+        <View style={{ marginTop: 10 }}><LinkText onPress={() => finish(null, "stated")}>Skip, don&apos;t count hours</LinkText></View>
       </Sheet>
 
       <Sheet open={leaving} onClose={() => setLeaving(false)}>
-        <Text style={[t.row, { fontSize: 18 }]}>Can't make it?</Text>
-        <Meta>That's okay. Your lead sees the place open again.</Meta>
+        <Text style={[t.row, { fontSize: 18 }]}>Can&apos;t make it?</Text>
+        <Meta>That&apos;s okay. Your lead sees the place open again.</Meta>
         <Field label="A word for your lead (optional)" value={word} onChangeText={setWord} placeholder="e.g. Work came up, sorry!" />
         <Panel style={{ backgroundColor: c.wash, marginTop: 10 }}>
           <Row left={<IconCircle name="heart" tone="white" />} title="Help another way" meta="See what else is open" onPress={() => { setLeaving(false); router.push(project ? `/project/${project.id}` : "/home"); }} />

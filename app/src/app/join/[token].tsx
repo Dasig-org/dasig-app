@@ -5,7 +5,7 @@ import { bix } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { teamIcon } from "@/lib/work";
-import { Avatar, Buttons, Field, IconCircle, LinkText, Meta, Notice, Primary, Sand, Screen } from "@/ui/kit";
+import { Avatar, Buttons, Field, IconCircle, Meta, Notice, Primary, Sand, Screen } from "@/ui/kit";
 import { SignInMethods } from "@/ui/SignInMethods";
 import { type as t } from "@/ui/theme";
 

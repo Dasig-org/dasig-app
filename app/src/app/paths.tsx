@@ -23,7 +23,7 @@ export default function Paths() {
       <Path icon="heart" title="I want to help out" meta="Join a group as a volunteer" onPress={() => router.push("/volunteer" as never)} />
       <Path icon="flag" title="I run a group" meta="Set up your organization and its people" onPress={() => router.push("/start-group")} />
       <Path icon="camera" title="I have an invite" meta="Scan a code or open a link someone sent" onPress={() => router.push((can.scan ? "/scan" : "/volunteer") as never)} />
-      <Text style={[t.meta, { marginTop: 18, textAlign: "center" }]} onPress={() => router.replace("/home")}>Skip for now</Text>
+      <Text accessibilityRole="button" style={[t.meta, { marginTop: 10, paddingVertical: 8, textAlign: "center" }]} onPress={() => router.replace("/home")}>Skip for now</Text>
     </Screen>
   );
 }

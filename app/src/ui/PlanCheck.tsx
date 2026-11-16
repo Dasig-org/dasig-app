@@ -100,6 +100,6 @@ const Small = ({ title, children }: { title: string; children: ReactNode }) => <
   <Text style={[t.meta, { fontWeight: "700", marginBottom: 4 }]}>{title}</Text>{children}</Animated.View>;
 const Line = ({ text, sub, act, onAct, onOpen }: { text: string; sub: string; act: string; onAct: () => void; onOpen?: () => void }) =>
   <View style={{ backgroundColor: c.white, borderRadius: radius.inner, padding: 12, marginBottom: 6 }}>
-    <Text style={t.row} onPress={onOpen}>{text}</Text><Text style={[t.meta, { marginTop: 2 }]}>{sub}</Text>
+    <Text accessibilityRole="button" style={t.row} onPress={onOpen}>{text}</Text><Text style={[t.meta, { marginTop: 2 }]}>{sub}</Text>
     <View style={{ flexDirection: "row", gap: 12, marginTop: 6 }}><LinkText onPress={onAct}>{act}</LinkText>{onOpen ? <LinkText onPress={onOpen}>Open the step</LinkText> : null}</View>
   </View>;

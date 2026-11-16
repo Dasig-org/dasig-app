@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
 import { invite, lookupHandle } from "@/lib/invites";
@@ -37,9 +37,12 @@ export function AddPeople({ open, onClose, orgId, target, onSomeoneNew, onDone, 
   const [done, setDone] = useState<Set<string>>(new Set());
   const org = `Organization/${orgId}`;
 
-  useEffect(() => {
-    if (!open) return;
-    setQ(""); setMsg(null); setFound(null); setDone(new Set());
+  // Each time it opens (for this group), it starts empty.
+  const opened = open ? orgId : null;
+  const [openedFor, setOpenedFor] = useState<string | null>(null);
+  if (opened !== openedFor) { setOpenedFor(opened); if (opened) { setQ(""); setMsg(null); setFound(null); setDone(new Set()); } }
+  // Who to show: the group's people and people you've worked with, read each time it opens.
+  const loadPeople = useEffectEvent(() => {
     (async () => {
       const roles = (await bix.search("Role", { organization: org }).catch(() => [] as R[])).filter((r) => r.status === "active");
       const refs = [...new Set(roles.map((r) => r.person.reference as string))].filter((r) => r !== me);
@@ -58,18 +61,21 @@ export function AddPeople({ open, onClose, orgId, target, onSomeoneNew, onDone, 
       const kp = await peopleFor(uniq.map((x) => x.ref), 20);
       setKnown(uniq.filter((x) => kp[x.ref]).map((x) => ({ ref: x.ref, p: kp[x.ref]!, teams: [x.group] })));
     })().catch(() => setInGroup([]));
-  }, [open, orgId]);
+  });
+  useEffect(() => { if (open) loadPeople(); }, [open, orgId]);
 
   // "@ana.cebu" or a bare handle-looking word: exact lookup, after a pause.
   const handle = q.trim().toLowerCase().replace(/^@/, "");
   const isEmail = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(q.trim());
   const looksHandle = !isEmail && /^@?[a-z][a-z0-9_.]{2,19}$/i.test(q.trim());
+  // A new search clears the last lookup.
+  const [lookedFor, setLookedFor] = useState(q);
+  if (q !== lookedFor) { setLookedFor(q); setFound(null); }
   useEffect(() => {
-    setFound(null);
     if (!open || !looksHandle) return;
     const h = setTimeout(() => lookupHandle(handle).then((r) => setFound(r ?? "none")).catch(() => setFound("none")), 450);
     return () => clearTimeout(h);
-  }, [q, open]);
+  }, [handle, looksHandle, open]);
 
   const onTeam = (ref: string) => target.kind === "team" && (target.team.participant ?? []).some((x: any) => x.person.reference === ref && x.status === "active");
   const onTask = (ref: string) => target.kind === "task" && ((target.task.participant ?? []).some((x: any) => x.person.reference === ref && x.status !== "ended") || target.task.owner?.reference === ref);
@@ -142,7 +148,7 @@ export function AddPeople({ open, onClose, orgId, target, onSomeoneNew, onDone, 
         })()}
       </Panel>
       {target.kind !== "task" || scope === "group" ? (filt(known).length ? <>
-        <Text style={[t.eyebrow, { marginTop: 14, marginBottom: 6, marginLeft: 4 }]}>People you've worked with</Text>
+        <Text style={[t.eyebrow, { marginTop: 14, marginBottom: 6, marginLeft: 4 }]}>People you&apos;ve worked with</Text>
         <Panel style={{ backgroundColor: c.wash }}>{filt(known).map((x, i, all) => <Row key={x.ref} left={<Avatar name={name(x)} photo={x.p.photo} />} title={name(x)} meta={`With you in ${x.teams[0]}`} last={i === all.length - 1}
           right={done.has(x.ref) ? <Icon name="check" color={c.accent} /> : <Outline label={busy === x.ref ? "…" : "Invite"} onPress={() => run(x.ref, () => invite({ target: targetRef, role, person: x.ref }), `Invitation sent to ${name(x)}. They'll see it in their Inbox.`)} />} />)}</Panel>
       </> : null) : null}

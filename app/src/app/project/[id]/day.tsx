@@ -5,7 +5,7 @@ import { bix, now, type R } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { act, peopleFor, personName, places } from "@/lib/work";
-import { Avatar, Buttons, Check, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton, Title } from "@/ui/kit";
+import { Avatar, Buttons, Check, Chips, Eyebrow, Field, IconCircle, Meta, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton, Title } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
 import { useSnackbar } from "@/ui/Snackbar";
 

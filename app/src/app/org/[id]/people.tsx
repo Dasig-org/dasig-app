@@ -13,7 +13,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { teamIcon } from "@/lib/work";
 import { FaceGrid } from "@/ui/m3";
-import { Avatar, Buttons, LinkText, Check, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, Title } from "@/ui/kit";
+import { Avatar, Buttons, Check, Chips, Eyebrow, Field, IconCircle, Meta, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Tip, Title } from "@/ui/kit";
 import { InviteOptions, linkOpts, type InviteOpts } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
 import { useSnackbar } from "@/ui/Snackbar";
@@ -79,7 +79,7 @@ export default function People({ orgId }: { orgId?: string } = {}) {
     <Screen onRefresh={reload} back={!orgId}>
       <AddPeople open={addPeople} onClose={() => { setAddPeople(false); reload(); }} orgId={id} target={{ kind: "group" }} onSomeoneNew={() => invite()} />
       <Title sub={s.current?.name}>People</Title>
-      <Tip id="people" title="Core team and volunteers">The core team runs the group. Volunteers help with parts of it and see their own teams' work.</Tip>
+      <Tip id="people" title="Core team and volunteers">The core team runs the group. Volunteers help with parts of it and see their own teams&apos; work.</Tip>
       {manage ? <Buttons><Primary label="Invite people" onPress={() => setAddPeople(true)} /><Outline label="Add by name" onPress={() => setAdding(true)} /></Buttons> : null}
       <Field icon="search" value={find} onChangeText={setFind} placeholder="Find someone" />
       {requests.length && manage ? <><Eyebrow right={`${requests.length}`}>Asking to join</Eyebrow><Panel>

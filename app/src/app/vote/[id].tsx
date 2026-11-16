@@ -6,7 +6,7 @@ import { short } from "@/lib/dates";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { Files } from "@/ui/Files";
-import { Body, Buttons, Check, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Sand, Screen , Skeleton} from "@/ui/kit";
+import { Body, Buttons, Check, Eyebrow, Field, IconCircle, Meta, Outline, Panel, Pill, Primary, Sand, Screen, Skeleton } from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 import { useSnackbar } from "@/ui/Snackbar";
 

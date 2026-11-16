@@ -1,30 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { onSynced } from "./outbox";
-import { onLocalChange, type R } from "./bix";
-
-/** Swap in any record with the same type and id (a few levels deep), keeping everything else as it is. */
-function swap<T>(x: T, by: Map<string, R>, depth = 0): T {
-  if (depth > 5 || x === null || typeof x !== "object") return x;
-  if (Array.isArray(x)) { let changed = false; const out = x.map((v) => { const n = swap(v, by, depth + 1); if (n !== v) changed = true; return n; }); return (changed ? out : x) as T; }
-  const o = x as Record<string, unknown>;
-  if (typeof o.resourceType === "string" && typeof o.id === "string") { const n = by.get(`${o.resourceType}/${o.id}`); if (n && ((n.meta as any)?.version ?? 0) >= ((o.meta as any)?.version ?? 0)) return n as T; }
-  let changed = false; const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(o)) { const n = swap(v, by, depth + 1); if (n !== v) changed = true; out[k] = n; }
-  return (changed ? out : x) as T;
-}
+import { onLocalChange, swap } from "./bix";
 
 /** Load data, reload when the screen comes back into focus. */
 export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const had = useRef(false);
-  const load = useCallback(async () => {
+  // The latest `fn`, so `load` can stay the same function; `deps` changing (compared item by item) counts as a new load.
+  const latest = useRef(fn);
+  useEffect(() => { latest.current = fn; });
+  const [seen, setSeen] = useState(deps);
+  const [round, setRound] = useState(0);
+  if (deps.length !== seen.length || deps.some((d, i) => !Object.is(d, seen[i]))) { setSeen(deps); setRound(round + 1); }
+  const load = useCallback(() => latest.current().then((d) => { had.current = true; setError(null); setData(d); },
     // Offline: keep showing what we had rather than replacing the screen with an error.
-    try { const d = await fn(); had.current = true; setError(null); setData(d); } catch (e) { if (!had.current) setError(e instanceof Error ? e.message : String(e)); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-  useEffect(() => { load(); }, [load]);
+    (e) => { if (!had.current) setError(e instanceof Error ? e.message : String(e)); }), []);
+  useEffect(() => { void load(); }, [load, round]);
   useEffect(() => onSynced(() => { load(); }), [load]);
   // Optimistic: show a change the moment it's made; reload if the server refuses it.
   useEffect(() => onLocalChange((e) => {
@@ -34,4 +27,14 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   }), [load]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
   return { data, error, reload: load };
+}
+
+/**
+ * The time now, for what a screen shows ("late", "this week", "up to date"), kept in state and moved on every `everyMs`
+ * so the screen updates on its own. Reading Date.now() while rendering would leave a memoized screen on a stale time.
+ */
+export function useNow(everyMs = 60000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const h = setInterval(() => setNow(Date.now()), everyMs); return () => clearInterval(h); }, [everyMs]);
+  return now;
 }

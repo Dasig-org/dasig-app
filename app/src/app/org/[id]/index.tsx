@@ -1,5 +1,5 @@
 import { PlaceField, placeExtensions, type PlaceValue } from "@/ui/PlaceField";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useEffectEvent } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Image, Platform, Pressable, Text, View } from "react-native";
 import { bix } from "@/lib/bix";
@@ -7,10 +7,10 @@ import { fileUri, pickPhoto } from "@/lib/files";
 import { CAUSES } from "@/lib/org";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { Body, Buttons, Check, Chips, Eyebrow, Faces, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton } from "@/ui/kit";
+import { Body, Buttons, Check, Chips, Eyebrow, Faces, Field, IconCircle, Meta, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { Logo } from "@/ui/Context";
 import { Icon } from "@/ui/Icon";
-import { directoryOpen, networkOpen } from "@/lib/network";
+import { networkOpen } from "@/lib/network";
 import { useWhere } from "@/ui/Where";
 import { label, VISIBILITY, VisibilityChoice, visibilityFields, visibilityOf } from "@/ui/Privacy";
 import { CopyToEcosystem } from "@/ui/CopyToEcosystem";
@@ -39,21 +39,26 @@ export default function Org() {
   }, [id]);
   const [logoUri, setLogoUri] = useState<string | null>(null);
   const { data: storage } = useLoad(async () => (s.connection?.kind === "ecosystem" ? bix.storage(id).catch(() => null) : null), [id]);
-  useEffect(() => { if (data?.org.image) fileUri(data.org.image).then(setLogoUri).catch(() => {}); }, [data?.org.image?.hash]);
+  const logo = data?.org.image;
+  const showLogo = useEffectEvent(() => { if (logo) fileUri(logo).then(setLogoUri).catch(() => {}); });
+  useEffect(() => { showLogo(); }, [logo?.hash]);
   const [name, setName] = useState(""); const [about, setAbout] = useState("");
   const [placeV, setPlaceV] = useState<PlaceValue>({ text: "" }); const [causes, setCauses] = useState<string[]>([]);
   const [invitePolicy, setInvitePolicy] = useState("core-team");
   const [memoryOn, setMemoryOn] = useState(false);
-  useEffect(() => { if (data) { const ex = (data.org.extension ?? []) as { url: string; value: string }[];
+  // The form starts from the group's record, and again whenever a newer version of it arrives.
+  const [formFrom, setFormFrom] = useState<unknown>(undefined);
+  if (data && data.org.meta.version !== formFrom) { const ex = (data.org.extension ?? []) as { url: string; value: string }[];
+    setFormFrom(data.org.meta.version);
     setName(data.org.name); setAbout(data.org.description ?? ""); setCauses((data.org.cause ?? []).map((x: any) => x.code)); setInvitePolicy(data.org.invitePolicy ?? "core-team"); setMemoryOn(((data.org.assist ?? []) as any[]).some((a) => a.code === "memory"));
-    setPlaceV({ text: ex.find((x) => x.url === "bayanihan:place-text")?.value ?? "", code: ex.find((x) => x.url === "bayanihan:psgc")?.value }); } }, [data?.org.meta.version]);
+    setPlaceV({ text: ex.find((x) => x.url === "bayanihan:place-text")?.value ?? "", code: ex.find((x) => x.url === "bayanihan:psgc")?.value }); }
   if (!data) return <Screen back><Skeleton /></Screen>;
   const { org, roles, requests, projects, contacts } = data;
   const place = (org.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value as string | undefined;
   const officer = s.groups.some((g) => g.org.id === id && g.role.code?.code === "officer");
   const save = async (fields: Record<string, unknown>) => { try { await bix.commit(bix.next(org, fields)); setMsg("Saved."); setEditing(false); reload(); s.refresh(); } catch (e) { setMsg(String(e instanceof Error ? e.message : e)); } };
   return (
-    <Screen back here={{ kind: "group", org, projects, officer }}>
+    <Screen back here={{ kind: "group", org, projects, officer, requests: data.requests.length }}>
       <View style={{ alignItems: "center" }}>
         <Pressable disabled={!officer} accessibilityLabel="Change your group's logo" onPress={async () => { const a = await pickPhoto(false).catch(() => null); if (a) save({ image: a }); }}>
           {logoUri ? <Image source={{ uri: logoUri }} style={{ width: 84, height: 84, borderRadius: 26 }} /> : <Logo name={org.name} size={84} />}
@@ -88,8 +93,8 @@ export default function Org() {
         <Eyebrow>About</Eyebrow>
         <Panel>
           <View style={{ paddingVertical: 10 }}>{org.description ? <Body>{org.description}</Body>
-            : officer ? <Text style={[t.meta, { color: c.accent, fontWeight: "600" }]} onPress={() => setEditing(true)}>＋ Say what your group does, so volunteers know who they're helping</Text>
-            : <Meta>The group hasn't written about itself yet.</Meta>}</View>
+            : officer ? <Text accessibilityRole="button" style={[t.meta, { color: c.accent, fontWeight: "600" }]} onPress={() => setEditing(true)}>＋ Say what your group does, so volunteers know who they&apos;re helping</Text>
+            : <Meta>The group hasn&apos;t written about itself yet.</Meta>}</View>
           {(org.cause ?? []).length ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, paddingBottom: 10 }}>{(org.cause ?? []).map((x: any) => <Pill key={x.code}>{CAUSES.find((y) => y.code === x.code)?.label ?? x.code}</Pill>)}</View> : null}
           {place ? <Row left={<IconCircle name="pin" />} title={place} meta="Where it works" last={!contacts.length} /> : null}
           {contacts.length ? <Row left={<View style={{ width: 54 }}><Faces names={contacts.map((x) => x.name)} photos={contacts.map((x) => x.photo)} /></View>} title={contacts.map((x) => x.name).join(", ")} meta={contacts.length === 1 ? "Officer · ask them about the group" : "Officers · ask them about the group"} last /> : null}
@@ -98,7 +103,7 @@ export default function Org() {
       </>}
       {/* Where the group's records are kept, in plain words (review 2026-11-15: "Bayanihan Network · up to date" read as
           technical). The status words show only when something is wrong (offline, or waiting to send). */}
-      <Eyebrow>Where it's kept</Eyebrow>
+      <Eyebrow>Where it&apos;s kept</Eyebrow>
       <Panel><Row left={<IconCircle name={where.icon} />} last={!(officer && networkOpen && s.connection?.kind !== "ecosystem")}
         title={where.warn || where.icon === "wifioff" ? where.text : s.connection?.kind === "ecosystem" ? "Kept safe online, and backed up" : s.connection?.kind === "hub" ? "Kept on your group's hub phone" : "Kept on this phone"}
         meta={s.connection?.kind === "ecosystem" ? "Works without signal too; it catches up when you're back" : networkOpen ? "Copy it online to work from any phone" : "Nothing needs the internet"} onPress={() => router.push("/network" as never)} />

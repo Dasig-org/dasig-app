@@ -26,7 +26,7 @@ export function SyncBar() {
         {n ? `${n} change${n === 1 ? "" : "s"} waiting to sync.` : ""}
         {refused.length ? ` ${refused.length} couldn't be saved: ${refused[0]!.current?.owner ? "someone got there first" : friendly(refused[0]!.reasons[0] ?? "")}.` : ""}
       </Text>
-      {refused.length ? <Text onPress={clearRefused} style={{ fontSize: 13, fontWeight: "600", color: c.ink, textDecorationLine: "underline" }}>OK</Text> : null}
+      {refused.length ? <Text accessibilityRole="button" onPress={clearRefused} style={{ fontSize: 13, fontWeight: "600", color: c.ink, textDecorationLine: "underline", paddingVertical: 8, paddingHorizontal: 6 }}>OK</Text> : null}
     </View>
   );
 }

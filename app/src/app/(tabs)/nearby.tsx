@@ -1,18 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { router } from "expo-router";
 import { Image, ScrollView, Share, Text, View } from "react-native";
-import { appUrl } from "@/lib/env";
+import { appUrl, networkUrl } from "@/lib/env";
 import { visibilityOf } from "@/ui/Privacy";
-import { radius } from "@/ui/theme";
+import { radius, c, type as t } from "@/ui/theme";
 import * as Network from "expo-network";
 import { bix, type R } from "@/lib/bix";
-import { networkUrl } from "@/lib/env";
 import { CAUSES } from "@/lib/org";
 import { useSession } from "@/lib/session";
 import { Logo } from "@/ui/Context";
-import { Body, Buttons, Chips, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Primary, Row, Sand, Screen, Sheet, Skeleton, Title } from "@/ui/kit";
-import { c, type as t } from "@/ui/theme";
+import { Body, Buttons, Chips, Eyebrow, Field, IconCircle, LinkText, Meta, Outline, Panel, Primary, Row, Sand, Screen, Sheet, Skeleton, Title } from "@/ui/kit";
 import { useSnackbar } from "@/ui/Snackbar";
+import { reportProblem } from "@/ui/About";
 
 type Found = { groups: R[]; projects: (R & { groupName?: string })[] };
 const placeOf = (r?: R | null) => (r?.extension ?? []).find((x: any) => x.url === "bayanihan:place-text")?.value as string | undefined;
@@ -32,18 +31,19 @@ export default function Nearby() {
   const [open, setOpen] = useState<{ group?: R; project?: R & { groupName?: string } } | null>(null);
   const { show } = useSnackbar();
   const setMsg = (m: string | null) => { if (m) show(m); };
-  const search = async () => {
-    setStatus("checking");
-    const net = await Network.getNetworkStateAsync().catch(() => null);
+  const look = (by: string) => Network.getNetworkStateAsync().catch(() => null).then(async (net) => {
     if (net && net.isInternetReachable === false) return setStatus("offline");
     try {
-      const p = new URLSearchParams({ ...(cause !== "all" ? { cause } : {}), ...(q.trim() ? { q: q.trim() } : {}), ...(place.trim() ? { place: place.trim() } : {}) });
+      const p = new URLSearchParams({ ...(by !== "all" ? { cause: by } : {}), ...(q.trim() ? { q: q.trim() } : {}), ...(place.trim() ? { place: place.trim() } : {}) });
       const r = await fetch(`${networkUrl}/$directory?${p}`);
       if (!r.ok) return setStatus("down");
       setFound(await r.json()); setStatus("ok");
     } catch { setStatus("down"); }
-  };
-  useEffect(() => { search(); }, [cause]);
+  });
+  const search = () => { setStatus("checking"); return look(cause); };
+  // On opening, and when a cause is picked (the chip sets "checking"); the words typed are searched on Enter.
+  const lookFor = useEffectEvent((by: string) => { void look(by); });
+  useEffect(() => { lookFor(cause); }, [cause]);
   const onEcosystem = s.connection?.kind === "ecosystem";
   const groupOf = (p?: R) => found?.groups.find((g) => `Organization/${g.id}` === p?.organization?.reference);
   const ask = async (org: R) => {
@@ -55,18 +55,19 @@ export default function Nearby() {
   const total = (found?.groups.length ?? 0) + (found?.projects.length ?? 0);
   // The directory is empty, not just this search: show a starter instead of filters that match nothing (design §8).
   const [emptyDirectory, setEmptyDirectory] = useState(false);
-  useEffect(() => { if (status === "ok" && found && !q.trim() && !place.trim() && cause === "all") setEmptyDirectory(!total); }, [status, found]);
+  const [judged, setJudged] = useState<Found | null>(null);
+  if (found !== judged) { setJudged(found); if (status === "ok" && found && !q.trim() && !place.trim() && cause === "all") setEmptyDirectory(!total); }
   const mine = s.groups.find((g) => g.role.code?.code === "officer");
   const mineHidden = mine && visibilityOf(mine.org) !== "public";
   const minePlace = mine ? placeOf(mine.org) : undefined;
   return (
     <Screen onRefresh={search}>
-      <Title sub={emptyDirectory ? "Groups and projects on Dasig, as their organizers make them public." : "Groups and projects that chose to be found."}>Who's working here</Title>
+      <Title sub={emptyDirectory ? "Groups and projects on Dasig, as their organizers make them public." : "Groups and projects that chose to be found."}>Who&apos;s working here</Title>
       {emptyDirectory ? null : <>
       <Field icon="search" value={q} onChangeText={setQ} placeholder="Search a group or project" returnKeyType="search" onSubmitEditing={search} />
       <Field icon="pin" value={place} onChangeText={setPlace} placeholder="Where, e.g. Lahug or Cebu City" returnKeyType="search" onSubmitEditing={search} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18 }} contentContainerStyle={{ paddingHorizontal: 18 }}>
-        <Chips options={[{ value: "all", label: "All" }, ...CAUSES.slice(0, 9).map((x) => ({ value: x.code, label: x.label }))]} value={cause} onChange={setCause} />
+        <Chips options={[{ value: "all", label: "All" }, ...CAUSES.slice(0, 9).map((x) => ({ value: x.code, label: x.label }))]} value={cause} onChange={(v) => { setCause(v); setStatus("checking"); }} />
       </ScrollView></>}
       {status === "checking" && !found ? <Skeleton /> : null}
       {status === "offline" || status === "down" ? <View style={{ marginTop: 12 }}><Sand><IconCircle name="wifioff" tone="white" />
@@ -122,6 +123,7 @@ export default function Nearby() {
           <Meta>{["\n" + (placeOf(open.group) ?? ""), causeWords(open.project ?? open.group)].filter((x) => x && x.trim()).join(" · ")}</Meta>
           {open.group ? <Buttons><Primary label={onEcosystem ? `Ask to join ${open.group.name}` : "Connect to the Bayanihan Network to ask"} onPress={() => ask(open.group!)} /></Buttons> : null}
           {!onEcosystem ? <Meta>{"Asking to join needs a Bayanihan Network account on this phone. No password; it uses this phone's own key."}</Meta> : null}
+          <View style={{ alignItems: "center", marginTop: 10 }}><LinkText onPress={() => reportProblem("a listing", `${open.project ? "Project" : "Group"}: ${open.project?.title ?? open.group?.name} (${open.project ? "Initiative" : "Organization"}/${(open.project ?? open.group)?.id})`)}>Report this listing</LinkText></View>
         </> : null}
       </Sheet>
       {status === "offline" || status === "down" ? <Buttons><Outline flex label="Where your records live" onPress={() => router.push("/network" as never)} /></Buttons> : null}

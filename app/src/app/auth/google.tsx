@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useEffectEvent } from "react";
 import { router } from "expo-router";
 import { Text, View } from "react-native";
 import { networkUrl } from "@/lib/env";
@@ -11,7 +11,8 @@ import { type as t } from "@/ui/theme";
 export default function GoogleReturn() {
   const s = useSession();
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => {
+  // Once, as the screen opens.
+  const finish = useEffectEvent(() => {
     if (typeof window === "undefined") return;
     (async () => {
       const g = await finishGoogleWeb(window.location.hash);
@@ -19,7 +20,8 @@ export default function GoogleReturn() {
       const r = await s.networkSignIn("/$google", { idToken: g.idToken }, { via: "google" });
       router.replace((r.created ? `/profile?first=1&via=google&then=${encodeURIComponent(g.then)}` : g.then) as never);
     })().catch((e) => setErr(e instanceof Error ? e.message : String(e)));
-  }, []);
+  });
+  useEffect(() => { finish(); }, []);
   return <Screen where={false}>
     <View style={{ marginTop: 40 }}><Text style={[t.title, { textAlign: "center" }]}>{err ? "Sign-in didn't finish" : "Signing you in…"}</Text></View>
     {err ? <><Notice>{err}</Notice><Buttons><Primary label="Back to the start" onPress={() => router.replace("/start" as never)} /></Buttons></> : <Skeleton rows={2} />}

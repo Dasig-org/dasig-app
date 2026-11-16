@@ -4,7 +4,7 @@ import { Text, View } from "react-native";
 import { answerInvitation, myInvitations, type Invitation } from "@/lib/invites";
 import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
-import { Buttons, IconCircle, LinkText, Meta, Notice, Outline, Panel, Primary, Row, Screen, Skeleton, Title } from "@/ui/kit";
+import { Buttons, IconCircle, LinkText, Meta, Outline, Panel, Primary, Row, Screen, Skeleton, Title } from "@/ui/kit";
 import { type as t } from "@/ui/theme";
 import { useSnackbar } from "@/ui/Snackbar";
 

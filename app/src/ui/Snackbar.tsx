@@ -3,6 +3,7 @@ import { Platform, Pressable, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown, FadeOut, LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { onQueued } from "@/lib/bix";
 import { c, motion } from "./theme";
 
 type Item = { id: number; text: string; undo?: () => void; error?: boolean };
@@ -23,6 +24,8 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
     timer.current = setTimeout(() => setItem(null), o?.ms ?? (o?.undo ? 5000 : 3000));
   }, []);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  // A change kept to send later (lib/bix.ts): said a moment after the screen's own message, so both are seen.
+  useEffect(() => onQueued(() => { setTimeout(() => show("Saved on this phone. We'll send it when you're back online.", { ms: 4000 }), 1500); }), [show]);
   const api = useMemo(() => ({ show }), [show]);
   return <Ctx.Provider value={api}>
     {children}

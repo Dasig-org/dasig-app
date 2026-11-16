@@ -1,8 +1,8 @@
 import { AddPeople } from "@/ui/AddPeople";
-import { AnswerRow } from "@/ui/Answer";
-import { suggester } from "@/lib/work";
-import { ErrorState } from "@/ui/ErrorState";
 import { AddSheet } from "@/ui/AddSheet";
+import { AnswerRow } from "@/ui/Answer";
+import { suggester, act, shortRef, stateLabel, teamIcon, places } from "@/lib/work";
+import { ErrorState } from "@/ui/ErrorState";
 import { short } from "@/lib/dates";
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
@@ -13,10 +13,13 @@ import { getConnection } from "@/lib/connection";
 import { bix, type R } from "@/lib/bix";
 import { appUrl } from "@/lib/env";
 import { useSession } from "@/lib/session";
-import { useLoad } from "@/lib/use";
-import { act, shortRef, stateLabel, teamIcon, places } from "@/lib/work";
+import { useLoad, useNow } from "@/lib/use";
+import { pickDocument, pickPhoto } from "@/lib/files";
+import { Files } from "@/ui/Files";
+import { Updates } from "@/ui/Updates";
+import { ago } from "@/ui/Where";
 import { FaceGrid } from "@/ui/m3";
-import { Avatar, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Notice, Outline, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, Sheet, Skeleton } from "@/ui/kit";
+import { Avatar, Buttons, Check, Eyebrow, Faces, Field, IconCircle, LinkText, Meta, Outline, Panel, Pill, Primary, RoundButton, Row, Sand, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { InviteOptions, linkOpts, type InviteOpts } from "@/ui/Privacy";
 import { c, type as t } from "@/ui/theme";
 import { useSnackbar } from "@/ui/Snackbar";
@@ -40,6 +43,10 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
   const [qr, setQr] = useState<string | null>(null);
   const [choosing, setChoosing] = useState<null | R[]>(null);
   const [optsOpen, setOptsOpen] = useState(false);
+  const [askFor, setAskFor] = useState<R | null>(null);
+  const [addingFile, setAddingFile] = useState(false);
+  const [showDone, setShowDone] = useState(false);
+  const now = useNow();
   const { data, error, reload } = useLoad(async () => {
     const team = await bix.get("Team", id);
     const tasks = await bix.search("Task", { team: `Team/${id}` });
@@ -92,7 +99,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
     if (!title.trim()) return;
     const task = bix.create("Task", { intent: lead ? "plan" : "proposal", status: lead ? "ready" : "draft", title: title.trim(), owner: { reference: `Team/${id}` }, team: { reference: `Team/${id}` }, partOf: team.initiative, audience: "team",
       ...(lead ? {} : { note: [{ author: { reference: me }, time: new Date().toISOString(), text: "Suggested" }] }) });
-    try { await bix.commit(task); setTitle(""); setMsg(lead ? "Added. Open it to say what it's about, so whoever takes it knows." : "Suggested. Your lead will see it."); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
+    try { await bix.commit(task); setTitle(""); setMsg(lead ? "Added under Needs someone. Tap Assign to ask someone." : "Suggested. Your lead will see it."); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
     reload();
   };
   const makeInvite = async (o?: InviteOpts) => {
@@ -111,6 +118,29 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
     } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); }
   };
   const setTeamField = async (f: Record<string, unknown>) => { try { await bix.commit(bix.next(team, f)); reload(); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };
+  /*
+   * The team's work at a glance (Don, 2026-11-16: "track completion status and activity within the team"): what needs
+   * someone, what's under way, what's done; then what happened lately, from the steps' own records.
+   */
+  const on = (x: R) => ((x.participant ?? []) as any[]).filter((p) => p.status === "active");
+  const isLate = (x: R) => x.status !== "completed" && !!x.due && Date.parse(x.due) < now;
+  const byDue = (a: R, b: R) => String(a.due ?? "9999").localeCompare(String(b.due ?? "9999"));
+  const done = work.filter((x) => x.status === "completed");
+  const needs = work.filter((x) => x.status === "ready" && (on(x).length === 0 || places(x).left > 0)).sort(byDue);
+  const going = work.filter((x) => x.status !== "completed" && !needs.includes(x)).sort(byDue);
+  const late = work.filter(isLate).length;
+  const share = work.length ? Math.round((done.length / work.length) * 100) : 0;
+  const activity = [
+    ...work.map((x) => ({ at: String((x.meta as any)?.lastUpdated ?? ""), id: x.id, who: on(x).map((p) => name(p.person.reference)).join(", "),
+      text: x.status === "completed" ? `Finished “${x.title}”` : x.status === "accepted" || x.status === "in-progress" ? `Took “${x.title}”` : x.status === "requested" ? `Asked about “${x.title}”` : `Added “${x.title}”` })),
+    ...work.flatMap((x) => ((x.note ?? []) as any[]).filter((n) => n.text && n.time).map((n) => ({ at: String(n.time), id: x.id, who: name(n.author?.reference ?? ""), text: `“${n.text}” on ${x.title}` }))),
+  ].filter((a) => a.at).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 6);
+  const canPost = onTeam || lead;
+  const addFile = async (pick: () => Promise<any>) => { setAddingFile(false); const a = await pick().catch((e: any) => { setMsg(String(e?.message ?? e)); return null; }); if (a) setTeamField({ attachment: [...(team.attachment ?? []), a] }); };
+  const workRow = (x: R, i: number, list: R[], assign?: boolean) => <Row key={x.id} last={i === list.length - 1} left={<IconCircle name={x.status === "completed" ? "check" : isLate(x) ? "clock" : "pen"} tone={x.status === "completed" ? "grey" : "sand"} />} title={x.title}
+    meta={[lead ? shortRef(x) : null, x.due ? (isLate(x) ? `late · was due ${short(x.due)}` : `due ${short(x.due)}`) : "no date", on(x).map((p) => name(p.person.reference)).join(", ") || null].filter(Boolean).join(" · ")}
+    right={assign && lead && orgId ? <Outline label="Assign" onPress={() => setAskFor(x)} />
+      : <Pill tone={places(x).shift && x.status === "ready" ? "neutral" : stateLabel(x, me).tone}>{places(x).shift && x.status === "ready" ? `${places(x).left} of ${places(x).n} left` : stateLabel(x, me).label}</Pill>} onPress={() => router.push(`/task/${x.id}`)} />;
   const setup = work.length === 0 && parts.length <= 1;
   const everyone = parts.map((p: any) => name(p.person.reference));
   const count = (n: number, one: string, many: string) => (n ? `${n} ${n === 1 ? one : many}` : null);
@@ -151,9 +181,9 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
   return (
     <Screen onRefresh={reload} back right={<View style={{ flexDirection: "row", gap: 8 }}><RoundButton icon="userplus" label="Add people" onPress={() => (orgId ? setAddPeople(true) : makeInvite())} />
       {lead ? <RoundButton icon="plus" label="Add" onPress={() => setAddOpen(true)} /> : null}</View>}
-      dock={view === "work" ? <Field value={title} onChangeText={setTitle} placeholder={lead ? "Add something to do" : "Suggest something to do"} onSubmitEditing={add} submitBehavior="submit" returnKeyType="done" /> : undefined}>
+      dock={view === "work" ? <Field value={title} onChangeText={setTitle} placeholder={lead ? "Add a task for this team" : "Suggest a task"} onSubmitEditing={add} submitBehavior="submit" returnKeyType="done" /> : undefined}>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={teamIcon(team.name)} size={56} tone="white" />
-        <View style={{ flex: 1 }}><Meta>{view === "people" ? "People" : leadsIt ? "You lead it" : s.isLead ? "Your group's team" : "Team"}</Meta><Text style={[t.title, { fontSize: 24 }]}>{team.name}</Text></View></View>
+        <View style={{ flex: 1 }}><Meta>{view === "people" ? "People" : leadsIt ? "You lead it" : s.isLead ? "Your group's team" : "Team"}</Meta><Text style={[t.title, { fontSize: 24 }]}>{team.name}</Text>{team.description ? <Meta>{team.description}</Meta> : null}</View></View>
       {/* Join this team (teamwork sketches B4, B5): core members join at once; others in the group ask the lead. */}
       {!onTeam && !askedToJoin && myGroup ? <View style={{ marginTop: 14 }}>
         <Buttons><Primary label={coreHere ? "Join this team" : "Ask to join"} onPress={() => setMe({ person: { reference: me }, role: coreHere ? "member" : "volunteer", status: coreHere ? "active" : "requested" },
@@ -168,15 +198,40 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
         meta={`An idea · suggested by ${name(by[x.id] ?? x.note?.[0]?.author?.reference ?? "")}`} yesLabel="Accept" onYes={async () => { try { await bix.commit(act.accept(x)); } catch {} reload(); }} />)}</Panel></View> : null}
       {view === "people" || setup ? roster : summary}
       {view === "work" ? <>
-      <Eyebrow right={`${work.filter((x) => x.status === "completed").length} of ${work.length} done`}>Our work</Eyebrow>
-      <Panel>
-        {work.map((x, i) => <Row key={x.id} last={i === work.length - 1} left={<IconCircle name={x.status === "completed" ? "check" : "pen"} tone={x.status === "completed" ? "grey" : "sand"} />} title={x.title}
-          meta={[lead ? shortRef(x) : null, x.due ? `due ${short(x.due)}` : null, ((x.participant ?? []) as any[]).filter((p) => p.status === "active").map((p) => name(p.person.reference)).join(", ") || null].filter(Boolean).join(" · ")}
-          right={<Pill tone={places(x).shift && x.status === "ready" ? "neutral" : stateLabel(x, me).tone}>{places(x).shift && x.status === "ready" ? `${places(x).left} of ${places(x).n} left` : stateLabel(x, me).label}</Pill>} onPress={() => router.push(`/task/${x.id}`)} />)}
-        {work.length ? null : <Row title="Nothing yet" meta={lead ? "Add the first thing to do below" : "Suggest something below"} last />}
-      </Panel>
+      {/* Where the team stands: one bar, and the three numbers a lead asks about. */}
+      {work.length ? <View style={{ marginTop: 12, backgroundColor: c.white, borderRadius: 24, padding: 16 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}><Text style={[t.title, { fontSize: 22 }]}>{`${done.length} of ${work.length} done`}</Text><Text style={t.meta}>{`${share}%`}</Text></View>
+        <View style={{ height: 8, borderRadius: 4, backgroundColor: c.s200, overflow: "hidden", marginTop: 10 }} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: share }}><View style={{ height: 8, width: `${share}%`, borderRadius: 4, backgroundColor: c.accent }} /></View>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+          <Pill tone={needs.length ? "state" : "neutral"}>{`${needs.length} need${needs.length === 1 ? "s" : ""} someone`}</Pill><Pill>{`${going.length} under way`}</Pill>{late ? <Pill tone="state">{`${late} late`}</Pill> : null}</View>
+      </View> : null}
+      {needs.length ? <><Eyebrow right={`${needs.length}`}>Needs someone</Eyebrow><Panel>{needs.map((x, i, l) => workRow(x, i, l, true))}</Panel>
+        {lead ? <Meta>{"\nAssign asks someone by name; they get it in their Inbox. Or leave it open for the team to take."}</Meta> : null}</> : null}
+      {going.length ? <><Eyebrow right={`${going.length}`}>Under way</Eyebrow><Panel>{going.map((x, i, l) => workRow(x, i, l))}</Panel></> : null}
+      {done.length ? <><Eyebrow right={showDone ? "Hide" : `Show ${done.length}`} onRightPress={() => setShowDone(!showDone)}>Done</Eyebrow>
+        {showDone ? <Panel>{done.map((x, i, l) => workRow(x, i, l))}</Panel> : null}</> : null}
+      {work.length ? null : <><Eyebrow>Our work</Eyebrow><Panel><Row title="Nothing yet" meta={lead ? "Add the first task below, then assign it" : "Suggest something below"} last /></Panel></>}
+
+      {/* Photos, files and updates for the team (BIX Team.attachment[], Team.note[]), for the people on it. */}
+      {(team.attachment ?? []).length || canPost ? <><Eyebrow right={(team.attachment ?? []).length ? `${(team.attachment ?? []).length}` : undefined}>Photos and files</Eyebrow>
+        <Files hint="Add a photo, a list or a document for the team" items={team.attachment ?? []} onAdd={canPost ? () => setAddingFile(true) : undefined} onRemove={lead ? (a) => setTeamField({ attachment: (team.attachment ?? []).filter((x: any) => x.hash !== a.hash) }) : undefined} /></> : null}
+      {(team.note ?? []).length || canPost ? <><Eyebrow right={(team.note ?? []).length ? `${(team.note ?? []).length}` : undefined}>Updates</Eyebrow>
+        <Updates notes={team.note ?? []} hint="Tell the team how it's going" onPost={canPost ? (text) => setTeamField({ note: [...(team.note ?? []), { author: { reference: me }, time: new Date().toISOString(), text }] }) : undefined} /></> : null}
+      {activity.length ? <><Eyebrow>Lately</Eyebrow><Panel>{activity.map((a, i) => <Row key={`${a.id}${a.at}${i}`} left={<IconCircle name="pending" tone="grey" />} title={a.text} meta={[a.who || null, ago(Date.parse(a.at), now)].filter(Boolean).join(" · ")} onPress={() => router.push(`/task/${a.id}`)} last={i === activity.length - 1} />)}</Panel></> : null}
       </> : null}
       {onTeam && !leadsIt && view === "work" ? <View style={{ alignItems: "center", marginTop: 16 }}><LinkText onPress={() => setMe({ ...mine, status: "ended" }, `You left ${team.name}.`)}>Leave this team</LinkText></View> : null}
+      {/* The "+" at the top: what a lead can add to this team (ui/AddSheet). */}
+      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} ctx={{ kind: "team", team, lead }} />
+      {/* Assign a step from the list: the same "ask someone" as on the step's own page. */}
+      {orgId && askFor ? <AddPeople open onClose={() => { setAskFor(null); reload(); }} orgId={orgId} target={{ kind: "task", task: askFor, teamName: team.name }} onSomeoneNew={() => makeInvite()} /> : null}
+      <Sheet open={addingFile} onClose={() => setAddingFile(false)}>
+        <Text style={[t.row, { fontSize: 18, marginBottom: 6 }]}>Add a photo or file</Text>
+        <Panel style={{ backgroundColor: c.wash }}>
+          <Row left={<IconCircle name="camera" tone="white" />} title="Photo" meta="Kept by your group" onPress={() => addFile(() => pickPhoto(false, orgId))} />
+          <Row left={<IconCircle name="smile" tone="white" />} title="Photo that shows children" meta="Never leaves the group" onPress={() => addFile(() => pickPhoto(true, orgId))} />
+          <Row left={<IconCircle name="receipt" tone="white" />} title="Document" meta="PDF, Word, Excel, text" onPress={() => addFile(() => pickDocument(orgId))} last />
+        </Panel>
+      </Sheet>
       {orgId ? <AddPeople open={addPeople} onClose={() => { setAddPeople(false); reload(); }} orgId={orgId} target={{ kind: "team", team }} onSomeoneNew={() => makeInvite()} /> : null}
       <Sheet open={!!choosing} onClose={() => setChoosing(null)}>
         <Text style={[t.row, { fontSize: 18 }]}>{`Who leads ${team.name}?`}</Text>

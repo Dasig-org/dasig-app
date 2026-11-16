@@ -7,9 +7,12 @@ export type Attachment = { contentType: string; url: string; hash: string; size:
 
 /** Files travel as base64 JSON: React Native can't reliably send or read binary bodies (no Blob from bytes, no readAsArrayBuffer). */
 /** The group a new file counts against on servers with a storage allowance (set by the session when the group changes). */
-let uploadGroup: string | null = null;
-export const setUploadGroup = (orgId: string | null) => { uploadGroup = orgId; };
-async function upload(base64: string, contentType: string, title: string, showsMinors: boolean): Promise<Attachment> {
+let currentGroup: string | null = null;
+export const setUploadGroup = (orgId: string | null) => { currentGroup = orgId; };
+async function upload(base64: string, contentType: string, title: string, showsMinors: boolean, orgId?: string | null): Promise<Attachment> {
+  // The group the file is for: the one that owns the step or project it's added to (so it counts against that group's
+  // storage, whatever group the person happens to be working in); otherwise the group they're working in.
+  const uploadGroup = orgId ?? currentGroup;
   const org = uploadGroup ? `&org=${encodeURIComponent(`Organization/${uploadGroup}`)}` : "";
   const res = await send("POST", `/$files?b64=1&title=${encodeURIComponent(title)}&showsMinors=${showsMinors}${org}`, JSON.stringify({ contentType, data: base64 }));
   const json = await res.json();
@@ -28,7 +31,7 @@ async function readBase64(uri: string): Promise<string> {
 }
 
 /** Choose a photo. Kept by the group's own server (or this phone). */
-export async function pickPhoto(showsMinors = false): Promise<Attachment | null> {
+export async function pickPhoto(showsMinors = false, orgId?: string | null): Promise<Attachment | null> {
   if (Platform.OS !== "web") {
     const p = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!p.granted) throw new Error("Dasig needs permission to see your photos. You can allow it in Settings.");
@@ -41,13 +44,13 @@ export async function pickPhoto(showsMinors = false): Promise<Attachment | null>
   const { manipulateAsync, SaveFormat } = await import("expo-image-manipulator");
   const long = Math.max(a.width ?? 0, a.height ?? 0);
   const out = await manipulateAsync(a.uri, long > 1600 ? [{ resize: (a.width ?? 0) >= (a.height ?? 0) ? { width: 1600 } : { height: 1600 } }] : [], { compress: 0.7, format: SaveFormat.JPEG, base64: true });
-  return upload(out.base64 ?? (await readBase64(out.uri)), "image/jpeg", a.fileName ?? "Photo", showsMinors);
+  return upload(out.base64 ?? (await readBase64(out.uri)), "image/jpeg", a.fileName ?? "Photo", showsMinors, orgId);
 }
-export async function pickDocument(): Promise<Attachment | null> {
+export async function pickDocument(orgId?: string | null): Promise<Attachment | null> {
   const r = await DocumentPicker.getDocumentAsync({ type: ["application/pdf", "image/*", "text/*", "application/vnd.openxmlformats-officedocument.*"], copyToCacheDirectory: true });
   if (r.canceled || !r.assets[0]) return null;
   const a = r.assets[0];
-  return upload(await readBase64(a.uri), a.mimeType ?? "application/pdf", a.name, false);
+  return upload(await readBase64(a.uri), a.mimeType ?? "application/pdf", a.name, false, orgId);
 }
 const cache = new Map<string, string>();
 /** Keep a file's data URI for previews (after an upload, the app already has it). */

@@ -21,7 +21,7 @@ export function InstallGuide() {
   useEffect(() => {
     if (Platform.OS !== "web" || installed()) return;
     AsyncStorage.getItem(KEY).then((v) => setShow(iab || !v || Date.now() - Number(v) > 7 * 86400000)).catch(() => setShow(true));
-  }, []);
+  }, [iab]);
   if (!show) return null;
   const dismiss = () => { AsyncStorage.setItem(KEY, String(Date.now())); setShow(false); };
   return <>

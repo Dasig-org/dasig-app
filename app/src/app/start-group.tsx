@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useEffectEvent } from "react";
 import { PlaceField, placeExtensions, type PlaceValue } from "@/ui/PlaceField";
 import { router } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
@@ -36,8 +36,8 @@ export default function StartGroup() {
   const [vis, setVis] = useState<Visibility>("public");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => { if (logo) fileUri(logo).then(setLogoUri).catch(() => {}); }, [logo?.hash]);
-  useEffect(() => { setStructure(kind === "civic-club" ? "club" : kind === "registered-npo" ? "nonprofit" : kind === "informal" ? "own" : "community"); }, [kind]);
+  const showLogo = useEffectEvent(() => { if (logo) fileUri(logo).then(setLogoUri).catch(() => {}); });
+  useEffect(() => { showLogo(); }, [logo?.hash]);
 
   const [checking, setChecking] = useState(false);
   const [alikes, setAlikes] = useState<{ resource: any; where: string; onEcosystem: boolean }[] | null>(null);
@@ -99,7 +99,7 @@ export default function StartGroup() {
       <VisibilityChoice value={vis} onChange={setVis} />
       {err ? <Notice>{err}</Notice> : null}
       <Buttons><Primary label="Create the group" onPress={create} busy={busy} /></Buttons>
-      <Text style={[t.meta, { marginTop: 12, textAlign: "center" }]} onPress={() => setStep(2)}>Back</Text>
+      <Text accessibilityRole="button" style={[t.meta, { marginTop: 12, textAlign: "center" }]} onPress={() => setStep(2)}>Back</Text>
     </Screen>
   );
   // The "is this your group?" sheet opens from step 2, so it is rendered there.
@@ -126,7 +126,7 @@ export default function StartGroup() {
       </View>
       {err ? <Notice>{err}</Notice> : null}
       <Buttons><Primary label="Next: how it's run" busy={checking} onPress={next} /></Buttons>
-      <Text style={[t.meta, { marginTop: 12, textAlign: "center" }]} onPress={() => setStep(1)}>Back</Text>
+      <Text accessibilityRole="button" style={[t.meta, { marginTop: 12, textAlign: "center" }]} onPress={() => setStep(1)}>Back</Text>
       {similarSheet}
     </Screen>
   );
@@ -142,7 +142,7 @@ export default function StartGroup() {
       <Text style={[t.meta, { textAlign: "center" }]}>Add a logo, or keep the initials</Text>
       <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Lahug Uplands Runners Club" />
       <Text style={{ fontSize: 12.5, fontWeight: "600", color: c.s500, marginTop: 14, marginLeft: 4 }}>What kind of group?</Text>
-      <Chips options={[...KINDS]} value={kind} onChange={setKind} />
+      <Chips options={[...KINDS]} value={kind} onChange={(k) => { setKind(k); setStructure(k === "civic-club" ? "club" : k === "registered-npo" ? "nonprofit" : k === "informal" ? "own" : "community"); }} />
       {err ? <Notice>{err}</Notice> : null}
       <Buttons><Primary label="Next" onPress={() => setStep(2)} disabled={!name.trim()} /></Buttons>
     </Screen>

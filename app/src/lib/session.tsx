@@ -1,12 +1,17 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-/** Supabase is only for the local-development "cloud" connection; loaded on first use, never in the web bundle. */
-const sb = async () => (await import("./supabase")).supabase;
 import { bix, type R } from "./bix";
 import { getConnection, setConnection, type Connection } from "./connection";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
+import { Offline, onReach } from "./reach";
+/** Supabase is only for the local-development "cloud" connection; loaded on first use, never in the web bundle. */
+const sb = async () => (await import("./supabase")).supabase;
 
 type Group = { org: R; role: R };
 type Session = {
   ready: boolean;
+  /** Signed in, but the phone can't reach its records and has no saved copy of who you are yet. */
+  unreachable: boolean;
   person: R | null;
   /** The person finished (or skipped) their profile. */
   profileDone: boolean;
@@ -43,6 +48,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [current, setCurrentState] = useState<R | null>(null);
   const [connection, setConn] = useState<Connection | null>(null);
+  const [unreachable, setUnreachable] = useState(false);
   /*
    * Which context the person last chose, remembered on this device (Don, 2026-11-15: the app always opened on the first
    * group, not the one last worked in). A group's id, or "me" for "Just me"; kept with the person's id, so someone else
@@ -55,12 +61,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(CONTEXT_KEY, JSON.stringify({ person: chosen.person, context: chosen.context })).catch(() => {});
   }, []);
 
-  const refresh = useCallback(async () => {
-    const c = await getConnection();
+  const refresh = useCallback(() => getConnection().then(async (c) => {
     setConn(c);
     const signedIn = c.kind === "cloud" ? !!(await (await sb()).auth.getSession()).data.session : !!c.token;
     if (!signedIn) { setPerson(null); setGroups([]); return; }
-    let me = await bix.me();
+    // Without signal: who you are and your groups as this phone last knew them, so the app opens signed in (reads come from lib/cache).
+    let me: R; let gs: Group[];
+    try {
+    me = await bix.me();
     // Make sure this phone's own key is on the person's record (once per phone; quietly retried next time if offline).
     try {
       const { withMyKey, keyRotation } = await import("./keys");
@@ -74,23 +82,32 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           const saved = await AS.getItem("dasig.ecosystem.person"); if (saved) await AS.setItem("dasig.ecosystem.person", JSON.stringify({ ...JSON.parse(saved), publicKey: rot.publicKey.filter((x: any) => x.status === "active") })); }
       }
     } catch {}
-    setPerson(me);
-    chosen.person = me.id;
+    const roles = (await bix.search("Role", { person: `Person/${me.id}` })).filter((r) => r.status === "active");
+    gs = [];
+    for (const role of roles) { try { gs.push({ role, org: await bix.get("Organization", role.organization.reference.split("/")[1]) }); } catch (e) { if (e instanceof Offline) throw e; } }
+    stale = false; setUnreachable(false);
+    AsyncStorage.setItem(SNAP, JSON.stringify({ me, gs })).catch(() => {});
+    } catch (e) {
+      if (!(e instanceof Offline)) throw e;
+      const snap = await AsyncStorage.getItem(SNAP).catch(() => null);
+      if (!snap) { stale = true; setUnreachable(true); return; }
+      ({ me, gs } = JSON.parse(snap) as { me: R; gs: Group[] }); stale = true; setUnreachable(false);
+    }
+    setPerson(me); chosen.person = me.id;
     if (chosen.context === undefined) {
       const saved = await AsyncStorage.getItem(CONTEXT_KEY).catch(() => null);
       const v = saved ? (JSON.parse(saved) as { person?: string; context?: string }) : null;
       chosen.context = v && v.person === me.id ? v.context ?? null : null;
     }
-    const roles = (await bix.search("Role", { person: `Person/${me.id}` })).filter((r) => r.status === "active");
-    const gs: Group[] = [];
-    for (const role of roles) { try { gs.push({ role, org: await bix.get("Organization", role.organization.reference.split("/")[1]) }); } catch {} }
     setGroups(gs);
     // The remembered choice, as a fresh record (not a stale copy); "Just me" stays "Just me".
     const want = chosen.context;
     setCurrentState(want === "me" ? null : gs.find((g) => g.org.id === want)?.org ?? gs[0]?.org ?? null);
-  }, []);
+  }), []);
 
   useEffect(() => { refresh().catch(() => {}).finally(() => setReady(true)); }, [refresh]);
+  // Back in reach after opening from the saved copy: load the real records once.
+  useEffect(() => onReach((r) => { if (stale && r.lastOk) { stale = false; refresh().catch(() => {}); } }), [refresh]);
   // Web: ask the browser to keep this app's storage (the device key and anything waiting to sync), so it isn't cleared.
   useEffect(() => { if (typeof navigator !== "undefined" && (navigator as any).storage?.persist) (navigator as any).storage.persist().catch(() => {}); }, []);
 
@@ -188,23 +205,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (c.kind === "cloud") await (await sb()).auth.signOut();
     else if (c.kind === "ecosystem" && Platform.OS === "web") await setConnection({ kind: "ecosystem", url: c.url, token: "" });
     else await setConnection(c.kind === "hub" || c.kind === "ecosystem" ? { kind: "phone", token: await AsyncStorageGet() } : { kind: "phone" });
-    chosen.context = undefined; chosen.person = undefined; await AsyncStorage.removeItem(CONTEXT_KEY).catch(() => {});
+    chosen.context = undefined; chosen.person = undefined; await AsyncStorage.removeItem(CONTEXT_KEY).catch(() => {}); await AsyncStorage.removeItem(SNAP).catch(() => {});
     setPerson(null); setGroups([]); setCurrentState(null); await refresh();
   };
 
   useEffect(() => { import("./files").then((m) => m.setUploadGroup(current?.id ?? null)).catch(() => {}); }, [current?.id]);
   const profileDone = !!(person?.extension ?? []).find((x: any) => x.url === "bayanihan:profile-done");
   const isLead = !!current && groups.some((g) => g.org.id === current.id && ["officer", "core-member"].includes(g.role.code?.code));
-  return <Ctx.Provider value={{ ready, person, profileDone, isLead, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, joinEcosystem, googleEcosystem, networkSignIn, refresh, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ ready, unreachable, person, profileDone, isLead, groups, current, connection, setCurrent, startWithNickname, pairWithHub, useThisPhone, joinEcosystem, googleEcosystem, networkSignIn, refresh, signOut }}>{children}</Ctx.Provider>;
 }
 
-/** The phone's own token, remembered when switching to a hub, so going back keeps your local records. */
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Platform } from "react-native";
 const CONTEXT_KEY = "dasig.context";
+/** Who you are and your groups, as last loaded, for opening the app without signal. */
+const SNAP = "dasig.session.v1";
+/** The session is showing the saved copy (or nothing), and should reload when the phone is back in reach. */
+let stale = false;
 /** The remembered context (one session provider per app): undefined until read from storage. */
 const chosen: { context: string | null | undefined; person: string | undefined } = { context: undefined, person: undefined };
 async function AsyncStorageGet(): Promise<string | undefined> { return (await AsyncStorage.getItem("dasig.phone.token")) ?? undefined; }
+/** The phone's own token, remembered when switching to a hub, so going back keeps your local records. */
 export async function rememberPhoneToken(t?: string) { if (t) await AsyncStorage.setItem("dasig.phone.token", t); }
 
 export const useSession = () => {

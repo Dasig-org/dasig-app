@@ -3,7 +3,7 @@ import { Text, View } from "react-native";
 import { bix, type R } from "@/lib/bix";
 import { useLoad } from "@/lib/use";
 import { teamIcon } from "@/lib/work";
-import { Faces, IconCircle, Meta, Panel, Row, Screen, Title , Skeleton} from "@/ui/kit";
+import { Faces, IconCircle, Panel, Row, Screen, Title, Skeleton } from "@/ui/kit";
 import { type as t } from "@/ui/theme";
 
 /** Credits, like a WordPress release's: everyone who did confirmed work, by team; leads and volunteers together; named as each chose. */
@@ -35,7 +35,7 @@ export default function Credits() {
       <Panel>{rows.map((x, i) => <Row key={x.tm.id} left={<IconCircle name={teamIcon(x.tm.name)} />} title={x.tm.name} meta={x.names.join(", ") || "Anonymous helpers"} right={<View style={{ width: 70, alignItems: "flex-end" }}><Faces names={x.names} /></View>} last={i === rows.length - 1} />)}
         {!rows.length ? <Row title="No finished work yet" meta="Credits fill in as work is done" last /> : null}</Panel>
       {anon ? <Text style={[t.meta, { marginTop: 10, marginHorizontal: 6 }]}>{`${anon} helper${anon === 1 ? "" : "s"} chose to stay anonymous. Thank you, too.`}</Text> : null}
-      <Text style={[t.meta, { marginTop: 10, marginHorizontal: 6 }]}>Counted from finished work. Names follow each person's choice.</Text>
+      <Text style={[t.meta, { marginTop: 10, marginHorizontal: 6 }]}>Counted from finished work. Names follow each person&apos;s choice.</Text>
     </Screen>
   );
 }

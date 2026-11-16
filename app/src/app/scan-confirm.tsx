@@ -1,14 +1,16 @@
-import { Redirect } from "expo-router";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { can } from "@/lib/capabilities";
 import { useState } from "react";
-import { router, useLocalSearchParams } from "expo-router";
 import { bix } from "@/lib/bix";
 import { useSession } from "@/lib/session";
 import { Body, Buttons, Field, Notice, Primary, Screen, Title } from "@/ui/kit";
 
 export default function ScanConfirm() {
   // Phones only: a browser can't be or reach a hub (lib/capabilities).
-  if (!can.hub) return <Redirect href={"/volunteer" as never} />;
+  return can.hub ? <ScanConfirmScreen /> : <Redirect href={"/volunteer" as never} />;
+}
+
+function ScanConfirmScreen() {
   const p = useLocalSearchParams<{ hub?: string; code?: string; link?: string }>();
   const s = useSession();
   const [nick, setNick] = useState("");

@@ -90,6 +90,59 @@ const declineRule = (project: R, t: R, question: string, change: { op: "add" | "
   await bix.commitAssisted([declineSuggestion({ id: newId(), target: { reference: `Task/${t.id}` }, basedOn: t.meta.version, organization: { reference: org }, question, change, reason }) as R], { type: "rule", rule: `memory:${question}` });
 };
 
+/** A team with work due within 14 days and no lead: someone has to run it. `of` names its project, across a group. */
+function leadless(teams: R[], tasks: R[], now: number, of?: (tm: R) => string | undefined): Move[] {
+  const out: Move[] = [];
+  for (const tm of teams) {
+    const hasLead = ((tm.participant ?? []) as { role?: string; status: string }[]).some((p) => p.role === "lead" && p.status === "active");
+    const due = live(tasks).filter((k) => k.team?.reference === `Team/${tm.id}` && k.status !== "completed" && k.due && left(k.due, now) <= 14);
+    const at = of?.(tm);
+    if (!hasLead && due.length) out.push({ id: `lead-${tm.id}`, tag: "people", group: "now", rank: 72, icon: "users", title: `${tm.name} has no lead`, why: `${due.length} step${due.length === 1 ? "" : "s"} due in the next 2 weeks${at ? ` · ${at}` : ""}. Ask someone to lead it`, go: `/team/${tm.id}` });
+  }
+  return out;
+}
+
+/*
+ * A group, for whoever runs it (Don, 2026-11-16: "more helpful for coordinators running an organization"). The same
+ * rules as a project, across every project on the go, so one look says what needs the coordinator today; then what
+ * waits on an officer: people asking to join, an event with no report sent, an event that's over and not wrapped up,
+ * what a project is still short of, a project with no steps. All from records the screen already loaded.
+ */
+function groupMoves(here: Extract<Here, { kind: "group" }>, now: number): Move[] {
+  const out: Move[] = [];
+  const on = here.projects.filter((p) => p.status === "active");
+  const titleOf = (ref?: string) => on.find((p) => `Initiative/${p.id}` === ref)?.title as string | undefined;
+  const teams = here.teams ?? [], tasks = here.tasks ?? [];
+  const teamOf = (k: R) => teams.find((x) => `Team/${x.id}` === k.team?.reference);
+  const mine = tasks.filter((k) => titleOf(k.partOf?.reference));
+  out.push(...stepMoves(mine, now, (k) => [titleOf(k.partOf?.reference), teamOf(k)?.name].filter(Boolean).join(" · ")));
+  out.push(...leadless(teams, mine, now, (tm) => titleOf(tm.initiative?.reference)));
+  for (const p of on) {
+    const start = p.period?.start ? left(p.period.start, now) : null;
+    const steps = live(mine).filter((k) => k.partOf?.reference === `Initiative/${p.id}`);
+    const open = steps.filter((k) => k.status !== "completed").length;
+    if (start !== null && start >= 0 && start <= 7) out.push({ id: `soon-${p.id}`, tag: "check", group: "now", rank: 70 - start, icon: "flag", title: `“${p.title}” starts ${start === 0 ? "today" : `in ${start} day${start === 1 ? "" : "s"}`}`,
+      why: here.tasks ? (open ? `${open} step${open === 1 ? "" : "s"} still open` : "Every step is done") : "Open it to see what's still undone", go: `/project/${p.id}` });
+    // Over for two days or more and still open: wrap it up, so its report, credits and memory are kept.
+    const end = p.period?.end ?? p.period?.start;
+    if (end && left(end, now) <= -2 && !(here.unreported ?? []).some((x) => x.id === p.id)) out.push({ id: `wrap-${p.id}`, tag: "check", group: "now", rank: 64, icon: "flag", title: `Wrap up “${p.title}”`, why: `It was on ${short(end)}. Thank everyone, send the report, and keep what worked for next time`, go: `/project/${p.id}/wrap` });
+    if (here.tasks && !steps.length) out.push({ id: `empty-${p.id}`, tag: "check", group: "plan", rank: 50, icon: "pen", title: `“${p.title}” has no steps yet`, why: "Add the work, so people can take it", go: `/project/${p.id}` });
+    else if (!end) out.push({ id: `undated-${p.id}`, tag: "check", group: "plan", rank: 38, icon: "clock", title: `Give “${p.title}” a date`, why: "With a date, Bayani can say what's due and what's late", go: `/project/${p.id}` });
+  }
+  if (here.officer && here.requests) out.push({ id: "joins", tag: "people", group: "now", rank: 78, icon: "users", title: `${here.requests} ${here.requests === 1 ? "person is" : "people are"} waiting to join`, why: "Accept or decline them, so they can start helping", go: `/org/${here.org.id}/people` });
+  for (const p of here.unreported ?? []) out.push({ id: `report-${p.id}`, tag: "check", group: "now", rank: 66, icon: "pen", title: `Send the report for “${p.title}”`, why: "Written from what your teams recorded. Check it and send", go: `/project/${p.id}/report` });
+  for (const n of here.needs ?? []) {
+    if (["met", "cancelled", "withdrawn"].includes(String(n.status))) continue;
+    const d = n.neededBy ? left(n.neededBy, now) : null;
+    if (n.priority !== "urgent" && (d === null || d > 7)) continue;
+    const want = n.quantity?.value ?? 0, got = n.received?.value ?? 0, at = titleOf(n.initiative?.reference);
+    out.push({ id: `need-${n.id}`, tag: "people", group: "now", rank: n.priority === "urgent" ? 76 : 68, icon: "users", title: `Still short of ${String(n.category?.display ?? "something").toLowerCase()}`,
+      why: [want ? `${got} of ${want} ${n.quantity?.unit ?? ""}`.trim() : null, d !== null ? (d < 0 ? `needed by ${short(n.neededBy)}, already past` : `needed by ${short(n.neededBy)}`) : "urgent", at].filter(Boolean).join(" · "), go: `/need/${n.id}` });
+  }
+  if (here.officer && !assistOn(here.org, "memory")) out.push({ id: "memory-off", tag: "needed", group: "plan", rank: 20, icon: "book", title: "Turn on project memory", why: "Then Bayani says what projects like yours usually need, and what's usually done by now", go: `/org/${here.org.id}` });
+  return out;
+}
+
 export function movesFor(here: Here | undefined, mem: Memory | null): Move[] {
   if (!here) return [];
   const now = Date.now();
@@ -100,12 +153,7 @@ export function movesFor(here: Here | undefined, mem: Memory | null): Move[] {
     const planning = !["completed", "cancelled"].includes(String(project.status));
     if (!planning) return [];
     moves.push(...stepMoves(here.tasks, now, team));
-    // A team with work due within 14 days and no lead: someone has to run it.
-    for (const tm of here.teams) {
-      const hasLead = ((tm.participant ?? []) as { role?: string; status: string }[]).some((p) => p.role === "lead" && p.status === "active");
-      const due = live(here.tasks).filter((k) => k.team?.reference === `Team/${tm.id}` && k.status !== "completed" && k.due && left(k.due, now) <= 14);
-      if (!hasLead && due.length) moves.push({ id: `lead-${tm.id}`, tag: "people", group: "now", rank: 72, icon: "users", title: `${tm.name} has no lead`, why: `${due.length} step${due.length === 1 ? "" : "s"} due in the next 2 weeks. Ask someone to lead it`, go: `/team/${tm.id}` });
-    }
+    moves.push(...leadless(here.teams, here.tasks, now));
     const dec = mem?.declined;
     for (const x of mem?.doneByNow ?? []) {
       // Already flagged as late: one item per step is enough.
@@ -156,12 +204,7 @@ export function movesFor(here: Here | undefined, mem: Memory | null): Move[] {
     // Its subtasks (smaller steps given to someone): late, nobody on one due soon, asked with no answer.
     moves.push(...stepMoves(here.subs ?? [], now).map((m) => ({ ...m, rank: m.rank - 5 })));
     moves.push(...stepMoves(here.siblings.filter((k) => k.id !== here.task.id), now).map((m) => ({ ...m, rank: m.rank - 20 })));
-  } else {
-    for (const p of here.projects.filter((x) => x.status === "active")) {
-      const start = p.period?.start ? left(p.period.start, now) : null;
-      if (start !== null && start >= 0 && start <= 7) moves.push({ id: `soon-${p.id}`, tag: "check", group: "now", rank: 70 - start, icon: "flag", title: `“${p.title}” starts ${start === 0 ? "today" : `in ${start} day${start === 1 ? "" : "s"}`}`, why: "Open it to see what's still undone", go: `/project/${p.id}` });
-    }
-  }
+  } else moves.push(...groupMoves(here, now));
   return moves.sort((a, b) => b.rank - a.rank);
 }
 
@@ -170,15 +213,16 @@ export type Intent = "week" | "late" | "needed" | "people";
 export function intentOf(q: string): Intent | null {
   const s = q.toLowerCase();
   if (/\b(late|risk|behind|overdue|stuck|slip|worr)/.test(s)) return "late";
-  if (/\b(forget|forgot|missing|usual|need(ed)?|should we have|left out)/.test(s)) return "needed";
+  // "Who's still needed?" is about people, not about a missing step: who-questions are read first.
   if (/\b(who|nobody|no one|people|volunteer|staff|help)\b/.test(s)) return "people";
+  if (/\b(forget|forgot|missing|usual|should we have|left out)|\b(need|needed)\b/.test(s)) return "needed";
   if (/\b(week|today|soon|next|first|priorit|focus|do now|attention|what should)/.test(s)) return "week";
   return null;
 }
 export const STARTERS: Record<string, { q: string; intent: Intent }[]> = {
   project: [{ q: "What should we do this week?", intent: "week" }, { q: "What's late or at risk?", intent: "late" }, { q: "What are we forgetting?", intent: "needed" }, { q: "Who's still needed?", intent: "people" }],
   task: [{ q: "What needs attention?", intent: "week" }],
-  group: [{ q: "What needs attention across our projects?", intent: "week" }],
+  group: [{ q: "What needs me today?", intent: "week" }, { q: "What's late across our projects?", intent: "late" }, { q: "Who's still needed?", intent: "people" }],
 };
 export function pick(moves: Move[], intent: Intent): Move[] {
   const tags: Record<Intent, MoveTag[] | null> = { week: null, late: ["late", "people"], needed: ["needed", "check", "bayani"], people: ["people"] };
@@ -216,7 +260,7 @@ const ext = (p: R, url: string) => ((p.extension ?? []) as { url: string; value?
  */
 export async function noticed(here: Here | undefined, o: { onMove: (m: Move) => void; onProgress?: (left: number) => void; budget?: number; cancelled?: () => boolean }): Promise<string | null> {
   if (!here || !modelSupported || !(await modelDownloaded().catch(() => false))) return null;
-  if (here.kind === "group") return "On a group, Bayani works from your projects' records. Open a project or a step and Bayani-1 checks its steps.";
+  if (here.kind === "group") return "Across the group, Bayani works from your projects' records, by rules. Open a project or a step and Bayani-1 checks its steps too.";
   const project = here.kind === "project" ? here.project : here.project;
   const org = here.kind === "project" ? here.org : here.org;
   const lead = here.kind === "project" ? here.lead : !!here.lead;

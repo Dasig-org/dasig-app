@@ -114,8 +114,8 @@ export function ZeroHome() {
       {/* What their story will look like: placeholder tiles, honestly labelled. */}
       <Text style={[t.eyebrow, { marginTop: 22, marginBottom: 8, marginHorizontal: 4 }]}>Your story</Text>
       <View style={{ backgroundColor: c.sand, borderRadius: radius.panel, padding: 16 }}>
-        <Text style={[t.row, { fontSize: 16 }]}>Starts with your first “I'm in”</Text>
-        <Meta>Work you finish shows up here, signed by your group. It's yours to keep, wherever you go.</Meta>
+        <Text style={[t.row, { fontSize: 16 }]}>Starts with your first “I&apos;m in”</Text>
+        <Meta>Work you finish shows up here, signed by your group. It&apos;s yours to keep, wherever you go.</Meta>
         <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>{[0, 1, 2].map((i) =>
           <View key={i} style={{ width: 78, height: 78, borderRadius: radius.inner, backgroundColor: c.white, opacity: 0.7 - i * 0.18, alignItems: "center", justifyContent: "center" }}>
             <Icon name="check" size={22} color={c.s300} /></View>)}</View>

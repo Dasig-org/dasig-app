@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Platform, Pressable, Text, View } from "react-native";
 import { useAccount } from "@/lib/account";
@@ -32,7 +32,9 @@ export default function AccountScreen() {
   const handle = (s.person as any)?.handle as { value: string; findable?: boolean } | undefined;
   const saveHandle = async () => { const v = (naming ?? "").trim().toLowerCase().replace(/^@/, ""); const why = v ? handleProblem(v) : null; if (why) { setMsg(why); return; }
     await run(async () => { await setHandle(v || null); await s.refresh(); setNaming(null); }, v ? `Your username is @${v}.` : "Username removed."); };
-  useEffect(() => { if (add === "1" && a.loaded && a.onNetwork) setAdding(true); }, [add, a.loaded]);
+  // Opened with ?add=1: show "add a way to sign in" once the account has loaded.
+  const [autoAdded, setAutoAdded] = useState(false);
+  if (!autoAdded && add === "1" && a.loaded && a.onNetwork) { setAutoAdded(true); setAdding(true); }
   const web = Platform.OS === "web";
   const run = async (f: () => Promise<unknown>, ok?: string) => { setMsg(null); try { await f(); if (ok) setMsg(ok); await a.reload(); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };
   const out = async () => { setLeaving(false); await s.signOut(); router.replace("/start" as never); };
@@ -44,7 +46,7 @@ export default function AccountScreen() {
       <SignInMethods then="/account" onNickname={() => router.back()} />
     </Screen>
   );
-  if (!a.acct) return <Screen back>{a.loaded ? <Notice>Couldn't load your account. Pull down to try again, or check your internet.</Notice> : <Skeleton />}</Screen>;
+  if (!a.acct) return <Screen back>{a.loaded ? <Notice>Couldn&apos;t load your account. Pull down to try again, or check your internet.</Notice> : <Skeleton />}</Screen>;
   const { methods, devices, via, can } = a.acct;
   const hereMethod = methods.find((m) => m.provider === via);
   const canRemove = (m: (typeof methods)[number]) => methods.length > 1 && m !== hereMethod;

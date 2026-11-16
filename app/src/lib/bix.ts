@@ -1,4 +1,7 @@
 import { randomUUID } from "expo-crypto";
+import { getCached, putCached } from "./cache";
+import { getConnection } from "./connection";
+import { Offline } from "./reach";
 import { send } from "./transport";
 
 export type Ref = { reference: string };
@@ -19,9 +22,37 @@ export class BixError extends Error {
   constructor(public reasons: string[], public current: R | null = null) { super(reasons.join("; ")); }
 }
 
+/** Swap in any record with the same type and id (a few levels deep), keeping everything else as it is. */
+export function swap<T>(x: T, by: Map<string, R>, depth = 0): T {
+  if (depth > 5 || x === null || typeof x !== "object") return x;
+  if (Array.isArray(x)) { let changed = false; const out = x.map((v) => { const n = swap(v, by, depth + 1); if (n !== v) changed = true; return n; }); return (changed ? out : x) as T; }
+  const o = x as Record<string, unknown>;
+  if (typeof o.resourceType === "string" && typeof o.id === "string") { const n = by.get(`${o.resourceType}/${o.id}`); if (n && ((n.meta as any)?.version ?? 0) >= ((o.meta as any)?.version ?? 0)) return n as T; }
+  let changed = false; const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) { const n = swap(v, by, depth + 1); if (n !== v) changed = true; out[k] = n; }
+  return (changed ? out : x) as T;
+}
+
+/** Without signal: the last answer this phone got for the same read, with changes still waiting to sync shown on top. */
+async function fromCache(path: string): Promise<unknown> {
+  const { pending } = await import("./outbox");
+  const by = new Map((await pending()).map((p) => [`${p.resource.resourceType}/${p.resource.id}`, p.resource]));
+  const hit = await getCached(path);
+  if (hit !== null) return swap(JSON.parse(hit), by);
+  return /^\/[A-Za-z]+\/[^/?$]+$/.test(path) ? by.get(path.slice(1)) : undefined;
+}
+
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await send(method, path, body === undefined ? undefined : JSON.stringify(body));
+  // Reads are kept for offline, except on the phone's own server, which is never out of reach.
+  const keep = method === "GET" && (await getConnection()).kind !== "phone";
+  let res: Response;
+  try { res = await send(method, path, body === undefined ? undefined : JSON.stringify(body)); }
+  catch (e) {
+    if (keep && e instanceof Offline) { const hit = await fromCache(path); if (hit !== undefined) return hit as T; }
+    throw e;
+  }
   const text = await res.text();
+  if (keep && res.ok) void putCached(path, text);
   const json = text ? JSON.parse(text) : null;
   if (!res.ok && !(res.status === 409 && json?.entry)) throw new BixError([friendly(json?.error ? String(json.error) : `HTTP ${res.status}`)]);
   return json as T;
@@ -36,6 +67,9 @@ type LocalListener = (e: { kind: "change"; records: R[] } | { kind: "revert" }) 
 const local = new Set<LocalListener>();
 export const onLocalChange = (l: LocalListener) => { local.add(l); return () => { local.delete(l); }; };
 const announce = (e: Parameters<LocalListener>[0]) => local.forEach((l) => { try { l(e); } catch {} });
+/** A change couldn't be sent and was kept to send later: said once, as a plain message (ui/Snackbar.tsx), not as an error. */
+const queued = new Set<() => void>();
+export const onQueued = (l: () => void) => { queued.add(l); return () => { queued.delete(l); }; };
 
 /** A thin client for any Bayanihan Server: the same calls any BIX app makes. */
 export const bix = {
@@ -59,7 +93,7 @@ export const bix = {
     try { const out = await this.commitNow(...records); announce({ kind: "change", records: out }); return out; }
     catch (e) {
       const { isNetworkError, enqueue } = await import("./outbox");
-      if (isNetworkError(e)) { await enqueue(records); throw new BixError(["Saved on this phone. We'll send it when you're back online."]); }
+      if (isNetworkError(e)) { await enqueue(records); queued.forEach((l) => l()); return records; }
       announce({ kind: "revert" });
       throw e;
     }
@@ -75,7 +109,7 @@ export const bix = {
     } catch (e) {
       const { isNetworkError, enqueue } = await import("./outbox");
       // Offline: kept and sent later without the suggester (the outbox has no place for it yet).
-      if (isNetworkError(e)) { await enqueue(records); throw new BixError(["Saved on this phone. We'll send it when you're back online."]); }
+      if (isNetworkError(e)) { await enqueue(records); queued.forEach((l) => l()); return records; }
       announce({ kind: "revert" }); throw e;
     }
   },

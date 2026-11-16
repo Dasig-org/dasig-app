@@ -8,6 +8,7 @@ import { lastMethod, startGoogleWeb } from "@/lib/signin";
 import { LinkText, Notice } from "./kit";
 import { SignInButton } from "./SignIn";
 import { c, type as t } from "./theme";
+import { openSite } from "@/ui/About";
 
 /**
  * Google, email and Dasig.org, side by side, then "Try it with a nickname" (design/account-sketches.html 1, 2, 7).
@@ -44,5 +45,9 @@ export function SignInMethods({ then = "/", onNickname }: { then?: string; onNic
     {err ? <Notice>{err}</Notice> : null}
     <View style={{ alignItems: "center", marginTop: 16 }}><LinkText onPress={onNickname}>Try it with a nickname</LinkText></View>
     <Text style={[t.meta, { textAlign: "center", marginTop: 14, marginHorizontal: 8, color: c.s500 }]}>Your account is on the <Text style={{ fontWeight: "700" }}>Bayanihan Network</Text>, where groups keep their work. Use any of these; you can add more later.</Text>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 6 }}>
+      <Text style={[t.meta, { color: c.s500 }]}>By continuing you accept how Dasig handles your data:</Text>
+      <LinkText onPress={() => openSite("/trust/privacy")}>Privacy</LinkText><LinkText onPress={() => openSite("/trust/safety")}>Safety</LinkText>
+    </View>
   </View>;
 }

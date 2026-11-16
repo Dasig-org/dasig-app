@@ -18,7 +18,7 @@ export default function Groups() {
       {s.groups.length ? <Panel>
         {s.groups.map((g, i) => { const here = s.current?.id === g.org.id;
           return <Row key={g.org.id} left={<Logo name={g.org.name} size={40} image={g.org.image} />} title={g.org.name} meta={ROLE_WORDS[g.role.code?.code] ?? "Member"} last={i === s.groups.length - 1}
-            right={here ? <Text style={{ fontSize: 12, fontWeight: "800", color: tone.onPrimaryContainer, backgroundColor: tone.primaryContainer, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: "hidden" }}>You're here</Text> : undefined}
+            right={here ? <Text style={{ fontSize: 12, fontWeight: "800", color: tone.onPrimaryContainer, backgroundColor: tone.primaryContainer, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: "hidden" }}>You&apos;re here</Text> : undefined}
             onPress={() => { s.setCurrent(g.org); router.push(`/org/${g.org.id}` as never); }} />; })}
       </Panel> : null}
       <Eyebrow>Add a group</Eyebrow>

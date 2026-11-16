@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useEffectEvent } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { extOf, fileUri, kindOf, type Attachment, type FileKind } from "@/lib/files";
 import { FileViewer } from "./FileViewer";
@@ -29,7 +29,8 @@ const TILE = 104;
 function Tile({ a, onPress }: { a: Attachment; onPress: () => void }) {
   const [uri, setUri] = useState<string | null>(null);
   const image = kindOf(a) === "image";
-  useEffect(() => { let on = true; if (image) fileUri(a).then((u) => on && setUri(u)).catch(() => {}); return () => { on = false; }; }, [a.hash, image]);
+  const show = useEffectEvent((on: () => boolean) => { if (image) fileUri(a).then((u) => { if (on()) setUri(u); }).catch(() => {}); });
+  useEffect(() => { let on = true; show(() => on); return () => { on = false; }; }, [a.hash, image]);
   const label = `${a.title ?? (image ? "Photo" : "File")}, ${kb(a.size)}. Open`;
   if (image) return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
     style={({ pressed }) => ({ width: TILE, height: TILE, borderRadius: 16, overflow: "hidden", backgroundColor: c.s200, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.85 : 1 })}>

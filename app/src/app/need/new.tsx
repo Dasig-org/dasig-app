@@ -60,7 +60,7 @@ export default function NewNeed() {
       {err ? <Notice>{err}</Notice> : null}
       <Buttons><Primary label="Post the need" onPress={post} busy={busy} disabled={!what.trim()} /></Buttons>
       <Text style={{ color: c.s500, fontSize: 13, marginTop: 10, textAlign: "center" }}>People who see your project can offer to help.</Text>
-      <Text style={{ color: c.s500, fontSize: 13, marginTop: 12, textAlign: "center" }} onPress={() => setStep(1)}>Back</Text>
+      <Text accessibilityRole="button" style={{ color: c.s500, fontSize: 13, marginTop: 12, textAlign: "center" }} onPress={() => setStep(1)}>Back</Text>
     </Screen>
   );
 }

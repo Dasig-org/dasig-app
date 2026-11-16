@@ -37,7 +37,7 @@ await don.getByLabel("What it's about").fill("Two days of talks and workshops in
 await don.getByText("Two days of talks and workshops in Cebu").waitFor(); log("project details edited by its officer");
 await don.getByText("Communications", { exact: true }).click();
 await don.getByText("You lead it").waitFor();
-await don.getByPlaceholder("Add something to do").fill("Draft call for speakers"); await don.getByPlaceholder("Add something to do").press("Enter");
+await don.getByPlaceholder("Add a task for this team").fill("Draft call for speakers"); await don.getByPlaceholder("Add a task for this team").press("Enter");
 await don.getByText(/^LU-\d+$/).waitFor(); log("task with a LU reference");
 await shot(don, "07b-team-work"); await don.getByLabel("Invite people").first().click(); await tap(don, "Make the invite");
 const invite = await don.getByText(/\/join\//).textContent(); log("invite:", invite);
@@ -51,7 +51,7 @@ await mia.getByText("Draft call for speakers").click();
 await tap(mia, "I'll take it"); await mia.getByText("Mark done").waitFor();
 await tap(mia, "Mark done");
 await mia.getByText("Signed by your group · unchanged").waitFor(); await shot(mia, "09-done"); log("Mia did it: recorded and signed");
-await don.goto(don.url()); await don.getByPlaceholder("Add something to do").fill("Print race bibs"); await don.getByPlaceholder("Add something to do").press("Enter"); await don.getByText("Print race bibs").first().waitFor(); log("Don added a second task, left open");
+await don.goto(don.url()); await don.getByPlaceholder("Add a task for this team").fill("Print race bibs"); await don.getByPlaceholder("Add a task for this team").press("Enter"); await don.getByText("Print race bibs").first().waitFor(); log("Don added a second task, left open");
 await mia.goto(APP + "/home"); await mia.getByText(/Good (morning|afternoon|evening), Mia/).waitFor();
 await mia.getByText("Something worth doing").waitFor(); await mia.getByText("Print race bibs").first().waitFor(); await shot(mia, "10-volunteer-home"); log("volunteer home shows Something worth doing");
 

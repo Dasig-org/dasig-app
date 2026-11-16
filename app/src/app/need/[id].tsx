@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session";
 import { useLoad } from "@/lib/use";
 import { History } from "@/ui/History";
 import { shortRef } from "@/lib/work";
-import { Avatar, Buttons, Eyebrow, Field, IconCircle, Meta, Notice, Outline, Panel, Pill, Primary, Row, Screen, Sheet , Skeleton} from "@/ui/kit";
+import { Avatar, Buttons, Eyebrow, Field, IconCircle, Meta, Outline, Panel, Pill, Primary, Row, Screen, Sheet, Skeleton } from "@/ui/kit";
 import { c, type as t } from "@/ui/theme";
 import { useSnackbar } from "@/ui/Snackbar";
 
@@ -26,11 +26,12 @@ export default function Need() {
     const people: Record<string, R> = {};
     for (const o of offers) { const r = o.offeredBy?.reference; if (r?.startsWith("Person/")) { try { people[r] = await bix.get("Person", r.split("/")[1]); } catch {} } }
     const ini = need.initiative ? await bix.get("Initiative", need.initiative.reference.split("/")[1]).catch(() => null) : null;
-    return { need, offers, people, ini };
+    // What you may do with this need comes from its own server, not from the group you happen to be in.
+    return { need, offers, people, ini, can: await bix.can("Need", id) };
   }, [id]);
   if (!data) return <Screen back><Skeleton /></Screen>;
   const { need, offers, people, ini } = data;
-  const lead = s.isLead;
+  const lead = data.can.edit;
   const unit = need.quantity?.unit ?? "";
   const want = need.quantity?.value ?? 0, got = need.received?.value ?? 0;
   const run = async (...rs: R[]) => { try { await bix.commit(...rs); reload(); } catch (e) { setMsg(e instanceof Error ? e.message : String(e)); } };

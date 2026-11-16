@@ -61,7 +61,7 @@ export default function NewVote() {
       <Field label="Days open" value={days} onChangeText={setDays} keyboardType="numeric" />
       {err ? <Notice>{err}</Notice> : null}
       <Buttons><Primary label="Open the vote" onPress={start} busy={busy} disabled={!q.trim()} /></Buttons>
-      <Text style={{ marginTop: 10, fontSize: 13, color: "#64748b" }}>Results show when voting closes, so later voters aren't swayed.</Text>
+      <Text style={{ marginTop: 10, fontSize: 13, color: "#64748b" }}>Results show when voting closes, so later voters aren&apos;t swayed.</Text>
     </Screen>
   );
 }

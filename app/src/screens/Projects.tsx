@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { ErrorState } from "@/ui/ErrorState";
 import { router } from "expo-router";
-import { View } from "react-native";
+import { View, Image, Pressable, Text } from "react-native";
 import { bix, type R } from "@/lib/bix";
 import { useSession } from "@/lib/session";
-import { useLoad } from "@/lib/use";
+import { useLoad, useNow } from "@/lib/use";
 import { ContextPill } from "@/ui/Context";
-import { Image, Pressable, Text } from "react-native";
 import { Eyebrow, Field, IconCircle, Panel, Row, Screen, Skeleton, Title, usePhoto } from "@/ui/kit";
 import { places } from "@/lib/work";
 import { ProgressRing, SharedCover, StateChip } from "@/ui/m3";
@@ -46,6 +45,7 @@ function ProjectCard({ p, tasks, onPress }: { p: R; tasks: R[]; onPress: () => v
 
 /** Projects: the current group's (or your own) projects. Coming up first, then undated, then finished; search past six. */
 export default function Projects({ tab }: { tab?: boolean } = {}) {
+  const now = useNow();
   const s = useSession();
   const [find, setFind] = useState("");
   const [showCancelled, setShowCancelled] = useState(false);
@@ -62,7 +62,7 @@ export default function Projects({ tab }: { tab?: boolean } = {}) {
   const all = (data ?? []).filter((p) => p.status !== "cancelled" && matches(p));
   // Cancelled projects (14 Nov): kept in BIX with their history; listed last, folded, so they can be found and opened.
   const cancelled = (data ?? []).filter((p) => p.status === "cancelled" && matches(p)).sort((a, b) => String((b.meta as any)?.lastUpdated ?? "").localeCompare(String((a.meta as any)?.lastUpdated ?? "")));
-  const done = (p: R) => p.status === "completed" || (p.period?.start && Date.parse(p.period.start) < Date.now() - 2 * 86400000);
+  const done = (p: R) => p.status === "completed" || (p.period?.start && Date.parse(p.period.start) < now - 2 * 86400000);
   const soon = all.filter((p) => !done(p) && p.period?.start).sort((a, b) => a.period.start.localeCompare(b.period.start));
   const undated = all.filter((p) => !done(p) && !p.period?.start);
   const past = all.filter(done).sort((a, b) => (b.period?.start ?? "").localeCompare(a.period?.start ?? ""));

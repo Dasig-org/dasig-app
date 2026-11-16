@@ -1,16 +1,16 @@
 import { router } from "expo-router";
+import Constants from "expo-constants";
+import { openSite, reportProblem } from "@/ui/About";
 import { Pressable, Text, View } from "react-native";
 import { useAccount } from "@/lib/account";
 import { useSession } from "@/lib/session";
 import { personName } from "@/lib/work";
-import { Avatar, Buttons, Eyebrow, IconCircle, Panel, Primary, Row, Sand, Screen } from "@/ui/kit";
-import { Icon } from "@/ui/Icon";
+import { Avatar, Buttons, Eyebrow, IconCircle, Panel, Primary, Row, Sand, Screen, Chips } from "@/ui/kit";
 import { PushToggle } from "@/ui/PushToggle";
 import { useEffect, useState } from "react";
-import { Chips } from "@/ui/kit";
 import { getAppearance, reloadIfWeb, setAppearance, type Appearance } from "@/ui/scheme";
 import { useSnackbar } from "@/ui/Snackbar";
-import { c, radius, scale, tone, type as t } from "@/ui/theme";
+import { radius, scale, tone, type as t } from "@/ui/theme";
 
 /*
  * Settings (design/account-sketches.html 8, 11): who you are and how you signed in, first; then this app, your data,
@@ -60,8 +60,12 @@ export default function Settings() {
         <Row left={<IconCircle name="wifioff" />} title="Working offline" meta={s.connection?.kind === "ecosystem" ? "Saved on the Bayanihan Network" : s.connection?.kind === "hub" ? "Your group's hub" : "On this phone only"} onPress={() => router.push("/offline" as never)} />
         <Row left={<IconCircle name="spark" />} title="How Dasig works" meta="Short guides" onPress={() => router.push("/help" as never)} />
         <Row left={<IconCircle name="spark" tone="bayani" />} title="Ask Bayani" meta="Questions about Dasig, BIX and Bayani; Bayani on this phone" onPress={() => router.push("/ask-bayani")} />
+        <Row left={<IconCircle name="lock" />} title="Privacy" meta="How Dasig handles your data" onPress={() => openSite("/trust/privacy")} />
+        <Row left={<IconCircle name="heart" />} title="Safety" meta="Keeping groups and volunteers safe" onPress={() => openSite("/trust/safety")} />
+        <Row left={<IconCircle name="send" />} title="Report a problem" meta="A bug, or something that shouldn't be here" onPress={() => reportProblem("a problem")} />
         <Row left={<IconCircle name="book" />} title="BIX, Bayanihan and Bayani" meta="Open source from Dasig Inc., and why we share it" onPress={() => router.push("/about" as never)} last />
       </Panel>
+      <Text style={[t.meta, { textAlign: "center", marginTop: 16 }]}>{`Dasig ${Constants.expoConfig?.version ?? ""}`}</Text>
     </Screen>
   );
 }

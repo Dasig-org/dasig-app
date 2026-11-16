@@ -1,7 +1,6 @@
-import { Redirect } from "expo-router";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { can } from "@/lib/capabilities";
 import { useState } from "react";
-import { router, useLocalSearchParams } from "expo-router";
 import { Platform, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { bix } from "@/lib/bix";
@@ -13,7 +12,10 @@ import { c, radius } from "@/ui/theme";
 /** Scan a hub's QR: pair with it, and join a team if the QR was a team invite. */
 export default function Scan() {
   // Phones only: a browser can't be or reach a hub (lib/capabilities).
-  if (!can.hub) return <Redirect href={"/volunteer" as never} />;
+  return can.hub ? <ScanScreen /> : <Redirect href={"/volunteer" as never} />;
+}
+
+function ScanScreen() {
   const s = useSession();
   const [perm, ask] = useCameraPermissions();
   const [busy, setBusy] = useState(false);

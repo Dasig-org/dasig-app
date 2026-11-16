@@ -1,6 +1,6 @@
 import { Redirect } from "expo-router";
 import { can } from "@/lib/capabilities";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { Platform, Text, View } from "react-native";
 import { QR as QRCode } from "@/ui/QR";
 import { useSession } from "@/lib/session";
@@ -11,25 +11,30 @@ import { c, radius, type as t } from "@/ui/theme";
 /** Make this phone the group's hub (spec: Hubs). Other phones join its hotspot and scan the QR. */
 export default function Hub() {
   // Phones only: a browser can't be or reach a hub (lib/capabilities).
-  if (!can.hub) return <Redirect href={"/home" as never} />;
+  return can.hub ? <HubScreen /> : <Redirect href={"/home" as never} />;
+}
+
+function HubScreen() {
   const s = useSession();
   const [addr, setAddr] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const native = Platform.OS !== "web";
-  const start = async () => {
-    setBusy(true); setErr(null);
-    try { const { localEngine } = await import("@/local/engine"); const e = await localEngine(); setAddr(await e.startHub()); setCode(e.pairingCode); }
-    catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); }
-  };
+  // On a phone used on its own, the hub starts as the screen opens.
+  const auto = native && s.connection?.kind === "phone";
+  const [busy, setBusy] = useState(auto);
+  const launch = () => import("@/local/engine").then(({ localEngine }) => localEngine())
+    .then((e) => e.startHub().then((a) => { setAddr(a); setCode(e.pairingCode); }))
+    .catch((e) => setErr(e instanceof Error ? e.message : String(e))).finally(() => setBusy(false));
+  const start = () => { setBusy(true); setErr(null); void launch(); };
   const stop = async () => { const { localEngine } = await import("@/local/engine"); (await localEngine()).stopHub(); setAddr(null); setCode(null); };
-  useEffect(() => { if (native && s.connection?.kind === "phone") start(); }, []);
-  if (!native) return <Screen back><Title>Hubs run on Android</Title><Body>Open Dasig on an Android phone to make it your group's hub.</Body></Screen>;
-  if (s.connection?.kind === "hub") return <Screen back><Title>You're connected to a hub</Title><Body>To make this phone a hub, first go back to using this phone on its own (Your story → Use this phone on its own).</Body></Screen>;
+  const autoStart = useEffectEvent(() => { if (auto) void launch(); });
+  useEffect(() => { autoStart(); }, []);
+  if (!native) return <Screen back><Title>Hubs run on Android</Title><Body>Open Dasig on an Android phone to make it your group&apos;s hub.</Body></Screen>;
+  if (s.connection?.kind === "hub") return <Screen back><Title>You&apos;re connected to a hub</Title><Body>To make this phone a hub, first go back to using this phone on its own (Your story → Use this phone on its own).</Body></Screen>;
   return (
     <Screen back>
-      <Title sub="Phones nearby join this one. No internet needed.">This phone is your group's hub</Title>
+      <Title sub="Phones nearby join this one. No internet needed.">This phone is your group&apos;s hub</Title>
       {addr && code ? <>
         <View style={{ backgroundColor: c.white, borderRadius: radius.hero, padding: 20, alignItems: "center" }}>
           <QRCode value={pairUrl({ hub: addr, code })} size={220} color={c.ink} backgroundColor={c.white} />

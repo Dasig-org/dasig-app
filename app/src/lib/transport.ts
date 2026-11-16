@@ -1,8 +1,8 @@
 import { env } from "./env";
+import { getConnection } from "./connection";
+import { missed, Offline, reached } from "./reach";
 /** Supabase is only for the local-development "cloud" connection; loaded on first use, never in the web bundle. */
 const sb = async () => (await import("./supabase")).supabase;
-import { getConnection } from "./connection";
-import { missed, reached } from "./reach";
 
 /** Send one request to wherever this phone's records live. Same BIX API in every case. */
 export async function send(method: string, path: string, body?: BodyInit | null, contentType = "application/json"): Promise<Response> {
@@ -16,7 +16,7 @@ export async function send(method: string, path: string, body?: BodyInit | null,
   }
   const remote = async (url: string) => {
     try { const r = await fetch(url, { method, headers, ...(body !== undefined && body !== null ? { body } : {}) }); reached(); return r; }
-    catch (e) { missed(); throw e; }
+    catch { missed(); throw new Offline(); }
   };
   if (c.kind === "hub" || c.kind === "ecosystem") {
     headers.authorization = `Bearer ${c.token}`;

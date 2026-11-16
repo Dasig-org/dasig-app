@@ -4,6 +4,7 @@ import { Pressable, Text, View } from "react-native";
 import { onPending } from "@/lib/outbox";
 import { onReach, reach } from "@/lib/reach";
 import { useSession } from "@/lib/session";
+import { useNow } from "@/lib/use";
 import { Icon, type IconName } from "./Icon";
 import { c, radius } from "./theme";
 
@@ -22,10 +23,9 @@ export function useWhere(): { icon: IconName; text: string; warn: boolean; detai
   const s = useSession();
   const [r, setR] = useState(reach());
   const [waiting, setWaiting] = useState(0);
-  const [, tick] = useState(0);
   useEffect(() => onReach(setR), []);
   useEffect(() => onPending(setWaiting), []);
-  useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 30000); return () => clearInterval(t); }, []);
+  const now = useNow(30000);
   const kind = s.connection?.kind ?? "phone";
   const w = waiting ? ` · ${waiting} waiting` : "";
   if (kind === "phone") return r.hosting
@@ -33,10 +33,10 @@ export function useWhere(): { icon: IconName; text: string; warn: boolean; detai
     : { icon: "phone", text: "Saved on this phone", warn: false, detail: "Everything is kept on this phone. Nothing needs the internet." };
   const place = kind === "hub" ? "Hub" : kind === "ecosystem" ? "Bayanihan Network" : "Online";
   const down = r.lastFail !== null && (r.lastOk === null || r.lastFail > r.lastOk);
-  if (down) return { icon: "wifioff", warn: true, text: `${place} not reachable · from ${ago(r.lastOk)}${w}`,
+  if (down) return { icon: "wifioff", warn: true, text: `${place} not reachable · from ${ago(r.lastOk, now)}${w}`,
     detail: kind === "hub" ? "Join the hub phone's Wi-Fi or hotspot. What you add is kept here and sent when you're back." : "You're offline. What you add is kept here and sent when you're back." };
-  const fresh = r.lastOk !== null && Date.now() - r.lastOk < 120000;
-  return { icon: kind === "hub" ? "wifi" : "cloud", warn: !!waiting, text: fresh && !waiting ? `${place} · up to date` : `${place} · updated ${ago(r.lastOk)}${w}`,
+  const fresh = r.lastOk !== null && now - r.lastOk < 120000;
+  return { icon: kind === "hub" ? "wifi" : "cloud", warn: !!waiting, text: fresh && !waiting ? `${place} · up to date` : `${place} · updated ${ago(r.lastOk, now)}${w}`,
     detail: kind === "hub" ? `Saved on ${(s.connection as { name?: string }).name ?? "your group's hub"} and copied to this phone.` : kind === "ecosystem" ? "Saved on the Bayanihan Network, the online Bayanihan Server Dasig runs, and backed up." : "Saved on the online Bayanihan Server." };
 }
 

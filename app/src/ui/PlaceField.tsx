@@ -20,9 +20,11 @@ export const placeExtensions = (v: PlaceValue) => [
 export function PlaceField({ label, value, onChange, placeholder }: { label: string; value: PlaceValue; onChange: (v: PlaceValue) => void; placeholder?: string }) {
   const [hits, setHits] = useState<{ code: string; name: string; kind: string; label: string }[]>([]);
   const [open, setOpen] = useState(false);
+  // Suggestions only while typing a place (3 letters or more) that isn't already one from the list.
+  const q = value.text.trim();
+  const searching = open && q.length >= 3 && !value.code;
   useEffect(() => {
-    const q = value.text.trim();
-    if (!open || q.length < 3 || value.code) { setHits([]); return; }
+    if (!searching) return;
     let live = true;
     const h = setTimeout(async () => {
       const conn = await getConnection();
@@ -30,11 +32,11 @@ export function PlaceField({ label, value, onChange, placeholder }: { label: str
       try { const r = await fetch(`${base.replace(/\/$/, "")}/$places?q=${encodeURIComponent(q)}&limit=6`); if (r.ok && live) setHits((await r.json()).entry ?? []); } catch { if (live) setHits([]); }
     }, 250);
     return () => { live = false; clearTimeout(h); };
-  }, [value.text, open, value.code]);
+  }, [q, searching]);
   return <View>
     <Field label={label} value={value.text} placeholder={placeholder} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 200)}
       onChangeText={(text) => onChange({ text })} />
-    {open && hits.length ? <View style={{ backgroundColor: c.white, borderRadius: radius.inner, marginTop: 6, paddingVertical: 4 }}>
+    {searching && hits.length ? <View style={{ backgroundColor: c.white, borderRadius: radius.inner, marginTop: 6, paddingVertical: 4 }}>
       {hits.map((p) => <Pressable key={p.code} onPress={() => { onChange({ text: p.label, code: p.code }); setHits([]); setOpen(false); }} accessibilityRole="button"
         style={{ paddingVertical: 10, paddingHorizontal: 14 }}><Text style={t.row}>{p.name}</Text><Meta>{[KIND[p.kind] ?? "", ...p.label.split(", ").slice(1)].filter(Boolean).join(" · ")}</Meta></Pressable>)}
     </View> : null}

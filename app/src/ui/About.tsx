@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { Platform, Text, View } from "react-native";
+import { Linking, Platform, Text, View } from "react-native";
+import Constants from "expo-constants";
 import { Body, Buttons, Eyebrow, IconCircle, Meta, Outline, Panel, Row, Screen, Title } from "@/ui/kit";
 import type { IconName } from "@/ui/Icon";
 import { c, radius, type as t } from "@/ui/theme";
@@ -18,6 +19,12 @@ export const openSite = (path: string) => {
   if (Platform.OS === "web" && typeof window !== "undefined") window.open(url, "_blank", "noopener");
   else WebBrowser.openBrowserAsync(url).catch(() => {});
 };
+
+/** Where "Report a problem" goes (D111). */
+export const SAFETY_EMAIL = "hello@dasig.org";
+/** Opens the person's own mail app with what they're reporting. The app sends nothing itself, and adds no name or id of theirs. */
+export const reportProblem = (about: string, detail = "") => Linking.openURL(
+  `mailto:${SAFETY_EMAIL}?subject=${encodeURIComponent(`Dasig: ${about}`)}&body=${encodeURIComponent(`${detail}\n\nWhat happened:\n\n\nDasig ${Constants.expoConfig?.version ?? ""} · ${Platform.OS}`)}`).catch(() => {});
 
 type Section = { h: string; p?: string; rows?: { icon: IconName; title: string; meta: string }[] };
 type Topic = { icon: IconName; name: string; tag: string; line: string; web: { label: string; path: string }; sections: Section[] };
@@ -109,7 +116,7 @@ export function AboutHome() {
         <Text style={[t.row, { fontSize: 16 }]}>Why we share these</Text>
         <View style={{ marginTop: 6 }}><Body>{"We want every volunteer to keep a record of what they did, and every organization to keep a record of its work, without depending on any one app or company, including ours.\n\nShared, open foundations are also groundwork for organizations, governments and volunteer communities to work together. What people build on them is up to them."}</Body></View>
       </View>
-      <Eyebrow>What's inside</Eyebrow>
+      <Eyebrow>What&apos;s inside</Eyebrow>
       <Panel>{ORDER.map((k, i) => { const x = TOPICS[k]!;
         return <Row key={k} left={<IconCircle name={x.icon} />} title={x.name} meta={x.tag} onPress={() => router.push(`/about/${k}` as never)} last={i === ORDER.length - 1} />; })}</Panel>
       <Buttons><Outline flex label="bayanihan.dasig.org" onPress={() => openSite("/about")} /></Buttons>

@@ -14,14 +14,17 @@ export function useAccount() {
   const [acct, setAcct] = useState<Account | null>(null);
   const [loaded, setLoaded] = useState(false);
   const load = useCallback(async () => {
-    if (!onNetwork) { setAcct(null); setLoaded(true); return; }
-    try { setAcct(await loadAccount()); } catch { setAcct(null); } finally { setLoaded(true); }
-  }, [onNetwork, s.person?.id]);
-  useEffect(() => { load(); }, [load]);
+    if (!onNetwork) return; // off the network there is no account: see below
+    await loadAccount().then(setAcct, () => setAcct(null)).finally(() => setLoaded(true));
+  }, [onNetwork]);
+  // Again when someone else signs in on this phone.
+  const personId = s.person?.id;
+  useEffect(() => { void load(); }, [load, personId]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
-  const methods = acct?.methods ?? [];
-  const here = methods.find((m) => m.provider === acct?.via) ?? null;
+  const methods = (onNetwork ? acct?.methods : null) ?? [];
+  const here = methods.find((m) => m.provider === (onNetwork ? acct?.via : undefined)) ?? null;
   const how = here ? `Signed in with ${METHOD_LABEL[here.provider] ?? here.provider}${here.email ? ` · ${here.email}` : ""}`
     : methods.length ? `Signed in with ${METHOD_LABEL[methods[0]!.provider] ?? methods[0]!.provider}` : null;
-  return { acct, loaded, reload: load, onNetwork, guest: loaded && methods.length === 0, how, emails: emailsOf(acct) };
+  const done = onNetwork ? loaded : true;
+  return { acct: onNetwork ? acct : null, loaded: done, reload: load, onNetwork, guest: done && methods.length === 0, how, emails: emailsOf(onNetwork ? acct : null) };
 }
