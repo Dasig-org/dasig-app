@@ -110,13 +110,13 @@ export default function ReportScreen() {
   const credited = m.credits.flatMap((x) => x.names);
   const shareText = `${title}\n${volunteers} volunteers · ${hours} hours${servedN ? ` · ${servedN} people served` : ""} · ${m.steps.done} of ${m.steps.total} steps done\n\n${text.trim()}${names && credited.length ? `\n\nWith thanks to ${[...new Set(credited)].join(", ")}.` : ""}\n\n${s.current?.name ?? "The group"} → ${appUrl()}/project/${id}`;
 
-  const tile = (big: string, small: string, planned?: number, value = 0, flag?: string) => <View key={small} style={{ width: "48.5%", backgroundColor: c.white, borderRadius: radius.panel, padding: 14 }}>
+  const tile = (big: string, small: string, planned?: number, value = 0, flag?: string, share?: number) => <View key={small} style={{ width: "48.5%", backgroundColor: c.white, borderRadius: radius.panel, padding: 14 }}>
     <Text style={[t.title, { fontSize: 24 }]}>{big}</Text><Meta>{small}{planned ? ` · planned ${planned}` : ""}</Meta>
     {flag ? <Text style={{ fontSize: 12, fontWeight: "700", color: "#B3261E", marginTop: 2 }}>{flag}</Text> : null}
-    {planned ? <Bar share={shareOf(value, planned)} /> : null}</View>;
+    {planned || share !== undefined ? <Bar share={share ?? shareOf(value, planned!)} /> : null}</View>;
   const figures = <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 12, justifyContent: "space-between" }}>
     {m.figures.map((f) => tile(`${f.value}${f.unit ? ` ${f.unit}` : ""}`, f.label, f.planned, f.value))}
-    {tile(`${m.steps.done} of ${m.steps.total}`, "steps done", m.steps.total || undefined, m.steps.done, m.steps.late ? `${m.steps.late} late` : undefined)}</View>;
+    {tile(`${m.steps.done} of ${m.steps.total}`, "steps done", undefined, m.steps.done, m.steps.late ? `${m.steps.late} late` : undefined, shareOf(m.steps.done, m.steps.total))}</View>;
   const exportButtons = <Buttons><Primary label="Save as PDF" busy={busy === "pdf"} onPress={pdf} /><Outline flex label="Share" onPress={() => Share.share({ message: shareText }).catch(() => {})} /></Buttons>;
 
   if (sent) return (

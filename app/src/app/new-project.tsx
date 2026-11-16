@@ -95,7 +95,7 @@ export default function NewEvent() {
   if (made) return (
     <Screen>
       {coverUri ? <Image source={{ uri: coverUri }} style={{ height: 150, borderRadius: radius.panel }} /> : null}
-      <Title sub={`${teams.filter((x) => x.keep).length} teams · ${taskCount} tasks · ${teams.filter((x) => x.keep && x.lead).length} leads`}>{`${made.title} is ready`}</Title>
+      <Title sub={[[teams.filter((x) => x.keep).length, "team"], [taskCount, "task"], [teams.filter((x) => x.keep && x.lead).length, "lead"]].map(([n, w]) => `${n} ${w}${n === 1 ? "" : "s"}`).join(" · ")}>{`${made.title} is ready`}</Title>
       <Panel>
         <Row left={<IconCircle name="share" />} title="Share with the group chat" meta="One link for the whole event: volunteers pick a place" onPress={() => Share.share({ message: `Help with ${made.title}! Pick a slot → ${appUrl()}/project/${made.id}` }).catch(() => {})} />
         {teams.filter((x) => x.keep && !x.lead).map((x) => <Row key={x.name} left={<IconCircle name="users" />} title={`${x.name} needs a lead`} meta="Choose later on the team page" />)}
