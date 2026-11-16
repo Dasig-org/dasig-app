@@ -41,7 +41,7 @@ export default function Project() {
     const [teams, tasks, needs, decisions] = await Promise.all([bix.search("Team", { initiative: ref }), bix.search("Task", { partOf: ref }), bix.search("Need", { initiative: ref }), bix.search("Decision", { partOf: ref })]);
     const can = await bix.can("Initiative", id);
     const org = p.organization ? await bix.get("Organization", p.organization.reference.split("/")[1]).catch(() => null) : null;
-    const folks = await peopleFor(teams.flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)), 20);
+    const folks = await peopleFor([...teams, ...tasks].flatMap((x) => (x.participant ?? []).filter((y: any) => y.status === "active").map((y: any) => y.person.reference)).concat(((p.note ?? []) as any[]).map((n) => n.author?.reference).filter(Boolean)), 40);
     return { p, teams, tasks, needs, decisions, can, org, folks };
   }, [id]);
   const logo = usePhoto(data?.p.image);
@@ -86,7 +86,7 @@ export default function Project() {
     right={late.includes(k) ? <StateChip kind="late">Late</StateChip> : k.status === "completed" ? <StateChip kind="done">Done</StateChip> : places(k) ? <StateChip kind="open">Open</StateChip> : undefined} />;
   const group = (label: string, list: any[]) => list.length ? <><Eyebrow right={`${list.length}`}>{label}</Eyebrow><Panel>{list.map(workRow)}</Panel></> : null;
   return (
-    <Screen onRefresh={reload} back here={{ kind: "project", project: p, tasks, teams, org, lead }} right={can.edit ? <RoundButton icon="pen" label="Edit project" onPress={edit} /> : undefined}
+    <Screen onRefresh={reload} back here={{ kind: "project", project: p, tasks, teams, org, lead, needs, people: folks }} right={can.edit ? <RoundButton icon="pen" label="Edit project" onPress={edit} /> : undefined}
       add={lead && p.status !== "cancelled" ? { kind: "project", project: p, lead } : undefined}>
       <ScreenTitle>{p.title}</ScreenTitle>
       {/* The hero: one large visual, then the numbers that matter (UI_REIMAGINE §3). */}

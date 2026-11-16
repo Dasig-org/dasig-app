@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -34,10 +35,28 @@ function Act({ label, onPress, busy, quiet }: { label: string; onPress: () => vo
     <Text style={{ fontSize: 14, fontWeight: "600", color: quiet ? c.s500 : c.ink }}>{busy ? "…" : label}</Text></Pressable>;
 }
 
+/*
+ * "Got it" (Don, 2026-11-16: the cards "should be dismissable or acknowledged and then dismissed"). A card you've seen
+ * is hidden on this phone until what it says changes (the key is the card and its words, so a step that gets later, or
+ * a new reason, shows again). Not a decision about the work: nothing is recorded, unlike "Not now".
+ */
+const SEEN = "dasig.bayani.seen.v1";
+let seen: Record<string, number> | null = null;
+const seenKey = (m: Move) => `${m.id}|${m.title}|${m.why}`;
+const loadSeen = async () => (seen ??= await AsyncStorage.getItem(SEEN).then((v) => (v ? JSON.parse(v) : {})).catch(() => ({})));
+function markSeen(m: Move) {
+  const now = Date.now(), all = { ...(seen ?? {}), [seenKey(m)]: now };
+  // Forget what was acknowledged more than 60 days ago, so the list stays small.
+  for (const [k, at] of Object.entries(all)) if (now - at > 60 * 86400000) delete all[k];
+  seen = all; AsyncStorage.setItem(SEEN, JSON.stringify(all)).catch(() => {});
+}
+
 export type MovesApi = ReturnType<typeof useMoves>;
 /** Running, declining and undoing moves, shared by every list of them. `onChanged` runs after anything is committed. */
 export function useMoves(onChanged?: () => void) {
   const [gone, setGone] = useState<Set<string>>(new Set());
+  const [ack, setAck] = useState<Record<string, number>>(() => seen ?? {});
+  useEffect(() => { let on = true; loadSeen().then((x) => { if (on) setAck(x); }); return () => { on = false; }; }, []);
   const [busy, setBusy] = useState<string | null>(null);
   const [texts, setTexts] = useState<Record<string, string>>({});
   const commit = useCommit();
@@ -47,6 +66,9 @@ export function useMoves(onChanged?: () => void) {
   const back = (ids: string[]) => { forget(ids, false); onChanged?.(); };
   return {
     gone, busy, texts,
+    /** Seen and acknowledged on this phone, until it changes. */
+    seen: (m: Move) => !!ack[seenKey(m)],
+    acknowledge: (m: Move) => { markSeen(m); setAck({ ...(seen ?? {}) }); show("Got it. It'll show again if anything changes."); },
     setText: (id: string, v: string) => setTexts((x) => ({ ...x, [id]: v })),
     run: async (m: Move) => {
       if (!m.run) return;
@@ -77,7 +99,7 @@ export function useMoves(onChanged?: () => void) {
 /** A list of moves. `onOpen` runs before a move's page opens (e.g. to close a sheet). */
 export function MoveList({ moves, api, onOpen, max }: { moves: Move[]; api: MovesApi; onOpen?: () => void; max?: number }) {
   const [all, setAll] = useState(false);
-  const shown = moves.filter((m) => !api.gone.has(m.id));
+  const shown = moves.filter((m) => !api.gone.has(m.id) && !api.seen(m));
   const list = max && !all ? shown.slice(0, max) : shown;
   if (!shown.length) return null;
   return <View>
@@ -93,10 +115,11 @@ export function MoveList({ moves, api, onOpen, max }: { moves: Move[]; api: Move
         {m.go ? <View style={{ paddingTop: 10 }}><Icon name="chevron" size={16} color={c.s300} /></View> : null}
       </Pressable>
       {m.edit !== undefined ? <View style={{ marginLeft: 48, marginTop: -8 }}><Field value={api.texts[m.id] ?? m.edit} onChangeText={(v) => api.setText(m.id, v)} maxLength={60} accessibilityLabel="Name to keep for next time" /></View> : null}
-      {m.run || m.decline ? <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginLeft: 48, paddingBottom: 12, marginTop: m.edit !== undefined ? 8 : -2 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginLeft: 48, paddingBottom: 12, marginTop: m.edit !== undefined ? 8 : -2 }}>
         {m.run ? <Act label={m.runLabel ?? "Do it"} busy={api.busy === m.id} onPress={() => api.run(m)} /> : null}
         {m.decline ? <Act quiet label="Not now" onPress={() => api.decline(m)} /> : null}
-      </View> : null}
+        <Act quiet label="Got it" onPress={() => api.acknowledge(m)} />
+      </View>
     </Animated.View>)}
     {max && shown.length > max ? <Pressable onPress={() => setAll(!all)} accessibilityRole="button" style={{ minHeight: 44, flexDirection: "row", alignItems: "center", gap: 6, borderTopWidth: 1, borderTopColor: c.s200 }}>
       <Text style={[t.meta, { fontWeight: "600", color: c.accent }]}>{all ? "Show fewer" : `Show ${shown.length - max} more`}</Text>

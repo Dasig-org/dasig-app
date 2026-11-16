@@ -85,7 +85,8 @@ function BayaniPart({ project, tasks, teams, org, judged, mem, onChanged }: { pr
     {out.length ? <Small title="Left out: doesn't seem to belong here">{out.map((x) => <Line key={x.practice.id} text={String(x.practice.title)}
       sub={`Bayani is ${Math.round(x.judgment.confidence * 100)}% sure`} act="It belongs, add it" onAct={() => add(x.practice)} />)}</Small> : null}
     <ModelLine />
-    {why && ms.phase !== "failed" ? <Text style={[t.meta, { marginVertical: 6 }]}>{why}</Text> : null}
+    {why && ms.phase !== "failed" ? <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginVertical: 6 }}><Text style={[t.meta, { flex: 1 }]}>{why}</Text>
+      <LinkText onPress={() => setWhy(null)}>Got it</LinkText></View> : null}
     {ms.phase === "failed" ? null : checking !== null ? <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginVertical: 6 }}><BayaniMark size={22} />
       <Text style={[t.meta, { flex: 1 }]}>{ms.phase === "loading" ? "Starting Bayani-1…" : checking ? `Checking ${checking} more step${checking === 1 ? "" : "s"}…` : "Reading the plan…"}</Text></View>
       : <Pressable onPress={check} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingHorizontal: 12, borderRadius: radius.inner, backgroundColor: pressed ? "#FFE9DC" : c.white, marginTop: 2 })}>

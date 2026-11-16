@@ -203,7 +203,7 @@ export default function Task() {
     </Pressable>;
 
   return (
-    <Screen back here={{ kind: "task", task, project, team, siblings, org, lead: isLead, subs }} bottom={actions ? <ActionBar>{actions}</ActionBar> : undefined}
+    <Screen back here={{ kind: "task", task, project, team, siblings, org, lead: isLead, subs, people }} bottom={actions ? <ActionBar>{actions}</ActionBar> : undefined}
       right={canEdit && open ? <RoundButton icon="pen" label="Plan this task" onPress={() => setTuning(true)} /> : undefined}
       add={(onIt || isLead) && task.status !== "completed" ? { kind: "task", task, lead: isLead, onIt, on: (w) => { if (w === "step") setStepFocus((n) => n + 1); else if (w === "photo") setAdding(true); else if (w === "ask") setAsking(true); else setTuning(true); } } : undefined}>
       <ScreenTitle>{task.title}</ScreenTitle>

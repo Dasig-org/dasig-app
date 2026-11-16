@@ -5,7 +5,8 @@ import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-nati
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { evidence, type Observed } from "@bayanihan/core/memory";
-import { ask, downloadModel, modelReady, removeModel, retryModel, startModel, useModel, type ModelState } from "@/lib/bayani";
+import { ask, classifyQuestion, downloadModel, modelReady, removeModel, retryModel, startModel, useModel, type ModelState } from "@/lib/bayani";
+import { answerFor, intentByWords, type Answer, type ScreenRecords } from "@/lib/bayaniAnswer";
 import { intentOf, movesFor, noticed, NOTHING, pick, STARTERS, type Intent, type Move } from "@/lib/copilot";
 import { MoveList, useMoves } from "./Moves";
 import { bix, refId, type R } from "@/lib/bix";
@@ -25,14 +26,14 @@ import { c, motion, radius, tone, type as t } from "./theme";
  * Look: DESIGN_STANDARD §5 (outline gradient spark in a ringed white circle; the Bayani surface for its own judgments).
  */
 export type Here =
-  | { kind: "project"; project: R; tasks: R[]; teams: R[]; org: R | null; lead: boolean }
-  | { kind: "task"; task: R; project: R | null; team: R | null; siblings: R[]; org?: R | null; lead?: boolean; subs?: R[] }
+  | { kind: "project"; project: R; tasks: R[]; teams: R[]; org: R | null; lead: boolean; needs?: R[]; people?: Record<string, R> }
+  | { kind: "task"; task: R; project: R | null; team: R | null; siblings: R[]; org?: R | null; lead?: boolean; subs?: R[]; people?: Record<string, R> }
   /*
    * A group. With `tasks` and `teams` (the coordinator's Home loads them), Bayani looks across every project on the go:
    * what's late, who's needed, which team has no lead; `requests` (people who asked to join), `unreported` (events that
    * happened with no report sent) and `needs` (what projects are still short of) add what waits on an officer.
    */
-  | { kind: "group"; org: R; projects: R[]; officer: boolean; tasks?: R[]; teams?: R[]; needs?: R[]; requests?: number; unreported?: R[] };
+  | { kind: "group"; org: R; projects: R[]; officer: boolean; tasks?: R[]; teams?: R[]; needs?: R[]; requests?: number; unreported?: R[]; people?: Record<string, R> };
 
 const SPARK = ["M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z", "M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"];
 const Grad = ({ id, down }: { id: string; down?: boolean }) => (
@@ -182,6 +183,45 @@ function HereGroup({ h }: { h: Extract<Here, { kind: "group" }> }) {
   return <><Eyebrow>{h.org.name}</Eyebrow><Lines lines={lines} /></>;
 }
 
+/** What the screen loaded, as the records Bayani answers from (lib/bayaniAnswer.ts). */
+export function recordsOf(h: Here): ScreenRecords {
+  if (h.kind === "project") return { kind: "project", org: h.org, project: h.project, tasks: h.tasks, teams: h.teams, needs: h.needs, people: h.people };
+  if (h.kind === "task") return { kind: "task", org: h.org, project: h.project, task: h.task, tasks: [...(h.subs ?? []), ...h.siblings], teams: h.team ? [h.team] : [], people: h.people };
+  return { kind: "group", org: h.org, projects: h.projects, tasks: h.tasks, teams: h.teams, needs: h.needs, people: h.people };
+}
+
+/**
+ * A typed question about this screen: understood (word matching, else Bayani-1 choosing the kind of question), then
+ * answered by the app from the screen's records, so the answer is exactly what the records say. Questions about the
+ * app itself go to the facts library.
+ */
+function useAnswer(here: Here | undefined, q: string | null) {
+  const ms = useModel();
+  const [state, setState] = useState<{ q: string; answer: Answer | null; by: "words" | "bayani" | null } | null>(null);
+  const has = modelReady(ms);
+  useEffect(() => {
+    if (!here || !q) return;
+    let on = true;
+    const records = recordsOf(here);
+    const byWords = intentByWords(q, records);
+    if (byWords) { Promise.resolve().then(() => { if (on) setState({ q, answer: answerFor(byWords, q, records), by: "words" }); }); return () => { on = false; }; }
+    Promise.resolve().then(() => { if (on) setState({ q, answer: null, by: null }); });
+    (has ? classifyQuestion(q) : Promise.resolve(null)).then((intent) => { if (on) setState({ q, answer: answerFor(intent ?? "unknown", q, records), by: intent ? "bayani" : "words" }); });
+    return () => { on = false; };
+  }, [here, q, has]);
+  return state && state.q === q ? state : null;
+}
+
+function AnswerCard({ a, by, onSheet, onClose }: { a: Answer; by: "words" | "bayani" | null; onSheet?: boolean; onClose?: () => void }) {
+  return <View style={{ marginTop: 12 }}><BayaniSurface label="Bayani">
+    <Text style={[t.body, { fontSize: 16 }]}>{a.text}</Text>
+    {a.lines?.length ? <View style={{ backgroundColor: onSheet ? c.white : c.wash, borderRadius: radius.inner, paddingHorizontal: 12, paddingVertical: 4, marginTop: 10 }}>
+      {a.lines.map((l, i) => <Text key={`${l}${i}`} style={[t.meta, { paddingVertical: 6, borderTopWidth: i ? 1 : 0, borderTopColor: c.s200, color: c.ink }]}>{l}</Text>)}</View> : null}
+    {a.go ? <View style={{ alignSelf: "flex-start", marginTop: 10 }}><Outline label={a.go.label} onPress={() => { onClose?.(); router.push(a.go!.path as never); }} /></View> : null}
+    <Meta>{`\nFrom this screen's records${by === "bayani" ? ". Bayani-1 worked out what you asked" : ""}.`}</Meta>
+  </BayaniSurface></View>;
+}
+
 /** The mark pulses while Bayani-1 works through its questions (never a spinner). */
 function Thinking({ on, children }: { on: boolean; children: ReactNode }) {
   const k = useSharedValue(1);
@@ -203,7 +243,10 @@ export function AskBox({ here, mem, onSheet, onClose, noticed = [], checking = 0
   const [asked, setAsked] = useState<{ q: string; intent: Intent | null } | null>(null);
   const api = useMoves();
   const all = useMemo(() => [...movesFor(here, mem ?? null), ...noticed].sort((a, b) => b.rank - a.rank), [here, mem, noticed]);
-  const go = (question = q, intent: Intent | null = intentOf(question)) => { if (question.trim().length < 3) return; setQ(question); setAsked({ q: question, intent }); };
+  const [typed, setTyped] = useState<string | null>(null);
+  const answer = useAnswer(here, typed);
+  // A starter chip shows its list of moves; a typed question gets an answer from the records (or the facts library).
+  const go = (question = q, intent: Intent | null = intentOf(question), starter = false) => { if (question.trim().length < 3) return; setQ(question); setAsked({ q: question, intent }); setTyped(starter || !here ? null : question.trim()); };
   const starters = STARTERS[here?.kind ?? ""] ?? [];
   const facts = asked !== null && asked.intent === null;
   const intent: Intent = asked?.intent ?? "week";
@@ -212,12 +255,15 @@ export function AskBox({ here, mem, onSheet, onClose, noticed = [], checking = 0
   const model = picked.filter((m) => m.by === "bayani").slice(0, 8);
   const runnable = [...rules, ...model].filter((m) => m.run);
   return <Animated.View layout={listLayout} style={{ marginTop: 6 }}>
-    <Field icon="spark" placeholder={here ? "Ask what's late, who's needed, what's missing" : "Ask about Dasig, BIX or Bayani"} value={q}
+    <Field icon="spark" placeholder={here ? (here.kind === "group" ? "Ask about your group's projects" : here.kind === "task" ? "Ask about this step" : "Ask about this project") : "Ask about Dasig, BIX or Bayani"} value={q}
       onChangeText={(x) => { setQ(x); if (!here) setAsked({ q: x, intent: null }); }} autoCorrect={false} returnKeyType="send" onSubmitEditing={() => go()} />
     {here ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>{starters.map((x) =>
-      <Pressable key={x.q} onPress={() => go(x.q, x.intent)} accessibilityRole="button" style={{ paddingHorizontal: 12, minHeight: 40, borderRadius: radius.pill, backgroundColor: asked?.q === x.q ? tone.primaryContainer : onSheet ? c.wash : c.white, justifyContent: "center" }}>
+      <Pressable key={x.q} onPress={() => go(x.q, x.intent, true)} accessibilityRole="button" style={{ paddingHorizontal: 12, minHeight: 40, borderRadius: radius.pill, backgroundColor: asked?.q === x.q ? tone.primaryContainer : onSheet ? c.wash : c.white, justifyContent: "center" }}>
         <Text style={{ fontSize: 14, fontWeight: "600", color: asked?.q === x.q ? tone.onPrimaryContainer : c.ink }}>{x.q}</Text></Pressable>)}</View> : null}
-    {here && facts ? <FactAnswers q={asked!.q} onPick={setQ} onSheet={onSheet} />
+    {here && typed ? (answer?.answer ? (answer.answer.intent === "unknown" ? <><AnswerCard a={answer.answer} by={answer.by} onSheet={onSheet} onClose={onClose} /><FactAnswers q={typed} onPick={setQ} onSheet={onSheet} /></>
+        : <AnswerCard a={answer.answer} by={answer.by} onSheet={onSheet} onClose={onClose} />)
+        : <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }}><Thinking on><BayaniMark size={24} /></Thinking><Text style={t.meta}>Reading this screen…</Text></View>)
+      : here && facts ? <FactAnswers q={asked!.q} onPick={setQ} onSheet={onSheet} />
       : here ? <Animated.View key={intent + String(!!asked)} layout={listLayout} entering={FadeIn.duration(motion.fade)} style={{ marginTop: 12 }}>
         <Eyebrow>{asked ? "What needs doing" : "What needs doing, right now"}</Eyebrow>
         <Panel style={{ backgroundColor: onSheet ? c.wash : c.white }}>{rules.length ? <MoveList moves={rules} api={api} onOpen={onClose} /> : <Text style={[t.body, { paddingVertical: 14 }]}>{NOTHING[intent]}</Text>}</Panel>

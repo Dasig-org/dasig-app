@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
-import { checkModel, downloadModel, MODEL_MB, pauseDownload, removeModel, useModel } from "@/lib/bayani";
+import { checkModel, downloadModel, modelMb, modelSpec, pauseDownload, removeModel, updateAvailable, useModel, type ModelSpec } from "@/lib/bayani";
 import { AskBox, ModelLine, ProgressBar } from "@/ui/Bayani";
 import { Eyebrow, IconCircle, Meta, Outline, Panel, Primary, Row, Screen, Title } from "@/ui/kit";
 import { useSnackbar } from "@/ui/Snackbar";
-import { type as t } from "@/ui/theme";
+import { c, radius, type as t } from "@/ui/theme";
 
 /**
  * Ask Bayani: answers from the facts library, shown as written with their source; and Bayani-1 on this phone.
@@ -20,6 +20,12 @@ export default function AskBayani() {
   const s = useModel();
   const { show } = useSnackbar();
   const [test, setTest] = useState<{ busy: boolean; result?: string; error?: string }>({ busy: false });
+  // A newer Bayani published (a manifest next to its files): offered here, downloaded like the first one.
+  const [update, setUpdate] = useState<ModelSpec | null>(null);
+  const installed = s.phase === "ready" || s.phase === "loaded" || s.phase === "failed";
+  useEffect(() => { let on = true; if (installed) updateAvailable().then((u) => { if (on) setUpdate(u); }).catch(() => {}); return () => { on = false; }; }, [installed]);
+  const spec = modelSpec();
+  const mb = (x: ModelSpec) => x.files.base.mb + x.files.lora.mb;
   const runCheck = async () => {
     setTest({ busy: true });
     try {
@@ -36,7 +42,7 @@ export default function AskBayani() {
       {s.phase === "web" ? <Meta>{"Bayani's model runs in the Android and iPhone apps, not in the browser. The answers above work everywhere."}</Meta>
         : s.phase === "checking" ? null
         : s.phase === "none" ? <Panel>
-            <Row left={<IconCircle name="download" />} title="Download Bayani-1" meta={`About ${(MODEL_MB / 1000).toFixed(1)} GB. Use Wi-Fi. It keeps downloading while you use the app, and continues from where it stopped if the app closes.`} last />
+            <Row left={<IconCircle name="download" />} title="Download Bayani-1" meta={`About ${(modelMb() / 1000).toFixed(1)} GB. Use Wi-Fi. It keeps downloading while you use the app, and continues from where it stopped if the app closes.`} last />
             <View style={{ paddingBottom: 14 }}><Primary label="Download" onPress={() => { void downloadModel(); }} /></View>
           </Panel>
         : s.phase === "downloading" || s.phase === "paused" ? <Panel>
@@ -51,12 +57,17 @@ export default function AskBayani() {
           </Panel>
         : <Panel>
             <Row left={<IconCircle name={s.phase === "failed" ? "pending" : "check"} />} title={s.phase === "failed" ? "Bayani-1 is on this phone, but couldn't start" : "Bayani-1 is on this phone"}
-              meta="For leads, when the group turned on Project memory. On a project or a step it checks usual steps against the ones you have, judges which belong, links steps to your usual steps, suggests a team for steps without one, and at close-out names the steps worth keeping. Each suggestion shows how sure it is; you accept, decline or undo. Offline." last />
+              meta={`${spec.name} ${spec.version}${spec.family ? `, on ${spec.family}` : ""}. For leads, when the group turned on Project memory. On a project or a step it checks usual steps against the ones you have, judges which belong, links steps to your usual steps, suggests a team for steps without one, and at close-out names the steps worth keeping. Each suggestion shows how sure it is; you accept, decline or undo. It also works out what you ask about a project or a step. Offline.`} last />
             <View style={{ paddingBottom: 14, gap: 10 }}>
               <ModelLine />
               {test.result ? <Text style={t.body}>{test.result}</Text> : null}
               {test.error ? <><Text style={t.body}>{"It didn't work:"}</Text><Text style={t.meta} selectable>{test.error}</Text></> : null}
               <Primary label={test.busy ? (s.phase === "loading" ? "Starting Bayani-1…" : "Checking…") : "Check that it works"} disabled={test.busy} onPress={runCheck} />
+              {update ? <View style={{ backgroundColor: c.sand, borderRadius: radius.inner, padding: 12, gap: 8 }}>
+                <Text style={t.row}>{`A newer Bayani is ready: ${update.version}`}</Text>
+                <Meta>{`${update.family ? `On ${update.family}. ` : ""}About ${(mb(update) / 1000).toFixed(1)} GB on Wi-Fi. It replaces the one on this phone.`}</Meta>
+                <Primary label="Update Bayani" onPress={async () => { await removeModel(); setUpdate(null); setTest({ busy: false }); void downloadModel(); }} />
+              </View> : null}
               <Outline label="Remove it" onPress={async () => { await removeModel(); setTest({ busy: false }); show("Bayani-1 removed from this phone."); }} />
             </View>
           </Panel>}

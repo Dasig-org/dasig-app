@@ -69,7 +69,7 @@ export function CoordinatorHome() {
   // What Bayani sees here: every project on the go with its steps, teams and needs, and what waits on an officer.
   const officer = s.groups.some((g) => g.org.id === orgId && g.role.code?.code === "officer");
   const group = s.current;
-  const here = useMemo(() => (data && group ? { kind: "group" as const, org: group, projects: data.projects, tasks: data.tasks, teams: data.teams, needs: data.needs, requests: data.requests, unreported: data.past, officer } : undefined), [data, group, officer]);
+  const here = useMemo(() => (data && group ? { kind: "group" as const, org: group, projects: data.projects, tasks: data.tasks, teams: data.teams, needs: data.needs, requests: data.requests, unreported: data.past, officer, people: data.people } : undefined), [data, group, officer]);
   const [sharing, setSharing] = useState<R | null>(null);
   const [skip, setSkip] = useState<Set<string>>(new Set());
   const [remind, setRemind] = useState<string | null>(null);

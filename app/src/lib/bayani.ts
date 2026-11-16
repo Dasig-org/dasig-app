@@ -4,7 +4,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { buildPack, decode, parseFacts, findFacts, words, type Fact, type Pack, type Question } from "@bayanihan/bayani";
 import FACTS from "@/data/facts.json";
 import type { R } from "./bix";
-import { chat, completionFor, confidenceOf, type TokenProbs } from "./bayaniPrompt";
+import { completionFor, confidenceOf, messagesFor, type TokenProbs } from "./bayaniPrompt";
+import { INTENT_SETTINGS, asIntent, intentGrammar, intentMessages, type Intent as AskIntent } from "./bayaniAnswer";
 
 /*
  * Bayani in the app (bayani repo: docs/CONTEXT_PACK.md, knowledge/README.md).
@@ -24,10 +25,36 @@ export function ask(question: string) {
 }
 
 const HF = "https://huggingface.co/dasig/bayani-1/resolve/main";
-const FILES = { base: { name: "base-q4_k_m.gguf", mb: 1056 }, lora: { name: "bayani-1-lora.gguf", mb: 36 } } as const;
-type Key = keyof typeof FILES;
+/*
+ * Which model, from a manifest, not from the app (Don, 2026-11-16: OLMo-2-1B scored as well as SmolLM2-1.7B and is
+ * smaller; "regardless of the installed model, the app should be able to instruct it"). A new Bayani base or add-on
+ * ships by publishing `bayani-manifest.json` next to its files; the app offers it as an update, no new APK. Prompts
+ * are chat messages in the model's own format (lib/bayaniPrompt.ts), so nothing here is tied to one model.
+ *   { "name": "Bayani-1", "version": "...", "family": "OLMo-2-1B-Instruct",
+ *     "files": { "base": { "url": "https://...", "file": "base.gguf", "mb": 760 }, "lora": { ... } } }
+ * Without a manifest (or offline), the built-in one below: the model this app was first released with.
+ */
+type Key = "base" | "lora";
+export type ModelSpec = { name: string; version: string; family: string; files: Record<Key, { url: string; file: string; mb: number }> };
+const BUILT_IN: ModelSpec = { name: "Bayani-1", version: "1.7B-q4-lora-2026-11-14", family: "SmolLM2-1.7B-Instruct",
+  files: { base: { url: `${HF}/base-q4_k_m.gguf`, file: "base-q4_k_m.gguf", mb: 1056 }, lora: { url: `${HF}/bayani-1-lora.gguf`, file: "bayani-1-lora.gguf", mb: 36 } } };
+export const MANIFEST_URL = `${HF}/bayani-manifest.json`;
+/** The model on this phone (from complete.json), or the one a download would fetch. */
+let spec: ModelSpec = BUILT_IN;
+export const modelSpec = () => spec;
+const validSpec = (x: any): x is ModelSpec => !!x && typeof x.name === "string" && typeof x.version === "string" && ["base", "lora"].every((k) => typeof x.files?.[k]?.url === "string" && /^https:\/\//.test(x.files[k].url) && typeof x.files[k].file === "string" && /^[\w.-]+\.gguf$/.test(x.files[k].file) && typeof x.files[k].mb === "number");
+/** The published manifest, if there is one and it's well formed. */
+export async function latestSpec(): Promise<ModelSpec | null> {
+  try { const r = await fetch(MANIFEST_URL); if (!r.ok) return null; const j = await r.json(); return validSpec(j) ? { ...j, family: String(j.family ?? "") } : null; } catch { return null; }
+}
+/** A newer model than the one on this phone, to offer as an update. Null when up to date, offline, or none installed. */
+export async function updateAvailable(): Promise<ModelSpec | null> {
+  if (!(await modelDownloaded())) return null;
+  const next = await latestSpec();
+  return next && next.version !== spec.version ? next : null;
+}
 const ORDER: Key[] = ["lora", "base"];
-export const MODEL_MB = FILES.base.mb + FILES.lora.mb;
+export const modelMb = () => spec.files.base.mb + spec.files.lora.mb;
 export const modelSupported = Platform.OS !== "web";
 
 /*
@@ -68,17 +95,17 @@ async function fs() {
   const FS = await import("expo-file-system");
   const dir = new FS.Directory(FS.Paths.document, "bayani");
   if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
-  return { FS, dir, file: (k: Key) => new FS.File(dir, FILES[k].name) };
+  return { FS, dir, file: (k: Key) => new FS.File(dir, spec.files[k].file) };
 }
 const sizeOf = (f: { exists: boolean; size?: number | null }) => (f.exists ? f.size ?? 0 : 0);
 
 /** complete.json: each file's size from the server, and the size of each finished file. Absent for older downloads. */
-type Marker = { size: Partial<Record<Key, number>>; done: Partial<Record<Key, number>> };
+type Marker = { size: Partial<Record<Key, number>>; done: Partial<Record<Key, number>>; spec?: ModelSpec };
 async function readMarker(): Promise<Marker | null> {
   const { FS, dir } = await fs();
   const f = new FS.File(dir, "complete.json");
   if (!f.exists) return null;
-  try { const m = JSON.parse(await f.text()) as Marker; return { size: m.size ?? {}, done: m.done ?? {} }; } catch { return { size: {}, done: {} }; }
+  try { const m = JSON.parse(await f.text()) as Marker; if (validSpec(m.spec)) spec = m.spec; return { size: m.size ?? {}, done: m.done ?? {}, ...(m.spec ? { spec: m.spec } : {}) }; } catch { return { size: {}, done: {} }; }
 }
 async function writeMarker(m: Marker) {
   const { FS, dir } = await fs();
@@ -91,11 +118,11 @@ async function writeMarker(m: Marker) {
 async function onPhone(): Promise<{ complete: boolean; got: number; total: number }> {
   const { file } = await fs();
   const m = await readMarker();
-  const expected = (k: Key) => m?.size[k] ?? FILES[k].mb * 1_000_000;
+  const expected = (k: Key) => m?.size[k] ?? spec.files[k].mb * 1_000_000;
   const total = ORDER.reduce((n, k) => n + expected(k), 0);
   const got = ORDER.reduce((n, k) => n + sizeOf(file(k)), 0);
   // Before complete.json (v0.19 and earlier): the old rule, 90% of the size. A damaged one shows when it fails to load.
-  const complete = m ? ORDER.every((k) => !!m.done[k] && sizeOf(file(k)) === m.done[k]) : ORDER.every((k) => sizeOf(file(k)) > FILES[k].mb * 900_000);
+  const complete = m ? ORDER.every((k) => !!m.done[k] && sizeOf(file(k)) === m.done[k]) : ORDER.every((k) => sizeOf(file(k)) > spec.files[k].mb * 900_000);
   return { complete, got, total };
 }
 
@@ -150,9 +177,11 @@ async function fetchAll(): Promise<void> {
     const old = await readMarker();
     // An older download (no complete.json) is started over: its files can't be checked.
     if (!old) for (const k of ORDER) if (file(k).exists) file(k).delete();
-    const m: Marker = old ?? { size: {}, done: {} };
+    // A new download fetches whichever model is published now; a paused one keeps the model it started.
+    if (!old?.spec) spec = (await latestSpec()) ?? spec;
+    const m: Marker = { ...(old ?? { size: {}, done: {} }), spec };
     await writeMarker(m);
-    const expected = (k: Key) => m.size[k] ?? FILES[k].mb * 1_000_000;
+    const expected = (k: Key) => m.size[k] ?? spec.files[k].mb * 1_000_000;
     const total = () => ORDER.reduce((n, k) => n + expected(k), 0);
     for (const k of ORDER) {
       if (m.done[k] && sizeOf(file(k)) === m.done[k]) continue;
@@ -163,7 +192,7 @@ async function fetchAll(): Promise<void> {
         const resume = Platform.OS === "android" && attempt === 0 && have > 0 && !!m.size[k] && have < m.size[k]! ? String(have) : undefined;
         if (!resume && file(k).exists) file(k).delete();
         set({ phase: "downloading", got: before + (resume ? have : 0), total: total() });
-        const dl = L.createDownloadResumable(`${HF}/${FILES[k].name}`, file(k).uri, {}, (p) => {
+        const dl = L.createDownloadResumable(spec.files[k].url, file(k).uri, {}, (p) => {
           if (p.totalBytesExpectedToWrite > 0 && m.size[k] !== p.totalBytesExpectedToWrite) { m.size[k] = p.totalBytesExpectedToWrite; writeMarker(m).catch(() => {}); }
           set({ phase: "downloading", got: before + p.totalBytesWritten, total: total() });
         }, resume);
@@ -189,7 +218,7 @@ async function fetchAll(): Promise<void> {
     await AsyncStorage.removeItem(WANT).catch(() => {});
     set({ phase: "ready" });
   } catch (e) {
-    const p = await onPhone().catch(() => ({ got: 0, total: MODEL_MB * 1_000_000 }));
+    const p = await onPhone().catch(() => ({ got: 0, total: modelMb() * 1_000_000 }));
     set({ phase: "paused", got: p.got, total: p.total, why: e instanceof Error ? e.message : String(e) });
   }
 }
@@ -200,7 +229,7 @@ export async function pauseDownload(): Promise<void> {
   pausing = true;
   await AsyncStorage.removeItem(WANT).catch(() => {});
   await current?.pauseAsync().catch(() => {});
-  const p = await onPhone().catch(() => ({ got: 0, total: MODEL_MB * 1_000_000 }));
+  const p = await onPhone().catch(() => ({ got: 0, total: modelMb() * 1_000_000 }));
   set({ phase: "paused", got: p.got, total: p.total, why: "Paused." });
 }
 
@@ -213,6 +242,7 @@ export async function removeModel(): Promise<void> {
   for (const k of ORDER) if (file(k).exists) file(k).delete();
   const m = new FS.File(dir, "complete.json");
   if (m.exists) m.delete();
+  spec = BUILT_IN; // the next download reads the manifest again
   cache.clear();
   set({ phase: "none" });
 }
@@ -269,12 +299,32 @@ export async function checkModel(): Promise<{ loadMs: number; answerMs: number; 
   const m = await serial(() => model());
   if (!m) throw new Error(state.phase === "failed" ? state.error : "Bayani-1 isn't on this phone yet.");
   const loadMs = Date.now() - t0, t1 = Date.now();
-  const r = await serial(() => m.completion({ prompt: chat("Is a clean-up drive something a volunteer group does? Answer yes or no."), n_predict: 3, temperature: 0, grammar: 'root ::= "yes" | "no"', stop: ["<|im_end|>"] }));
+  const r = await serial(() => m.completion({ messages: messagesFor("Is a clean-up drive something a volunteer group does? Answer yes or no."), n_predict: 3, temperature: 0, grammar: 'root ::= "yes" | "no"' }));
   return { loadMs, answerMs: Date.now() - t1, lib: state.phase === "loaded" ? state.lib : undefined, answer: r.text.trim() };
 }
 
+/**
+ * What kind of question a typed one is (lib/bayaniAnswer.ts), chosen by Bayani-1's base model under a grammar: the
+ * Bayani add-on is switched off for it (it was trained for the six judgment questions, not for this) and back on after.
+ * Null when the model isn't on this phone or can't load; the app then answers from word matching alone.
+ */
+export async function classifyQuestion(question: string): Promise<AskIntent | null> {
+  if (!modelSupported) return null;
+  return serial(async () => {
+    const m = await model();
+    if (!m) return null;
+    const ctxL = m as unknown as { removeLoraAdapters?: () => Promise<void>; applyLoraAdapters?: (l: { path: string; scaled?: number }[]) => Promise<void> };
+    const { file } = await fs();
+    try {
+      await ctxL.removeLoraAdapters?.();
+      const r = await m.completion({ messages: intentMessages(question), grammar: intentGrammar(), ...INTENT_SETTINGS });
+      return asIntent(r.text);
+    } finally { await ctxL.applyLoraAdapters?.([{ path: path(file("lora").uri), scaled: 1 }]).catch(() => {}); }
+  }).catch((e) => { noteError(e); return null; });
+}
+
 /** Who suggested it, as BIX Provenance names a model (rule 3, "Suggestions and their answers"). */
-export const MODEL = { name: "Bayani-1", version: "1.7B-q4-lora-2026-11-14" } as const;
+export const modelId = () => ({ name: spec.name, version: spec.version });
 /**
  * Below this, a judgment isn't shown (BIX leaves thresholds to the app). Set from scripts/bayani-check.ts (2026-11-15,
  * the 254 held-out questions through this app's prompt, grammar and confidence, llama.cpp): at 0.8 the shown answers
@@ -323,7 +373,7 @@ export async function judge(q: Question, records: R[], viewer: string): Promise<
   return out ?? null;
 }
 /** How a person's answer to a model suggestion is recorded (BIX "Suggestions and their answers"). */
-export const assisted = (j: Judgment, edited = false) => ({ type: "model" as const, model: { ...MODEL, question: j.question, ...(Number.isFinite(j.confidence) ? { confidence: Math.round(j.confidence * 100) / 100 } : {}), ...(edited ? { edited: true } : {}) } });
+export const assisted = (j: Judgment, edited = false) => ({ type: "model" as const, model: { ...modelId(), question: j.question, ...(Number.isFinite(j.confidence) ? { confidence: Math.round(j.confidence * 100) / 100 } : {}), ...(edited ? { edited: true } : {}) } });
 
 /** The existing step most likely to be the same as a usual one: shared words, plus a point for the same team. */
 export function closestTask(practice: R, tasks: R[], teamName: (t: R) => string | undefined): R | null {

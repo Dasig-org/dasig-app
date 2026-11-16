@@ -20,8 +20,10 @@ type S = { n: number; right: number; shown: number; shownRight: number; conf: nu
 const by: Record<string, S> = {};
 for (const row of rows.slice(0, limit)) {
   const pack = { question: row.question, text: row.text, answers: Array.isArray(row.answers) ? row.answers : { text: { maxLength: 60 } }, labels: {}, tokens: 0, needsModel: true } as Pack;
-  const c = completionFor(pack);
-  const res = await fetch(`${SERVER}/completion`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...c, cache_prompt: true }) }).then((r) => r.json()) as
+  // The messages in the model's own chat format, as llama.rn does on the phone (llama-server's /apply-template).
+  const { messages, ...c } = completionFor(pack);
+  const { prompt } = await fetch(`${SERVER}/apply-template`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages }) }).then((r) => r.json()) as { prompt: string };
+  const res = await fetch(`${SERVER}/completion`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...c, prompt, cache_prompt: true }) }).then((r) => r.json()) as
     { content: string; completion_probabilities?: { token: string; top_logprobs?: { token: string; logprob: number }[] }[] };
   // llama-server's raw logprobs → llama.rn's shape ({content, probs: [{tok_str, prob}]}).
   const steps: TokenProbs = (res.completion_probabilities ?? []).map((s) => ({ content: s.token, probs: (s.top_logprobs ?? []).map((p) => ({ tok_str: p.token, prob: Math.exp(p.logprob) })) }));
