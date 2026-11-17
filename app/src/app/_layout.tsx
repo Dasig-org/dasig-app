@@ -5,7 +5,8 @@ import { reportProblem } from "@/ui/About";
 import { loadScheme } from "@/ui/scheme";
 import { installViewTransitions } from "@/ui/viewTransitions";
 import { c, scheme as active } from "@/ui/theme";
-import { router, Stack, type ErrorBoundaryProps } from "expo-router";
+import { router, Stack, useSegments, type ErrorBoundaryProps } from "expo-router";
+import { trackScreen } from "@/lib/analytics";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SnackbarProvider } from "@/ui/Snackbar";
@@ -37,6 +38,10 @@ export default function Layout() {
   useEffect(() => { loadScheme().finally(() => setReady(true)); installViewTransitions(); }, []);
   // Android app: a tapped push opens the screen it points to (lib/push.ts).
   useEffect(() => { let stop = () => {}; listenForPushTaps((url) => router.push(url as never)).then((f) => { stop = f; }).catch(() => {}); return () => stop(); }, []);
+  // Web only: count screens by their route shape (/project/[id]/plan), never their IDs (lib/analytics.web.ts).
+  const segments = useSegments() as string[];
+  const route = "/" + segments.filter((s) => !s.startsWith("(")).join("/");
+  useEffect(() => { trackScreen(route); }, [route]);
   if (!ready) return <View style={{ flex: 1, backgroundColor: "#F2F2F7" }} />;
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

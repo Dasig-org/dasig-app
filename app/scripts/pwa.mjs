@@ -64,6 +64,19 @@ const head = `
     <meta name="robots" content="noindex" />
     <script>if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));</script>`;
 if (!html.includes('rel="manifest"')) html = html.replace("</head>", `${head}\n  </head>`);
+// Google Analytics 4 (volunteer.dasig.org stream). Page views are sent by src/lib/analytics.web.ts with route shapes only,
+// so the automatic one is off. The page address is cleaned before the tag starts (IDs and invite codes become [id] and
+// [token], query strings and fragments are dropped), so Google's automatic events (scrolls, clicks) never see them.
+// The stream's "page changes based on browser history events" must stay off: it reads the raw address.
+// DASIG_GA_ID="" builds without analytics.
+const ga = process.env.DASIG_GA_ID ?? "G-L9HSYDWR9M";
+if (ga && !html.includes("googletagmanager.com")) html = html.replace("</head>", `
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date());
+    (function(){var p=location.pathname.split("/"),k={join:"[token]",need:"[id]",org:"[id]",project:"[id]",task:"[id]",team:"[id]",vote:"[id]"};
+    if(k[p[1]]&&p[2]&&p[2]!=="new")p[2]=k[p[1]];p=p.join("/");gtag("set",{page_location:location.origin+p,page_path:p});})();
+    gtag("config","${ga}",{send_page_view:false});</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=${ga}"></script>
+  </head>`);
 html = html.replace(/<meta name="viewport" content="([^"]*)"/, (m, c) => (c.includes("viewport-fit") ? m : `<meta name="viewport" content="${c}, viewport-fit=cover"`));
 writeFileSync(join(dist, "index.html"), html);
 
