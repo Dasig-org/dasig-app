@@ -104,6 +104,10 @@ From [`docs/EXPERIENCE.md`](docs/EXPERIENCE.md), in short:
 By contributing you agree that your contribution is licensed under **AGPL-3.0** ([`LICENSE`](LICENSE)). "Dasig" and
 the hands emblem are trademarks of Dasig Inc.; see [`TRADEMARK.md`](TRADEMARK.md) if you publish your own build.
 
+Sign off each commit (`git commit -s`), which adds a `Signed-off-by:` line. It certifies the
+[Developer Certificate of Origin](https://developercertificate.org/): that you wrote the change, or otherwise have the
+right to submit it under these licences.
+
 ## Questions
 
 [Dasig-org Discussions](https://github.com/orgs/Dasig-org/discussions), or hello@dasig.org. Security and privacy

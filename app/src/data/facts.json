@@ -84,7 +84,7 @@
    "What licences do you use?",
    "Can I use the code?"
   ],
-  "answer": "Yes. The Dasig app is AGPL-3.0; BIX's schemas and Bayanihan Core use a permissive licence; Bayanihan Server is Apache-2.0. The licences take effect when the code is published with the first release. The code is open; the Dasig name and emblem stay trademarks of Dasig Inc.",
+  "answer": "Yes. The Dasig app and Bayanihan Server are AGPL-3.0 (the Server since 2026-11-21); BIX's schemas, Bayanihan Core and Bayani use permissive licences (Apache-2.0), and the BIX specification is CC BY 4.0. The code is open; the Dasig name and emblem stay trademarks of Dasig Inc.",
   "source": "https://bayanihan.dasig.org/about",
   "updated": "2026-11-14"
  },
