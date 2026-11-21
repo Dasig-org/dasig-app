@@ -4,7 +4,7 @@
  * checked on a Mac with scripts/bayani-answer-check.ts. Run: ../../bayanihan/node_modules/.bin/vitest run test
  */
 import { describe, expect, it } from "vitest";
-import { answerFor, intentByWords } from "../src/lib/bayaniAnswer";
+import { answerFor, brief, cleanAdvice, intentByWords, parseIdeas } from "../src/lib/bayaniAnswer";
 
 const NOW = Date.parse("2026-11-16T10:00:00+08:00"), at = (d) => new Date(NOW + d * 864e5).toISOString();
 const P = (id, name) => [`Person/${id}`, { resourceType: "Person", id, name: { text: name } }];
@@ -27,7 +27,7 @@ const ask = (q) => { const i = intentByWords(q, s); return { i, a: i ? answerFor
 describe("Bayani answering from the screen's records", () => {
   it("understands the common questions by their words", () => {
     expect(["What should we do this week?", "Anything overdue?", "Which steps still need people?", "How much money did we raise?", "Who's doing the bibs?", "When is the run?", "Are we on schedule?", "Give me the big picture", "Do we have enough bottles?", "What has the team been saying?", "Who is leading the water team?", "How do I invite someone?"]
-      .map((q) => intentByWords(q, s))).toEqual(["this-week", "late", "needs-people", "not-recorded", "step", "when-where", "progress", "summary", "needs", "updates", "team", "unknown"]);
+      .map((q) => intentByWords(q, s))).toEqual(["this-week", "late", "needs-people", "not-recorded", "step", "when-where", "progress", "summary", "needs", "updates", "team", "app"]);
     expect(intentByWords("Which committee is struggling?", s)).toBe(null); // left to Bayani-1
   });
   it("answers with exactly what the records say", () => {
@@ -46,5 +46,27 @@ describe("Bayani answering from the screen's records", () => {
   });
   it("asks which team when it can't tell", () => {
     expect(answerFor("team", "Which committee is struggling?", s, NOW).text).toBe("Which team? There are Water, Registration.");
+  });
+  it("lists what isn't done, on a team's screen too", () => {
+    expect(["What's pending here?", "What's left?", "Which tasks are not done yet?"].map((q) => intentByWords(q, s))).toEqual(["pending", "pending", "pending"]);
+    expect(ask("What's pending here?").a.text).toBe("4 steps aren't done yet, 1 late, 2 with nobody on them.");
+    const w = { ...s, kind: "team", team: s.teams[0], teams: [s.teams[0]], tasks: s.tasks.filter((x) => x.team?.reference === "Team/w") };
+    expect(answerFor(intentByWords("What's pending here?", w), "", w, NOW).lines.map((l) => l.split(" · ")[0])).toEqual(["Buy 400 bottles of water", "Arrange first aid"]);
+    expect(intentByWords("Who leads us?", w)).toBe("team");
+    expect(answerFor("team", "Who leads us?", w, NOW).text).toBe("Water is led by Rhea. 1 of 3 steps done.");
+  });
+  it("sends ideas and advice to Bayani-1, and app questions to the facts", () => {
+    expect(["Suggest steps to add", "What are we forgetting?", "What else should we prepare?", "Any ideas for the run?"].map((q) => intentByWords(q, s))).toEqual(["ideas", "ideas", "ideas", "ideas"]);
+    expect(["How do we get more runners?", "What could go wrong on the day?", "Any tips?"].map((q) => intentByWords(q, s))).toEqual(["advice", "advice", "advice"]);
+    expect(intentByWords("What is BIX?", s)).toBe("app");
+  });
+  it("keeps only usable new step names from what the model wrote", () => {
+    const out = "Sure, here are five more steps:\n1. Prepare handouts and materials\n2. **Print 300 race bibs**\n3. Coordinate with the barangay.\n- set up a first aid tent\nStep 5 -\n4. Coordinate with barangay officials";
+    expect(parseIdeas(out, s.tasks.map((x) => x.title))).toEqual(["Prepare handouts and materials", "Coordinate with the barangay", "Set up a first aid tent"]);
+    expect(cleanAdvice("Short and sweet.")).toBe("Short and sweet.");
+    expect(parseIdeas("Design a poster for the event\nCreate a Facebook event page\nCreate a Facebook event page for the barangay", ["Design the poster"])).toEqual(["Create a Facebook event page"]);
+    expect(cleanAdvice(`${"Promote it on Facebook and in class. ".repeat(20)}`).length).toBeLessThanOrEqual(600);
+    expect(parseIdeas("1. Coordinate with the barangay health center to ensure they have the permits.\n2. Group work: divide the students into groups\n3. Create a Facebook event page\n4. Design a Facebook event page banner", [])).toEqual(["Coordinate with the barangay health center", "Group work", "Create a Facebook event page", "Design a Facebook event page banner"]);
+    expect(brief(s, NOW)).toMatch(/^Project: Lahug Fun Run\nHappens: in 10 days\nWhere: Lahug Elementary School\nTeams: Water, Registration\nSteps they have: Find a water supplier \(Water\) - done; /);
   });
 });

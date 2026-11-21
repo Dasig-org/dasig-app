@@ -57,11 +57,14 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
     // Who suggested each idea (its note, else its history), named and not "Someone".
     const by: Record<string, string> = {};
     for (const x of tasks.filter((t) => t.status === "draft")) { const r = await suggester(x); if (r) { by[x.id] = r; if (!people[r]) { try { people[r] = await bix.get("Person", r.split("/")[1]!); } catch {} } } }
-    return { team, tasks, parts, people, asking, by };
+    // Its project and group, so Ask Bayani here knows the team's work and what it's part of.
+    const [project, org] = await Promise.all([team.initiative?.reference ? bix.get("Initiative", team.initiative.reference.split("/")[1]).catch(() => null) : null,
+      team.organization?.reference ? bix.get("Organization", team.organization.reference.split("/")[1]).catch(() => null) : null]);
+    return { team, tasks, parts, people, asking, by, project, org };
   }, [id]);
   if (error) return <Screen onRefresh={reload} back><ErrorState message={error} onRetry={reload} /></Screen>;
   if (!data) return <Screen onRefresh={reload} back><Skeleton /></Screen>;
-  const { team, tasks, parts, people, asking, by } = data;
+  const { team, tasks, parts, people, asking, by, project, org } = data;
   const name = (ref: string) => people[ref]?.name?.text ?? "Someone";
   const leadsIt = parts.some((p: any) => p.person.reference === me && p.role === "lead");
   // Rights come from the team's own group, not the group chosen in the pill (bug found in the multi-person test).
@@ -181,7 +184,7 @@ export default function Team({ view = "work" }: { view?: "work" | "people" }) {
       {lead ? <Meta>{"\nTick to keep this team's work to itself, or to let its volunteers see the whole project."}</Meta> : null}
   </>);
   return (
-    <Screen onRefresh={reload} back right={<View style={{ flexDirection: "row", gap: 8 }}><RoundButton icon="userplus" label="Add people" onPress={() => (orgId ? setAddPeople(true) : makeInvite())} />
+    <Screen onRefresh={reload} back here={{ kind: "team", team, tasks, project, org, lead, people }} right={<View style={{ flexDirection: "row", gap: 8 }}><RoundButton icon="userplus" label="Add people" onPress={() => (orgId ? setAddPeople(true) : makeInvite())} />
       {lead ? <RoundButton icon="plus" label="Add" onPress={() => setAddOpen(true)} /> : null}</View>}
       dock={view === "work" ? <Field value={title} onChangeText={setTitle} placeholder={lead ? "Add a task for this team" : "Suggest a task"} onSubmitEditing={add} submitBehavior="submit" returnKeyType="done" /> : undefined}>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}><IconCircle name={teamIcon(team.name)} size={56} tone="white" />

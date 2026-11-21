@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { checkModel, downloadModel, modelMb, modelSpec, pauseDownload, removeModel, updateAvailable, useModel, type ModelSpec } from "@/lib/bayani";
-import { AskBox, ModelLine, ProgressBar } from "@/ui/Bayani";
+import { AppPromo, AskBox, ModelLine, ProgressBar } from "@/ui/Bayani";
 import { Eyebrow, IconCircle, Meta, Outline, Panel, Primary, Row, Screen, Title } from "@/ui/kit";
 import { useSnackbar } from "@/ui/Snackbar";
 import { c, radius, type as t } from "@/ui/theme";
@@ -35,11 +35,11 @@ export default function AskBayani() {
   };
   return (
     <Screen back bayani={false}>
-      <Title sub="Ask about Dasig, BIX or Bayani and get the answer as written, with its source. On a project or a step, the round button opens Bayani as your copilot: it says what's late and what's missing, and a lead can do it from there.">Ask Bayani</Title>
+      <Title sub="Ask about Dasig, BIX or Bayani and get the answer as written, with its source. On a project, a team or a step, the round button opens Bayani as your copilot: what's pending and late, who's needed, and ideas for steps to add.">Ask Bayani</Title>
       <AskBox />
 
-      <Eyebrow>Bayani on this phone</Eyebrow>
-      {s.phase === "web" ? <Meta>{"Bayani's model runs in the Android and iPhone apps, not in the browser. The answers above work everywhere."}</Meta>
+      <Eyebrow>{s.phase === "web" ? "Bayani in the app" : "Bayani on this phone"}</Eyebrow>
+      {s.phase === "web" ? <AppPromo />
         : s.phase === "checking" ? null
         : s.phase === "none" ? <Panel>
             <Row left={<IconCircle name="download" />} title="Download Bayani-1" meta={`About ${(modelMb() / 1000).toFixed(1)} GB. Use Wi-Fi. It keeps downloading while you use the app, and continues from where it stopped if the app closes.`} last />

@@ -16,12 +16,15 @@
  */
 type R = { resourceType: string; id: string; [k: string]: any };
 export type ScreenRecords = {
-  kind: "group" | "project" | "task";
-  org?: R | null; project?: R | null; task?: R | null; projects?: R[];
+  kind: "group" | "project" | "task" | "team";
+  org?: R | null; project?: R | null; task?: R | null; team?: R | null; projects?: R[];
   tasks?: R[]; teams?: R[]; needs?: R[]; people?: Record<string, R>;
 };
-export type Intent = "late" | "needs-people" | "this-week" | "team" | "step" | "when-where" | "progress" | "needs" | "updates" | "summary" | "not-recorded" | "unknown";
+export type Intent = "pending" | "ideas" | "advice" | "app" | "late" | "needs-people" | "this-week" | "team" | "step" | "when-where" | "progress" | "needs" | "updates" | "summary" | "not-recorded" | "unknown";
 export const INTENTS: { code: Intent; means: string }[] = [
+  { code: "pending", means: "what isn't done yet, what's pending, left or still open" },
+  { code: "ideas", means: "ideas or suggestions: steps or tasks to add, what they might be forgetting, what to prepare" },
+  { code: "advice", means: "advice or tips: how to do something better, what could go wrong, how to get more people" },
   { code: "late", means: "which steps are late or overdue" },
   { code: "needs-people", means: "which steps still need someone, need volunteers or have nobody" },
   { code: "this-week", means: "what to do this week or soon, what's coming up, priorities" },
@@ -33,7 +36,8 @@ export const INTENTS: { code: Intent; means: string }[] = [
   { code: "updates", means: "the latest news or updates people posted" },
   { code: "summary", means: "a summary or overview of the project or group" },
   { code: "not-recorded", means: "money, budget, funds raised, expenses, or anything the app doesn't keep" },
-  { code: "unknown", means: "anything else, or how to use the Dasig app itself" },
+  { code: "app", means: "how to use the Dasig app, or what Dasig, BIX or Bayani is" },
+  { code: "unknown", means: "anything else" },
 ];
 
 const STOP = new Set("the and for who what when where which how are our with this that does did has have was were will can any all from into about step steps task tasks team teams doing".split(" "));
@@ -51,8 +55,9 @@ function named<T extends R>(q: string, xs: T[], label: (x: T) => string): T | nu
 /** Plain word matching: the questions people ask most. Null when it can't tell (then Bayani-1 decides). */
 export function intentByWords(q: string, s: ScreenRecords): Intent | null {
   const steps = [...(s.tasks ?? []), ...(s.task ? [s.task] : [])];
-  // How to use the app is for the facts library, not this screen's records.
-  if (has(q, /^(how (do|can|should) (i|we)|how to|can i|where (do|can) i)\b/) && !has(q, /\b(late|done|going|doing)\b/)) return "unknown";
+  // How to use the app, or what Dasig is: the facts library, not this screen's records.
+  if ((has(q, /^(how (do|can) i|how to|can i|where (do|can) i)\b/) || has(q, /\b(dasig|bix|bayanihan|bayani)\b/)) && !has(q, /\b(late|done|going|doing|pending)\b/)) return "app";
+  if (has(q, /\b(pending|remaining|unfinished|undone|outstanding|incomplete|to-?dos?|not (yet )?(done|finished|complete\w*)|left to do|still open|open (steps?|tasks?|work))\b/) || has(q, /what('?s| is) left/)) return "pending";
   if (has(q, /\b(money|budget|funds?|raised|raise|expenses?|spen[dt]|spending|paid|costs?|cash|pesos?|php|donations? of money)\b/)) return "not-recorded";
   if (has(q, /\b(summar\w*|overview|recap|big picture|tell me about)\b/)) return "summary";
   if (has(q, /\b(late|overdue|behind|delayed|missed)\b/)) return "late";
@@ -60,8 +65,11 @@ export function intentByWords(q: string, s: ScreenRecords): Intent | null {
   if (has(q, /\b(supplies|goods|items|bottles|received|donated|inventory)\b/)) return "needs";
   if (has(q, /\b(progress|how far|percent|on track|on schedule)\b/) || has(q, /how many .*done/)) return "progress";
   if (has(q, /\b(when|where|date|venue|location|what time)\b/) && !named(q, steps, (x) => x.title)) return "when-where";
-  if (has(q, /\b(this week|today|tomorrow|soon|coming up|priorit\w*|focus|should we)\b/)) return "this-week";
-  if (named(q, s.teams ?? [], (x) => x.name) && has(q, /\b(team|committee|lead|leads|leading|members?)\b/)) return "team";
+  if (has(q, /\b(this week|today|tomorrow|soon|coming up|priorit\w*|focus)\b/)) return "this-week";
+  // Ideas and advice (Bayani-1 writes them; Don, 2026-11-21: "the AI should also think and suggest on its own").
+  if (has(q, /\b(ideas?|suggest\w*|forget\w*|forgot|missing|what else|prepare|brainstorm)\b/) || has(q, /what (other )?(steps|tasks|things) (should|do|could|can) we/)) return "ideas";
+  if (has(q, /\b(tips?|advice|go wrong|risks?|improve|better|attract)\b/) || has(q, /^(how (do|can|should|could) we|should we|what if|what should (we|i)|what can we)\b/)) return "advice";
+  if ((named(q, s.teams ?? [], (x) => x.name) || s.kind === "team") && has(q, /\b(team|committee|lead|leads|leading|members?|who)\b/)) return "team";
   if (has(q, /\b(need|needs|needed|nobody|no one|volunteers?|short of|unassigned)\b/)) return "needs-people";
   if (named(q, steps, (x) => x.title)) return "step";
   return null;
@@ -76,7 +84,7 @@ export const intentGrammar = () => `root ::= ${INTENTS.map((x) => JSON.stringify
 export const INTENT_SETTINGS = { n_predict: 6, temperature: 0, stop: ["\n"] } as const;
 export const asIntent = (out: string): Intent => (INTENTS.find((x) => x.code === out.trim())?.code ?? "unknown");
 
-export type Answer = { intent: Intent; text: string; lines?: string[]; go?: { label: string; path: string } };
+export type Answer = { intent: Intent; text: string; lines?: string[]; go?: { label: string; path: string }; url?: { label: string; href: string; why: string } };
 const day = (iso?: string) => (iso ? new Date(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) : "");
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const ext = (r: R | null | undefined, url: string) => ((r?.extension ?? []) as { url: string; value?: unknown }[]).find((e) => e.url === url)?.value as string | undefined;
@@ -94,6 +102,13 @@ export function answerFor(intent: Intent, q: string, s: ScreenRecords, now = Dat
   const line = (x: R) => [x.title, teamName(x), x.due ? `due ${day(x.due)}` : null, who(x).length ? who(x).join(", ") : x.status === "completed" ? null : "nobody yet"].filter(Boolean).join(" · ");
   const p = s.project;
   switch (intent) {
+    case "pending": {
+      if (!open.length) return { intent, text: all.length ? `Nothing is pending: all ${plural(all.length, "step is", "steps are")} done.` : "There are no steps here yet." };
+      const order = [...open].sort((a, b) => String(a.due ?? "9999").localeCompare(String(b.due ?? "9999")));
+      const state = (x: R) => (late.includes(x) ? "late" : x.status === "requested" ? "asked, no answer yet" : who(x).length ? "under way" : "nobody yet");
+      return { intent, text: `${plural(open.length, "step isn't", "steps aren't")} done yet${late.length ? `, ${late.length} late` : ""}${nobody.length ? `, ${nobody.length} with nobody on ${nobody.length === 1 ? "it" : "them"}` : ""}.`,
+        lines: order.slice(0, 10).map((x) => `${line(x)} · ${state(x)}`) };
+    }
     case "late":
       return late.length ? { intent, text: `${plural(late.length, "step is", "steps are")} late.`, lines: late.slice(0, 8).map(line) }
         : { intent, text: open.length ? `Nothing is late. ${plural(open.length, "step is", "steps are")} still open.` : "Nothing is late, and nothing is open." };
@@ -109,7 +124,7 @@ export function answerFor(intent: Intent, q: string, s: ScreenRecords, now = Dat
       return { intent, text: head, lines: soon.slice(0, 8).map(line) };
     }
     case "team": {
-      const t = named(q, s.teams ?? [], (x) => x.name);
+      const t = named(q, s.teams ?? [], (x) => x.name) ?? s.team ?? null;
       if (!t) return { intent, text: s.teams?.length ? `Which team? There are ${s.teams.map((x) => x.name).join(", ")}.` : "There are no teams here yet." };
       const lead = active(t).find((x) => x.role === "lead"), members = active(t).filter((x) => x.role !== "lead").map((x) => name(x.person.reference));
       const work = all.filter((x) => x.team?.reference === `Team/${t.id}`), d = work.filter((x) => x.status === "completed").length;
@@ -147,11 +162,71 @@ export function answerFor(intent: Intent, q: string, s: ScreenRecords, now = Dat
         p?.description ? String(p.description) : null,
         all.length ? `${done.length} of ${plural(all.length, "step")} done${late.length ? `, ${late.length} late` : ""}${nobody.length ? `, ${nobody.length} with nobody yet` : ""}.` : null,
         s.teams?.length ? `Teams: ${s.teams.map((t) => { const l = active(t).find((x) => x.role === "lead"); return `${t.name}${l ? ` (${name(l.person.reference)})` : ""}`; }).join(", ")}.` : null];
+      if (s.kind === "team" && s.team) parts.unshift(`${s.team.name}${p ? `, part of ${p.title}` : ""}.`);
       return { intent, text: parts.filter(Boolean).join(" ") || "There isn't much here yet.", ...(p && s.kind === "project" ? { go: { label: "Make a report", path: `/project/${p.id}/report` } } : {}) };
     }
     case "not-recorded":
       return { intent, text: "Dasig doesn't keep money records yet: no budget, funds raised or expenses. They're planned, linked to Dasig.org fundraising." };
     default:
-      return { intent: "unknown", text: `About ${p?.title ?? s.org?.name ?? "this screen"}, I can say what's late, who's needed, how a team or a step is doing, when and where, progress, needs, updates, or give a summary.` };
+      return { intent: intent === "app" ? "app" : "unknown", text: `About ${s.team?.name ?? p?.title ?? s.org?.name ?? "this screen"}, I can say what's late, who's needed, how a team or a step is doing, when and where, progress, needs, updates, or give a summary.` };
   }
+}
+
+/*
+ * Bayani-1 writing (Don, 2026-11-21): ideas for steps to add, and short advice. Ideas are low-stakes (a person adds
+ * them or not); facts above stay worked out from the records. The base model writes freely (a grammar garbled it in the
+ * Mac test), then parseIdeas keeps only usable step names that aren't already in the plan.
+ */
+const relDay = (iso?: string, now = Date.now()) => { if (!iso) return null; const d = Math.round((Date.parse(iso) - now) / 864e5); return d === 0 ? "today" : d > 0 ? `in ${d} days` : `${-d} days ago`; };
+/** The screen's records as a short brief for the model: what it is, when, the teams and the steps it has. */
+export function brief(s: ScreenRecords, now = Date.now()): string {
+  const p = s.project, kind = (p?.category as { display?: string }[] | undefined)?.[0]?.display;
+  const teamOf = (x: R) => (s.teams ?? []).find((t) => `Team/${t.id}` === x.team?.reference)?.name;
+  const steps = [...(s.task ? [s.task] : []), ...(s.tasks ?? [])].filter((x, i, a) => !["cancelled"].includes(x.status) && a.findIndex((y) => y.id === x.id) === i).slice(0, 25);
+  const place = ext(p, "bayanihan:place-text");
+  return [p ? `Project: ${p.title}` : s.org ? `Group: ${s.org.name}` : null, kind ? `Kind: ${kind}` : null, p?.description ? `About: ${String(p.description).slice(0, 300)}` : null,
+    p?.period?.start ? `Happens: ${relDay(p.period.start, now)}` : null, place ? `Where: ${place}` : null,
+    s.kind === "team" && s.team ? `This team: ${s.team.name}` : s.teams?.length ? `Teams: ${s.teams.map((t) => t.name).join(", ")}` : null,
+    s.kind === "group" && s.projects?.length ? `Projects: ${s.projects.filter((x) => x.status === "active").map((x) => x.title).join("; ")}` : null,
+    `Steps they have: ${steps.length ? steps.map((x) => `${x.title}${s.kind !== "team" && teamOf(x) ? ` (${teamOf(x)})` : ""}${x.status === "completed" ? " - done" : ""}`).join("; ") : "none yet"}`].filter(Boolean).join("\n");
+}
+const WRITER = "You help volunteer groups in the Philippines plan projects.";
+export function ideasMessages(s: ScreenRecords, now = Date.now()) {
+  const forWho = s.kind === "team" && s.team ? `the ${s.team.name} team` : "they";
+  return [{ role: "system" as const, content: `${WRITER} Suggest practical steps they still need. Each step is a short task name starting with a verb. Don't repeat steps they already have.` },
+    { role: "user" as const, content: `${brief(s, now)}\n\nList 5 more steps ${forWho} should add, one per line.` }];
+}
+export function adviceMessages(q: string, s: ScreenRecords, now = Date.now()) {
+  return [{ role: "system" as const, content: `You are Bayani, a helper for volunteer groups in the Philippines. Give short, practical advice for this project in 2 to 4 sentences. Don't state numbers, names or dates that aren't in the project details.` },
+    { role: "user" as const, content: `${brief(s, now)}\n\nQuestion: ${q.trim()}` }];
+}
+export const WRITE_SETTINGS = { temperature: 0.3, n_predict: 160 } as const;
+/** Usable step names from the model's list: numbering stripped, chatter dropped, nothing the plan already has. Up to 5. */
+export function parseIdeas(text: string, have: string[]): string[] {
+  const seen = have.map((h) => new Set(W(h)));
+  const out: string[] = [];
+  for (const raw of text.split("\n")) {
+    // Numbering, bold and a trailing "(Team)" the model copies from the brief come off.
+    let x = raw.replace(/\*\*/g, "").replace(/^\s*(\d+[.):]|[-*•]|step\s*\d+\s*[.):-])\s*/i, "").replace(/[.:;]+\s*$/, "").replace(/\s*\([^)]*\)\s*$/, "").replace(/[.:;]+$/, "").trim();
+    // "Group work: divide the students…" keeps its name; a long sentence keeps its first clause.
+    const colon = x.indexOf(":");
+    if (colon >= 6 && colon <= 50) x = x.slice(0, colon).trim();
+    if (x.length > 55) x = x.split(/,\s| (?:to (?:ensure|make sure|keep|be|provide|attract|help|avoid)|so that|in order to|if needed|such as)\b/)[0]!.trim();
+    if (/^(sure|here|step\s*\d|of course|these|they|i )/i.test(x) || x.length < 6 || x.length > 80 || !/^[A-Za-z]/.test(x)) continue;
+    x = x[0]!.toUpperCase() + x.slice(1);
+    const w = new Set(W(x));
+    if (!w.size) continue;
+    const dup = seen.some((h) => { let n = 0; for (const k of w) if (h.has(k)) n++; return n / Math.max(w.size, h.size) >= 0.75 || (h.size >= 2 && n === h.size); });
+    if (dup) continue;
+    seen.push(w); out.push(x);
+    if (out.length >= 5) break;
+  }
+  return out;
+}
+/** The model's advice, kept short: at most about 600 characters, ending on a whole sentence. */
+export function cleanAdvice(text: string): string {
+  const x = text.trim();
+  if (x.length <= 600) return x;
+  const cut = x.slice(0, 600), end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf(".\n"), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+  return end > 200 ? cut.slice(0, end + 1) : `${cut.trim()}…`;
 }

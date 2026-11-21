@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -5,11 +6,13 @@ import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-nati
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 import { evidence, type Observed } from "@bayanihan/core/memory";
-import { ask, classifyQuestion, downloadModel, modelReady, removeModel, retryModel, startModel, useModel, type ModelState } from "@/lib/bayani";
+import { advise, ask, classifyQuestion, downloadModel, modelId, modelSupported, suggestSteps, modelReady, removeModel, retryModel, startModel, useModel, type ModelState } from "@/lib/bayani";
 import { answerFor, intentByWords, type Answer, type ScreenRecords } from "@/lib/bayaniAnswer";
-import { intentOf, movesFor, noticed, NOTHING, pick, STARTERS, type Intent, type Move } from "@/lib/copilot";
+import { movesFor, noticed, NOTHING, pick, STARTERS, type Intent, type Move } from "@/lib/copilot";
+import { useSnackbar } from "./Snackbar";
 import { MoveList, useMoves } from "./Moves";
 import { bix, refId, type R } from "@/lib/bix";
+import { useSession } from "@/lib/session";
 import { short } from "@/lib/dates";
 import { loadMemory, type Memory } from "@/lib/memory";
 import { Icon } from "./Icon";
@@ -21,12 +24,13 @@ import { c, motion, radius, tone, type as t } from "./theme";
  * located"). One round button, bottom right above the bar, on every Screen. It opens a sheet that knows the screen
  * (a group, a project or a step) and acts as a COPILOT: it reads the records, says what needs doing (late, nobody on
  * it, out of order, usually needed), and lets a lead do those things one by one or together, with Undo (lib/copilot.ts).
- * Bayani-1 was trained on BIX records, not on text, so there are no open written answers. Questions are matched to
- * what the copilot knows, or to the facts library, shown as written with sources. A person decides.
+ * Facts (what's pending, late, who's on it) are worked out from the records; Bayani-1 writes ideas for steps to add
+ * and short advice, labelled as its own (Don, 2026-11-21). Questions about Dasig itself go to the facts library.
  * Look: DESIGN_STANDARD §5 (outline gradient spark in a ringed white circle; the Bayani surface for its own judgments).
  */
 export type Here =
   | { kind: "project"; project: R; tasks: R[]; teams: R[]; org: R | null; lead: boolean; needs?: R[]; people?: Record<string, R> }
+  | { kind: "team"; team: R; tasks: R[]; project: R | null; org?: R | null; lead: boolean; people?: Record<string, R> }
   | { kind: "task"; task: R; project: R | null; team: R | null; siblings: R[]; org?: R | null; lead?: boolean; subs?: R[]; people?: Record<string, R> }
   /*
    * A group. With `tasks` and `teams` (the coordinator's Home loads them), Bayani looks across every project on the go:
@@ -51,7 +55,7 @@ export function BayaniMark({ size = 40 }: { size?: number }) {
 }
 
 /** The Bayani surface: warm tint, gradient hairline, faint sparkles, an uppercase label. Only for Bayani's own judgments. */
-export function BayaniSurface({ label, children }: { label: string; children: ReactNode }) {
+export function BayaniSurface({ label, children, onHide }: { label: string; children: ReactNode; onHide?: () => void }) {
   const [box, setBox] = useState({ w: 0, h: 0 });
   return <View onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })} style={{ borderRadius: radius.panel, padding: 14, overflow: "hidden" }}>
     {box.w && box.h ? <View pointerEvents="none" style={StyleSheet.absoluteFill}><Svg width={box.w} height={box.h}>
@@ -59,9 +63,40 @@ export function BayaniSurface({ label, children }: { label: string; children: Re
       <Rect x={0.75} y={0.75} width={box.w - 1.5} height={box.h - 1.5} rx={radius.panel - 0.75} fill="url(#bys)" stroke="url(#byb)" strokeWidth={1.5} />
       <G opacity={0.35} transform={`translate(${box.w - 38} 8) scale(0.9)`}>{SPARK.map((d) => <Path key={d} d={d} stroke={c.gold} strokeWidth={1.6} fill="none" strokeLinejoin="round" />)}</G>
     </Svg></View> : null}
-    <Text style={[t.eyebrow, { color: "#B4500F", marginBottom: 8 }]}>{label}</Text>
+    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+      <Text style={[t.eyebrow, { color: "#B4500F", flex: 1 }]}>{label}</Text>
+      {onHide ? <Pressable onPress={onHide} accessibilityRole="button" accessibilityLabel={`Hide ${label}`} hitSlop={10} style={{ paddingHorizontal: 10, height: 28, borderRadius: radius.pill, backgroundColor: c.white, justifyContent: "center", marginRight: 30 }}>
+        <Text style={{ fontSize: 13, fontWeight: "600", color: c.s500 }}>Hide</Text></Pressable> : null}
+    </View>
     {children}
   </View>;
+}
+
+/*
+ * On the web and the PWA, Ask Bayani promotes the phone app (Don, 2026-11-21): the facts work here, but Bayani-1's
+ * ideas, advice and plan checks run only on the phone. Answers from the records come first; the card sits below them; "Not now" folds it to one
+ * line for 14 days (this browser only). Links to the get page: the Android app is in pilot, Google Play after.
+ */
+export const GET_APP = "https://bayanihan.dasig.org/get";
+const PROMO = "dasig.bayani.promo.v1";
+const getApp = () => { Linking.openURL(GET_APP).catch(() => {}); };
+export function AppPromo() {
+  const [folded, setFolded] = useState<boolean | null>(null);
+  useEffect(() => { AsyncStorage.getItem(PROMO).then((v) => setFolded(!!v && Date.now() - Number(v) < 14 * 86400000)).catch(() => setFolded(false)); }, []);
+  if (modelSupported || folded === null) return null;
+  if (folded) return <Pressable onPress={getApp} accessibilityRole="link" style={{ flexDirection: "row", alignItems: "center", gap: 8, minHeight: 40, marginTop: 10 }}>
+    <BayaniMark size={22} /><Text style={[t.meta, { flex: 1 }]}>{"Ideas and advice from Bayani-1 are in the Android app"}</Text><Text style={{ fontSize: 14, fontWeight: "600", color: c.accent }}>Get it</Text></Pressable>;
+  return <View style={{ marginTop: 12 }}><BayaniSurface label="Bayani in the app">
+    <Text style={[t.row, { fontSize: 17 }]}>{"Get the full Bayani on your phone"}</Text>
+    <Text style={[t.meta, { marginTop: 4 }]}>{"Here, Bayani reads your records. In the Android app, Bayani-1 also thinks with you:"}</Text>
+    <View style={{ marginTop: 8, gap: 6 }}>{["Suggests steps your project or team still needs", "Answers planning questions with practical advice", "Checks your plan and suggests which team takes a step", "Works offline. Nothing leaves your phone"].map((x) =>
+      <View key={x} style={{ flexDirection: "row", gap: 8, alignItems: "flex-start" }}><Icon name="check" size={16} color={c.accent} /><Text style={[t.body, { flex: 1, fontSize: 15 }]}>{x}</Text></View>)}</View>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 16, marginTop: 12 }}>
+      <Primary label="Get the Android app" onPress={getApp} />
+      <LinkText onPress={() => { setFolded(true); AsyncStorage.setItem(PROMO, String(Date.now())).catch(() => {}); }}>Not now</LinkText>
+    </View>
+    <Meta>{"\nFree. The iPhone app is coming."}</Meta>
+  </BayaniSurface></View>;
 }
 
 /** Under every Bayani judgment: it was worked out here, and nothing left the phone. */
@@ -170,6 +205,14 @@ function HereTask({ h, onClose }: { h: Extract<Here, { kind: "task" }>; onClose:
   return <><Eyebrow>{h.task.title}</Eyebrow><Lines lines={lines} /></>;
 }
 
+/** A team: its work, and the project it's part of. */
+function HereTeam({ h, onClose }: { h: Extract<Here, { kind: "team" }>; onClose: () => void }) {
+  const all = live(h.tasks), done = all.filter((k) => k.status === "completed").length;
+  const lines: Line[] = [{ icon: "check", title: all.length ? `${done} of ${all.length} steps done` : "No work added yet", meta: all.length - done ? `${all.length - done} still open` : undefined }];
+  if (h.project) lines.push({ icon: "flag", title: `Part of ${h.project.title}`, go: () => { onClose(); router.push(`/project/${h.project!.id}`); } });
+  return <><Eyebrow>{h.team.name}</Eyebrow><Lines lines={lines} /></>;
+}
+
 /** A group: its projects, and whether project memory is on. */
 function HereGroup({ h }: { h: Extract<Here, { kind: "group" }> }) {
   const on = ((h.org.assist ?? []) as { code?: string }[]).some((a) => a.code === "memory");
@@ -186,41 +229,130 @@ function HereGroup({ h }: { h: Extract<Here, { kind: "group" }> }) {
 /** What the screen loaded, as the records Bayani answers from (lib/bayaniAnswer.ts). */
 export function recordsOf(h: Here): ScreenRecords {
   if (h.kind === "project") return { kind: "project", org: h.org, project: h.project, tasks: h.tasks, teams: h.teams, needs: h.needs, people: h.people };
+  if (h.kind === "team") return { kind: "team", org: h.org, project: h.project, team: h.team, teams: [h.team], tasks: h.tasks, people: h.people };
   if (h.kind === "task") return { kind: "task", org: h.org, project: h.project, task: h.task, tasks: [...(h.subs ?? []), ...h.siblings], teams: h.team ? [h.team] : [], people: h.people };
   return { kind: "group", org: h.org, projects: h.projects, tasks: h.tasks, teams: h.teams, needs: h.needs, people: h.people };
 }
 
 /**
  * A typed question about this screen: understood (word matching, else Bayani-1 choosing the kind of question), then
- * answered by the app from the screen's records, so the answer is exactly what the records say. Questions about the
- * app itself go to the facts library.
+ * answered. Facts are worked out from the screen's records. Ideas for steps and advice are Bayani-1's own writing,
+ * when it's on this phone. Questions about Dasig itself go to the facts library.
  */
-function useAnswer(here: Here | undefined, q: string | null) {
+type Asked = { q: string; n: number; answer: Answer | null; by: "words" | "bayani" | null; ideas?: string[]; advice?: string; writing?: boolean };
+function useAnswer(here: Here | undefined, q: string | null, n: number) {
   const ms = useModel();
-  const [state, setState] = useState<{ q: string; answer: Answer | null; by: "words" | "bayani" | null } | null>(null);
+  const [state, setState] = useState<Asked | null>(null);
   const has = modelReady(ms);
   useEffect(() => {
     if (!here || !q) return;
     let on = true;
     const records = recordsOf(here);
-    const byWords = intentByWords(q, records);
-    if (byWords) { Promise.resolve().then(() => { if (on) setState({ q, answer: answerFor(byWords, q, records), by: "words" }); }); return () => { on = false; }; }
-    Promise.resolve().then(() => { if (on) setState({ q, answer: null, by: null }); });
-    (has ? classifyQuestion(q) : Promise.resolve(null)).then((intent) => { if (on) setState({ q, answer: answerFor(intent ?? "unknown", q, records), by: intent ? "bayani" : "words" }); });
+    // Each answer carries its question and ask number, so a newer one is never overwritten by an older one (on the web,
+    // with no model, the answer is ready at once: a "thinking" state set after it left the sheet stuck, 2026-11-21).
+    const done = (x: Omit<Asked, "n">) => { if (on) setState({ ...x, n }); };
+    (async () => {
+      const byWords = intentByWords(q, records);
+      const intent = byWords ?? (has ? await classifyQuestion(q) : null) ?? "unknown";
+      const by = byWords ? "words" as const : has ? "bayani" as const : "words" as const;
+      if (intent === "ideas" && has && here.kind !== "group") {
+        const have = [...(records.tasks ?? []), ...(records.task ? [records.task] : [])].map((x) => String(x.title));
+        const ideas = await suggestSteps(records, have, (so) => { if (so.length) done({ q, by: "bayani", answer: { intent, text: "Some steps you could add:" }, ideas: so, writing: true }); });
+        return done({ q, by: "bayani", answer: { intent, text: ideas?.length ? "Some steps you could add:" : "Bayani-1 couldn't think of anything new for this plan." }, ideas: ideas ?? [] });
+      }
+      if ((intent === "advice" || intent === "unknown" || (intent === "ideas" && here.kind === "group")) && has) {
+        const advice = await advise(q, records, (so) => { if (so) done({ q, by: "bayani", answer: { intent: "advice", text: so }, advice: so, writing: true }); });
+        if (advice) return done({ q, by: "bayani", answer: { intent: "advice", text: advice }, advice });
+      }
+      // Without the model (the web, or before it's downloaded): the most useful answer the records give (what's still
+      // open for ideas; the overview for advice or anything else), then where Bayani-1 does more (Don, 2026-11-21).
+      if (["ideas", "advice", "unknown"].includes(intent) && !has) {
+        const base = answerFor(intent === "ideas" ? "pending" : "summary", q, records);
+        const more = intent === "ideas" ? "Bayani-1 also suggests new steps for this, from the project's details" : intent === "advice" ? "Bayani-1 also answers questions like this with practical advice" : "Bayani-1 also answers questions in your own words";
+        return done({ q, by, answer: { ...base, intent, text: intent === "unknown" ? `${base.text} Ask me what's pending, late, or who's still needed.` : base.text,
+          url: modelSupported ? { label: "Get Bayani-1", href: "/ask-bayani", why: `${more}, once it's on this phone.` } : { label: "Get the Android app", href: GET_APP, why: `${more}, in the Android app.` } } });
+      }
+      done({ q, by, answer: answerFor(intent, q, records) });
+    })().catch(() => done({ q, by: null, answer: answerFor("unknown", q, records) }));
     return () => { on = false; };
-  }, [here, q, has]);
-  return state && state.q === q ? state : null;
+  }, [here, q, has, n]);
+  return state && state.q === q && state.n === n ? state : null;
 }
 
-function AnswerCard({ a, by, onSheet, onClose }: { a: Answer; by: "words" | "bayani" | null; onSheet?: boolean; onClose?: () => void }) {
-  return <View style={{ marginTop: 12 }}><BayaniSurface label="Bayani">
+function AnswerCard({ a, by, onSheet, onClose, advice, writing }: { a: Answer; by: "words" | "bayani" | null; onSheet?: boolean; onClose?: () => void; advice?: boolean; writing?: boolean }) {
+  return <View style={{ marginTop: 12 }}><BayaniSurface label={advice ? "Bayani's advice" : "Bayani"}>
     <Text style={[t.body, { fontSize: 16 }]}>{a.text}</Text>
     {a.lines?.length ? <View style={{ backgroundColor: onSheet ? c.white : c.wash, borderRadius: radius.inner, paddingHorizontal: 12, paddingVertical: 4, marginTop: 10 }}>
       {a.lines.map((l, i) => <Text key={`${l}${i}`} style={[t.meta, { paddingVertical: 6, borderTopWidth: i ? 1 : 0, borderTopColor: c.s200, color: c.ink }]}>{l}</Text>)}</View> : null}
+    {a.url ? <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: c.s200, flexDirection: "row", alignItems: "center", gap: 10 }}>
+      <Text style={[t.meta, { flex: 1 }]}>{a.url.why}</Text>
+      <LinkText onPress={() => { if (a.url!.href.startsWith("/")) { onClose?.(); router.push(a.url!.href as never); } else getApp(); }}>{a.url.label}</LinkText></View> : null}
     {a.go ? <View style={{ alignSelf: "flex-start", marginTop: 10 }}><Outline label={a.go.label} onPress={() => { onClose?.(); router.push(a.go!.path as never); }} /></View> : null}
-    <Meta>{`\nFrom this screen's records${by === "bayani" ? ". Bayani-1 worked out what you asked" : ""}.`}</Meta>
+    {writing ? <Writing /> : null}
+    <Meta>{advice ? "\nWritten by Bayani-1 on this phone, from this screen. A suggestion: check it before acting on it." : `\nFrom this screen's records${by === "bayani" ? ". Bayani-1 worked out what you asked" : ""}.`}</Meta>
   </BayaniSurface></View>;
 }
+
+/** Where an idea goes: the project (and the team, on a team's screen). A lead adds it; anyone else suggests it. */
+export function ideaTarget(h: Here): { project: R | null; team: R | null; lead: boolean } {
+  if (h.kind === "team") return { project: h.project, team: h.team, lead: h.lead };
+  if (h.kind === "project") return { project: h.project, team: null, lead: h.lead };
+  if (h.kind === "task") return { project: h.project, team: h.team, lead: !!h.lead };
+  return { project: null, team: null, lead: false };
+}
+
+/**
+ * Bayani-1's ideas for steps, each with Add (or Suggest, for someone who isn't a lead) and Got it. An added step is
+ * recorded as suggested by Bayani-1 (Provenance), with no team on a project (Bayani then suggests one) and the team on
+ * a team's screen. "More ideas" asks again.
+ */
+export function IdeaRows({ here, ideas, onSheet, onAdded }: { here: Here; ideas: string[]; onSheet?: boolean; onAdded?: () => void }) {
+  const s = useSession();
+  const { show } = useSnackbar();
+  const [gone, setGone] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState<string | null>(null);
+  const { project, team, lead } = ideaTarget(here);
+  const me = s.person ? `Person/${s.person.id}` : null;
+  const add = async (title: string) => {
+    if (!project) return;
+    setBusy(title);
+    try {
+      const task = bix.create("Task", { intent: lead ? "plan" : "proposal", status: lead ? "ready" : "draft", title, partOf: { reference: `Initiative/${project.id}` },
+        ...(team ? { owner: { reference: `Team/${team.id}` }, team: { reference: `Team/${team.id}` }, audience: "team" } : {}),
+        ...(!lead && me ? { note: [{ author: { reference: me }, time: new Date().toISOString(), text: "Suggested (Bayani's idea)" }] } : {}) });
+      await bix.commitAssisted([task], { type: "model", model: { ...modelId(), question: "step-ideas" } });
+      setGone((g) => new Set(g).add(title));
+      show(lead ? `Added “${title}”.` : `Suggested “${title}”. A lead will see it.`);
+      onAdded?.();
+    } catch (e) { show(e instanceof Error ? e.message : String(e), { error: true }); }
+    setBusy(null);
+  };
+  // A lead adds it. Anyone else suggests it to a team (a team's page lists its suggestions); a project page has no list
+  // of suggestions without a team, so there it's Got it only.
+  const canAdd = !!project && (lead || !!team);
+  const left = ideas.filter((x) => !gone.has(x));
+  if (!left.length) return ideas.length ? <Text style={[t.meta, { marginTop: 6 }]}>{"That's all of them."}</Text> : null;
+  return <View style={{ backgroundColor: onSheet ? c.white : c.wash, borderRadius: radius.inner, paddingHorizontal: 12, marginTop: 10 }}>
+    {left.map((x, i) => <Animated.View key={x} layout={listLayout} style={{ paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: c.s200 }}>
+      <Text style={t.row}>{x}</Text>
+      <View style={{ flexDirection: "row", gap: 16, marginTop: 6, alignItems: "center" }}>
+        {canAdd ? <Outline label={busy === x ? "…" : lead ? "Add" : "Suggest it"} onPress={() => add(x)} /> : null}
+        <LinkText onPress={() => setGone((g) => new Set(g).add(x))}>Got it</LinkText>
+      </View></Animated.View>)}</View>;
+}
+
+/** Bayani-1's ideas for steps, in the sheet: the rows, and "More ideas" to ask again. */
+function IdeasCard({ here, ideas, text, onMore, onSheet, writing }: { here: Here; ideas: string[]; text: string; onMore: () => void; onSheet?: boolean; writing?: boolean }) {
+  return <View style={{ marginTop: 12 }}><BayaniSurface label="Bayani's ideas">
+    <Text style={[t.body, { fontSize: 16 }]}>{text}</Text>
+    <IdeaRows here={here} ideas={ideas} onSheet={onSheet} />
+    {writing ? <Writing /> : <View style={{ flexDirection: "row", marginTop: 10 }}><LinkText onPress={onMore}>More ideas</LinkText></View>}
+    <Meta>{"\nBayani-1's own ideas, written on this phone from this screen. Your group's past projects come first."}</Meta>
+  </BayaniSurface></View>;
+}
+
+/** While Bayani-1 is still writing: the pulsing mark, under what it has written so far. */
+const Writing = () => <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 }}><Thinking on><BayaniMark size={20} /></Thinking><Text style={t.meta}>{"Still writing…"}</Text></View>;
 
 /** The mark pulses while Bayani-1 works through its questions (never a spinner). */
 function Thinking({ on, children }: { on: boolean; children: ReactNode }) {
@@ -240,30 +372,39 @@ export function AskBox({ here, mem, onSheet, onClose, noticed = [], checking = 0
   const ms = useModel();
   const modelBusy = ms.phase === "loading" || ms.phase === "failed";
   const [q, setQ] = useState("");
+  // A chip with a list of moves (late, who's needed) shows that list; a typed question or any other chip gets an answer.
   const [asked, setAsked] = useState<{ q: string; intent: Intent | null } | null>(null);
   const api = useMoves();
   const all = useMemo(() => [...movesFor(here, mem ?? null), ...noticed].sort((a, b) => b.rank - a.rank), [here, mem, noticed]);
   const [typed, setTyped] = useState<string | null>(null);
-  const answer = useAnswer(here, typed);
-  // A starter chip shows its list of moves; a typed question gets an answer from the records (or the facts library).
-  const go = (question = q, intent: Intent | null = intentOf(question), starter = false) => { if (question.trim().length < 3) return; setQ(question); setAsked({ q: question, intent }); setTyped(starter || !here ? null : question.trim()); };
+  const [again, setAgain] = useState(0);
+  const answer = useAnswer(here, typed, again);
+  const go = (question = q, intent: Intent | null = null) => {
+    if (question.trim().length < 3) return;
+    setQ(question); setAsked({ q: question, intent }); setTyped(intent || !here ? null : question.trim());
+  };
   const starters = STARTERS[here?.kind ?? ""] ?? [];
-  const facts = asked !== null && asked.intent === null;
   const intent: Intent = asked?.intent ?? "week";
   const picked = pick(all, intent).filter((m) => !api.gone.has(m.id));
   const rules = picked.filter((m) => m.by !== "bayani").slice(0, asked ? 8 : 4);
   const model = picked.filter((m) => m.by === "bayani").slice(0, 8);
+  // Your group's own memory comes first for step suggestions (Don, 2026-11-21), above Bayani-1's own ideas.
+  const remembered = all.filter((m) => m.tag === "needed" && !api.gone.has(m.id));
   const runnable = [...rules, ...model].filter((m) => m.run);
+  const a = answer?.answer;
   return <Animated.View layout={listLayout} style={{ marginTop: 6 }}>
-    <Field icon="spark" placeholder={here ? (here.kind === "group" ? "Ask about your group's projects" : here.kind === "task" ? "Ask about this step" : "Ask about this project") : "Ask about Dasig, BIX or Bayani"} value={q}
+    <Field icon="spark" placeholder={here ? (here.kind === "group" ? "Ask about your group's projects" : here.kind === "task" ? "Ask about this step" : here.kind === "team" ? "Ask about this team's work" : "Ask about this project") : "Ask about Dasig, BIX or Bayani"} value={q}
       onChangeText={(x) => { setQ(x); if (!here) setAsked({ q: x, intent: null }); }} autoCorrect={false} returnKeyType="send" onSubmitEditing={() => go()} />
     {here ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 }}>{starters.map((x) =>
-      <Pressable key={x.q} onPress={() => go(x.q, x.intent, true)} accessibilityRole="button" style={{ paddingHorizontal: 12, minHeight: 40, borderRadius: radius.pill, backgroundColor: asked?.q === x.q ? tone.primaryContainer : onSheet ? c.wash : c.white, justifyContent: "center" }}>
+      <Pressable key={x.q} onPress={() => go(x.q, x.intent ?? null)} accessibilityRole="button" style={{ paddingHorizontal: 12, minHeight: 40, borderRadius: radius.pill, backgroundColor: asked?.q === x.q ? tone.primaryContainer : onSheet ? c.wash : c.white, justifyContent: "center" }}>
         <Text style={{ fontSize: 14, fontWeight: "600", color: asked?.q === x.q ? tone.onPrimaryContainer : c.ink }}>{x.q}</Text></Pressable>)}</View> : null}
-    {here && typed ? (answer?.answer ? (answer.answer.intent === "unknown" ? <><AnswerCard a={answer.answer} by={answer.by} onSheet={onSheet} onClose={onClose} /><FactAnswers q={typed} onPick={setQ} onSheet={onSheet} /></>
-        : <AnswerCard a={answer.answer} by={answer.by} onSheet={onSheet} onClose={onClose} />)
-        : <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }}><Thinking on><BayaniMark size={24} /></Thinking><Text style={t.meta}>Reading this screen…</Text></View>)
-      : here && facts ? <FactAnswers q={asked!.q} onPick={setQ} onSheet={onSheet} />
+    {here && typed ? (a ? <>
+        {a.intent === "ideas" && remembered.length ? <View style={{ marginTop: 12 }}><Eyebrow>{"From your group's past projects"}</Eyebrow>
+          <Panel style={{ backgroundColor: onSheet ? c.wash : c.white }}><MoveList moves={remembered.slice(0, 5)} api={api} onOpen={onClose} /></Panel></View> : null}
+        {answer.ideas ? <IdeasCard here={here} ideas={answer.ideas} text={a.text} onMore={() => setAgain((n) => n + 1)} onSheet={onSheet} writing={answer.writing} />
+          : a.intent === "app" ? <FactAnswers q={typed} onPick={(x) => go(x)} onSheet={onSheet} />
+          : <AnswerCard a={a} by={answer.by} onSheet={onSheet} onClose={onClose} advice={!!answer.advice} writing={answer.writing} />}
+      </> : <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }}><Thinking on><BayaniMark size={24} /></Thinking><Text style={t.meta}>{"Thinking about this screen…"}</Text></View>)
       : here ? <Animated.View key={intent + String(!!asked)} layout={listLayout} entering={FadeIn.duration(motion.fade)} style={{ marginTop: 12 }}>
         <Eyebrow>{asked ? "What needs doing" : "What needs doing, right now"}</Eyebrow>
         <Panel style={{ backgroundColor: onSheet ? c.wash : c.white }}>{rules.length ? <MoveList moves={rules} api={api} onOpen={onClose} /> : <Text style={[t.body, { paddingVertical: 14 }]}>{NOTHING[intent]}</Text>}</Panel>
@@ -303,7 +444,7 @@ export function BayaniSheet({ open, onClose, here }: { open: boolean; onClose: (
       .then((w) => { if (!stop) setWhy(w); }).catch(() => {}).finally(() => { if (!stop) setChecking(0); });
     return () => { stop = true; };
   }, [open, here, has]);
-  const status = ms.phase === "web" ? "Works on this page's records · Bayani-1 runs in the Android and iPhone apps" : modelWords(ms);
+  const status = ms.phase === "web" ? "Reads this page's records · the full Bayani is in the app" : modelWords(ms);
   return <Sheet open={open} onClose={onClose} snap>
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
       <BayaniMark size={44} />
@@ -312,16 +453,17 @@ export function BayaniSheet({ open, onClose, here }: { open: boolean; onClose: (
     </View>
     {ms.phase === "downloading" ? <View style={{ marginTop: 10 }}><ProgressBar share={ms.got / Math.max(1, ms.total)} /></View> : null}
     <AskBox here={here} mem={mem} onSheet onClose={onClose} noticed={found} checking={checking} why={why} />
-    <View style={{ marginTop: 18 }}>{here?.kind === "project" ? <HereProject h={here} mem={mem} onClose={onClose} /> : here?.kind === "task" ? <HereTask h={here} onClose={onClose} /> : here?.kind === "group" ? <HereGroup h={here} />
+    <AppPromo />
+    <View style={{ marginTop: 18 }}>{here?.kind === "project" ? <HereProject h={here} mem={mem} onClose={onClose} /> : here?.kind === "task" ? <HereTask h={here} onClose={onClose} /> : here?.kind === "group" ? <HereGroup h={here} /> : here?.kind === "team" ? <HereTeam h={here} onClose={onClose} />
       : <Sand><IconCircle name="book" tone="white" /><Text style={[t.body, { flex: 1 }]}>{"Open a project or a step and I can say what's late, who's needed and what it usually needs."}</Text></Sand>}</View>
     <View style={{ marginTop: 14, gap: 2 }}>
-      <Meta>{"Bayani suggests; a person decides. Bayani-1 was trained on BIX records: it matches steps to your usual ones, judges what belongs and which team fits, and names steps worth keeping. It doesn't write free text. Facts are shown as written, from Dasig's public pages."}</Meta>
+      <Meta>{"Bayani suggests; a person decides. What's pending, late or needed comes straight from your records. Ideas and advice are Bayani-1's own, written on this phone, and say so."}</Meta>
       <LinkText onPress={() => { onClose(); router.push("/ask-bayani"); }}>Bayani on this phone</LinkText>
     </View>
   </Sheet>;
 }
 
-const QUESTION: Record<string, string> = { "same-practice": "Already in the plan", "which-practice": "Linked to a usual step", applies: "Belongs in this project", "one-off": "One-off or not", "which-team": "Which team", "general-title": "Kept for next time", "usually-needed": "Usually needed (rule)", "out-of-order": "Make it wait (rule)", timing: "Usual date (rule)", "usually-done-by-now": "Usually done by now (rule)" };
+const QUESTION: Record<string, string> = { "step-ideas": "Bayani's ideas for steps", "same-practice": "Already in the plan", "which-practice": "Linked to a usual step", applies: "Belongs in this project", "one-off": "One-off or not", "which-team": "Which team", "general-title": "Kept for next time", "usually-needed": "Usually needed (rule)", "out-of-order": "Make it wait (rule)", timing: "Usual date (rule)", "usually-done-by-now": "Usually done by now (rule)" };
 /**
  * How Bayani's suggestions went for this group (the product measure, bayani README point 7): per question, how many a
  * person accepted unchanged, edited, or declined. Read from Provenance and declined proposals; nothing else is collected.

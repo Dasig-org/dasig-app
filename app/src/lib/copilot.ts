@@ -204,6 +204,10 @@ export function movesFor(here: Here | undefined, mem: Memory | null): Move[] {
     // Its subtasks (smaller steps given to someone): late, nobody on one due soon, asked with no answer.
     moves.push(...stepMoves(here.subs ?? [], now).map((m) => ({ ...m, rank: m.rank - 5 })));
     moves.push(...stepMoves(here.siblings.filter((k) => k.id !== here.task.id), now).map((m) => ({ ...m, rank: m.rank - 20 })));
+  } else if (here.kind === "team") {
+    // A team's own steps (Don, 2026-11-21: Ask Bayani on a team screen answered with Dasig's facts, not the team's work).
+    if (["completed", "cancelled"].includes(String(here.project?.status))) return [];
+    moves.push(...stepMoves(here.tasks, now), ...leadless([here.team], here.tasks, now));
   } else moves.push(...groupMoves(here, now));
   return moves.sort((a, b) => b.rank - a.rank);
 }
@@ -219,10 +223,12 @@ export function intentOf(q: string): Intent | null {
   if (/\b(week|today|soon|next|first|priorit|focus|do now|attention|what should)/.test(s)) return "week";
   return null;
 }
-export const STARTERS: Record<string, { q: string; intent: Intent }[]> = {
-  project: [{ q: "What should we do this week?", intent: "week" }, { q: "What's late or at risk?", intent: "late" }, { q: "What are we forgetting?", intent: "needed" }, { q: "Who's still needed?", intent: "people" }],
-  task: [{ q: "What needs attention?", intent: "week" }],
-  group: [{ q: "What needs me today?", intent: "week" }, { q: "What's late across our projects?", intent: "late" }, { q: "Who's still needed?", intent: "people" }],
+/** The chips under the field. With an intent: that list of moves. Without: answered like a typed question (lib/bayaniAnswer.ts). */
+export const STARTERS: Record<string, { q: string; intent?: Intent }[]> = {
+  project: [{ q: "What's pending?" }, { q: "What's late or at risk?", intent: "late" }, { q: "Suggest steps to add" }, { q: "Who's still needed?", intent: "people" }],
+  team: [{ q: "What's pending?" }, { q: "Suggest steps for this team" }, { q: "Who's still needed?", intent: "people" }],
+  task: [{ q: "What needs attention?", intent: "week" }, { q: "What's pending?" }],
+  group: [{ q: "What needs me today?", intent: "week" }, { q: "What's pending?" }, { q: "What's late across our projects?", intent: "late" }, { q: "Who's still needed?", intent: "people" }],
 };
 export function pick(moves: Move[], intent: Intent): Move[] {
   const tags: Record<Intent, MoveTag[] | null> = { week: null, late: ["late", "people"], needed: ["needed", "check", "bayani"], people: ["people"] };
@@ -260,6 +266,7 @@ const ext = (p: R, url: string) => ((p.extension ?? []) as { url: string; value?
  */
 export async function noticed(here: Here | undefined, o: { onMove: (m: Move) => void; onProgress?: (left: number) => void; budget?: number; cancelled?: () => boolean }): Promise<string | null> {
   if (!here || !modelSupported || !(await modelDownloaded().catch(() => false))) return null;
+  if (here.kind === "team") return null;
   if (here.kind === "group") return "Across the group, Bayani works from your projects' records, by rules. Open a project or a step and Bayani-1 checks its steps too.";
   const project = here.kind === "project" ? here.project : here.project;
   const org = here.kind === "project" ? here.org : here.org;

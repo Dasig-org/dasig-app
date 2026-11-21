@@ -5,7 +5,7 @@ import { buildPack, decode, parseFacts, findFacts, words, type Fact, type Pack, 
 import FACTS from "@/data/facts.json";
 import type { R } from "./bix";
 import { completionFor, confidenceOf, messagesFor, type TokenProbs } from "./bayaniPrompt";
-import { INTENT_SETTINGS, asIntent, intentGrammar, intentMessages, type Intent as AskIntent } from "./bayaniAnswer";
+import { INTENT_SETTINGS, WRITE_SETTINGS, adviceMessages, asIntent, cleanAdvice, ideasMessages, intentGrammar, intentMessages, parseIdeas, type Intent as AskIntent, type ScreenRecords } from "./bayaniAnswer";
 
 /*
  * Bayani in the app (bayani repo: docs/CONTEXT_PACK.md, knowledge/README.md).
@@ -309,6 +309,15 @@ export async function checkModel(): Promise<{ loadMs: number; answerMs: number; 
  * Null when the model isn't on this phone or can't load; the app then answers from word matching alone.
  */
 export async function classifyQuestion(question: string): Promise<AskIntent | null> {
+  const out = await baseModel((m) => m.completion({ messages: intentMessages(question), grammar: intentGrammar(), ...INTENT_SETTINGS }));
+  return out === null ? null : asIntent(out);
+}
+
+/**
+ * The base model alone (the Bayani add-on off, back on after): it was trained for the judgment questions, while
+ * sorting questions and writing ideas or advice are the base model's own skills. Null when it isn't on this phone.
+ */
+async function baseModel(run: (m: Ctx) => Promise<{ text: string }>): Promise<string | null> {
   if (!modelSupported) return null;
   return serial(async () => {
     const m = await model();
@@ -317,10 +326,31 @@ export async function classifyQuestion(question: string): Promise<AskIntent | nu
     const { file } = await fs();
     try {
       await ctxL.removeLoraAdapters?.();
-      const r = await m.completion({ messages: intentMessages(question), grammar: intentGrammar(), ...INTENT_SETTINGS });
-      return asIntent(r.text);
+      return (await run(m)).text;
     } finally { await ctxL.applyLoraAdapters?.([{ path: path(file("lora").uri), scaled: 1 }]).catch(() => {}); }
-  }).catch((e) => { noteError(e); return null; });
+  }, true).catch((e) => { noteError(e); return null; });
+}
+
+/*
+ * Shown as it's written (Don, 2026-11-21: 10-20 s on a mid-range phone felt slow with the words all at once): llama.rn
+ * calls back with each token; `onPartial` gets what's usable so far. Ideas: only finished lines (the last line may be
+ * half a step). Advice: the text so far.
+ */
+const streaming = (onText?: (all: string) => void) => {
+  let all = "";
+  return onText ? (d: { token: string }) => { all += d.token; onText(all); } : undefined;
+};
+/** Bayani-1's own ideas for steps to add (Don, 2026-11-21), none already in the plan. Null without the model. */
+export async function suggestSteps(s: ScreenRecords, have: string[], onPartial?: (ideas: string[]) => void): Promise<string[] | null> {
+  const cb = streaming(onPartial && ((all) => { const done = all.slice(0, all.lastIndexOf("\n") + 1); if (done) onPartial(parseIdeas(done, have)); }));
+  const out = await baseModel((m) => m.completion({ messages: ideasMessages(s), ...WRITE_SETTINGS }, cb));
+  return out === null ? null : parseIdeas(out, have);
+}
+/** Short advice on a planning question, from the screen's brief. Null without the model. */
+export async function advise(q: string, s: ScreenRecords, onPartial?: (text: string) => void): Promise<string | null> {
+  const cb = streaming(onPartial && ((all) => onPartial(cleanAdvice(all))));
+  const out = await baseModel((m) => m.completion({ messages: adviceMessages(q, s), ...WRITE_SETTINGS, n_predict: 150 }, cb));
+  return out ? cleanAdvice(out) : null;
 }
 
 /** Who suggested it, as BIX Provenance names a model (rule 3, "Suggestions and their answers"). */
@@ -339,8 +369,25 @@ export type Judgment =
   | { kind: "text"; value: string; confidence: number; question: Question["kind"] };
 
 // One question at a time: the phone has one model context. Answers are kept for the same records (by version).
-let queue: Promise<unknown> = Promise.resolve();
-const serial = <T,>(f: () => Promise<T>): Promise<T> => { const run = queue.then(f, f); queue = run.catch(() => undefined); return run; };
+/*
+ * One model call at a time. A question someone just asked (`urgent`) goes ahead of the checks still waiting (the plan
+ * check and project memory ask Bayani-1 up to ~30 judgments when a project opens), so it waits for one call at most,
+ * not all of them (review 2026-11-21: a typed question sat behind the background checks and looked stuck).
+ */
+type Job = { f: () => Promise<unknown>; ok: (v: unknown) => void; fail: (e: unknown) => void };
+const jobs: Job[] = [];
+let calling = false;
+function pump() {
+  if (calling || !jobs.length) return;
+  calling = true;
+  const j = jobs.shift()!;
+  Promise.resolve().then(j.f).then(j.ok, j.fail).finally(() => { calling = false; pump(); });
+}
+const serial = <T,>(f: () => Promise<T>, urgent = false): Promise<T> => new Promise<T>((ok, fail) => {
+  const j: Job = { f, ok: ok as (v: unknown) => void, fail };
+  if (urgent) jobs.unshift(j); else jobs.push(j);
+  pump();
+});
 const cache = new Map<string, Judgment | null>();
 const keyOf = (q: Question, records: R[]) => JSON.stringify(q) + "|" + records.map((r) => `${r.resourceType}/${r.id}@${r.meta?.version ?? 0}`).sort().join(",");
 
