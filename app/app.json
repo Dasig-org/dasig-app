@@ -2,7 +2,7 @@
   "expo": {
     "name": "Dasig",
     "slug": "dasig",
-    "version": "0.22.0",
+    "version": "0.22.1",
     "orientation": "portrait",
     "icon": "./assets/brand/icon.png",
     "scheme": [
@@ -28,9 +28,10 @@
         "android.permission.INTERNET"
       ],
       "blockedPermissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ],
-      "versionCode": 23,
+      "versionCode": 24,
       "googleServicesFile": "./google-services.json"
     },
     "web": {

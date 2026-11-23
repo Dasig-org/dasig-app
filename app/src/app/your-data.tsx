@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { router } from "expo-router";
-import { Text, View } from "react-native";
+import { Linking, Text, View } from "react-native";
 import { bix } from "@/lib/bix";
 import { saveJson } from "@/lib/save";
 import { useSession } from "@/lib/session";
@@ -8,6 +8,8 @@ import { useLoad } from "@/lib/use";
 import { Buttons, Eyebrow, IconCircle, Meta, Outline, Panel, Row, Screen, Sheet, Title } from "@/ui/kit";
 import { c, radius, type as t } from "@/ui/theme";
 import { useSnackbar } from "@/ui/Snackbar";
+import { SignInMethods } from "@/ui/SignInMethods";
+import { openSite } from "@/ui/About";
 
 /** Your data (sketch: trust #3, #4): what's kept, download it, choose what shows, delete your account. Not legal advice. */
 export default function YourData() {
@@ -21,6 +23,21 @@ export default function YourData() {
   const photos = entries.flatMap((r) => [...(r.attachment ?? []), ...((r.output ?? []).flatMap((o: any) => o.attachment ?? []))]).length;
   const dueDelete = (s.person?.extension ?? []).find((x: any) => x.url === "bayanihan:delete-after")?.value;
   const tile = (icon: any, n: string, label: string) => <View style={{ flex: 1, backgroundColor: c.white, borderRadius: radius.panel, padding: 14, gap: 8 }}><IconCircle name={icon} /><Text style={t.row}>{n}</Text><Meta>{label}</Meta></View>;
+  // Signed out (most often the web link from the Play listing): say how to sign in and delete, instead of empty counts.
+  if (s.ready && !s.person) return (
+    <Screen back>
+      <Title sub="Download or delete what the Dasig app keeps about you.">Your data</Title>
+      <Panel style={{ padding: 16 }}>
+        <Text style={t.body}>Sign in with the account you use in the Dasig app. Then choose Delete my account. You have 14 days to change your mind.</Text>
+      </Panel>
+      <View style={{ marginTop: 16 }}><SignInMethods then="/your-data" /></View>
+      <Eyebrow>{"Can't sign in?"}</Eyebrow>
+      <Panel>
+        <Row left={<IconCircle name="pen" />} title="Email privacy@dasig.org" meta="If you used a nickname only, tell us your nickname and group" onPress={() => Linking.openURL("mailto:privacy@dasig.org?subject=Delete%20my%20Dasig%20account")} />
+        <Row left={<IconCircle name="lock" />} title="How deletion works" meta="What's removed and what groups keep" onPress={() => openSite("/trust/delete-account")} last />
+      </Panel>
+    </Screen>
+  );
   return (
     <Screen back>
       <Title sub="What Dasig keeps about you, and what you can do with it.">Your data</Title>

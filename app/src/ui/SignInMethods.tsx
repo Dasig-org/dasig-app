@@ -15,7 +15,7 @@ import { openSite } from "@/ui/About";
  * Only the ways this network offers (GET /$signin) are shown; the last one used on this device is marked.
  * `then` is where to land after signing in (an invite link comes back to itself).
  */
-export function SignInMethods({ then = "/", onNickname }: { then?: string; onNickname: () => void }) {
+export function SignInMethods({ then = "/", onNickname }: { then?: string; onNickname?: () => void }) {
   const s = useSession();
   const [offers, setOffers] = useState<{ google: boolean; email: boolean; oidc: string[] } | null>(null);
   const [last, setLast] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export function SignInMethods({ then = "/", onNickname }: { then?: string; onNic
   return <View>
     {list.map((m) => <SignInButton key={m.via} via={m.via} label={m.label} last={last === m.via} busy={busy === m.via} onPress={m.go} />)}
     {err ? <Notice>{err}</Notice> : null}
-    <View style={{ alignItems: "center", marginTop: 16 }}><LinkText onPress={onNickname}>Try it with a nickname</LinkText></View>
+    {onNickname ? <View style={{ alignItems: "center", marginTop: 16 }}><LinkText onPress={onNickname}>Try it with a nickname</LinkText></View> : null}
     <Text style={[t.meta, { textAlign: "center", marginTop: 14, marginHorizontal: 8, color: c.s500 }]}>Your account is on the <Text style={{ fontWeight: "700" }}>Bayanihan Network</Text>, where groups keep their work. Use any of these; you can add more later.</Text>
     <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 6 }}>
       <Text style={[t.meta, { color: c.s500 }]}>By continuing you accept how Dasig handles your data:</Text>
