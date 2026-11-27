@@ -1,7 +1,7 @@
 /*
  * Bayani answering typed questions from the screen's records (lib/bayaniAnswer.ts): what kind of question it is, by
  * word matching, and the answer the app works out. The model's part (sorting the questions word matching misses) is
- * checked on a Mac with scripts/bayani-answer-check.ts. Run: ../../bayanihan/node_modules/.bin/vitest run test
+ * checked on a Mac with scripts/bayani-answer-check.ts. Run: npm test
  */
 import { describe, expect, it } from "vitest";
 import { answerFor, brief, cleanAdvice, intentByWords, parseIdeas } from "../src/lib/bayaniAnswer";

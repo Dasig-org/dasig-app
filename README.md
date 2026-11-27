@@ -69,18 +69,10 @@ and say **"I'm in"**. Finished work is thanked, signed by the group, and kept by
 
 ## Run it from source
 
-You need Node.js 22. The `@bayanihan/*` packages aren't on npm yet, so the repositories sit side by side in one folder:
+You need Node.js 22.13 or newer. The `@bayanihan/*` packages come from npm:
 
 ```sh
-mkdir dasig && cd dasig
-git clone https://github.com/Dasig-org/bix.git
-git clone https://github.com/Dasig-org/bayanihan.git
-git clone https://github.com/Dasig-org/bayani.git
 git clone https://github.com/Dasig-org/dasig-app.git
-
-(cd bix && npm install)
-(cd bayanihan && npm install)
-(cd bayani && npm install)
 cd dasig-app/app && npm install
 ```
 
