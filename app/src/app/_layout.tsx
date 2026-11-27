@@ -16,6 +16,7 @@ import { KProvider } from "@/ui/kbd";
 import { BayaniProvider } from "@/ui/Bayani";
 import { ScreenFab } from "@/ui/ScreenFab";
 import { ScreenButton } from "@/ui/kit";
+import { UpdateGate } from "@/ui/UpdateGate";
 
 /** When a screen crashes: say so in plain words, with a way back and a way to tell us. Drawn outside the providers, so it uses nothing from them. */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
@@ -55,6 +56,8 @@ export default function Layout() {
             <Stack screenOptions={{ headerShown: false, animation: "fade_from_bottom", contentStyle: { backgroundColor: c.wash } }} />
           </SnackbarProvider>
         </BayaniProvider></ScreenButton.Provider>
+        {/* Store builds: suggest or require an update (lib/update.ts). Never blocks offline. */}
+        <UpdateGate />
       </SessionProvider>
       </KProvider>
     </SafeAreaProvider>

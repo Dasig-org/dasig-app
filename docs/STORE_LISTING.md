@@ -193,3 +193,18 @@ Retake them on the 0.22.x build at the full Play size.
   `student org,nonprofit,volunteer management,teams,tasks,events,outreach,relief,bayanihan,club`
 - **Watch out:** on iOS, the "works without internet" and hub features depend on what the iOS build supports. Check
   before claiming them.
+
+---
+
+## Releasing an update (update check, added 2026-11-27)
+
+The store builds read `https://bayanihan.dasig.org/app/version.json` (in bayanihan-site `public/app/version.json`)
+once a day:
+- **`latest`**: phones on an older version see a dismissable "A new version of the Dasig app is ready. Update".
+  Set it **after** the new version is live on Play, or the button opens a store page without the update yet.
+- **`minimum`**: phones below it see a full screen with only Update. Use it rarely, only when old versions truly
+  can't work with the server any more.
+- **Offline or unreachable, nothing happens.** A group on a hub is never blocked, but a required update is
+  remembered from the last check.
+- iOS: add `"ios": { "latest", "minimum", "url" }` once the App Store link exists. Until then iOS skips the check.
+- Web and self-built copies skip it entirely.
