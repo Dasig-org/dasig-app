@@ -1,6 +1,6 @@
 /*
  * Bayani's rules for a group (lib/copilot.ts groupMoves): what a coordinator sees on Home. Run like offline.test.mjs:
- *   cd app && ../../bayanihan/node_modules/.bin/vitest run test
+ *   cd app && npm test
  */
 import { describe, expect, it, vi } from "vitest";
 

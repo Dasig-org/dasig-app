@@ -1,6 +1,6 @@
 /*
  * The project report's model and printable page (lib/report.ts). Run with the others:
- *   cd app && ../../bayanihan/node_modules/.bin/vitest run test
+ *   cd app && npm test
  * Set REPORT_OUT=/some/file.html to write the sample page, to look at it in a browser.
  */
 import { writeFileSync } from "node:fs";

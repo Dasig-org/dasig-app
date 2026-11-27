@@ -36,18 +36,10 @@ Read [`docs/EXPERIENCE.md`](docs/EXPERIENCE.md) (how the app should feel) and
 
 ## Set up
 
-You need Node.js 22. `@bayanihan/*` packages aren't on npm yet, so the repositories sit side by side:
+You need Node.js 22.13 or newer. The `@bayanihan/*` packages come from npm:
 
 ```sh
-mkdir dasig && cd dasig
-git clone https://github.com/Dasig-org/bix.git
-git clone https://github.com/Dasig-org/bayanihan.git
-git clone https://github.com/Dasig-org/bayani.git
 git clone https://github.com/<you>/dasig-app.git     # your fork
-
-(cd bix && npm install)
-(cd bayanihan && npm install)
-(cd bayani && npm install)
 cd dasig-app/app && npm install
 cp .env.example .env
 npx expo start --web
@@ -64,9 +56,15 @@ For Android: `npx expo run:android` with the Android SDK and a phone or emulator
 From `app/`:
 
 ```sh
-npx tsc --noEmit      # must pass
+npm run typecheck     # must pass
 npx expo lint
+npm test
 ```
+
+The same checks run on every pull request.
+
+To change a `@bayanihan/*` package and the app together, clone that repository, build it (`npm run build`), and
+`npm link` it into `app/`.
 
 End-to-end checks in a real browser at phone size are described in [`app/e2e/README.md`](app/e2e/README.md).
 
