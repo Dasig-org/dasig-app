@@ -3,7 +3,7 @@
  * change kept for later is a success, and that reads fall back to the saved copy with waiting changes on top.
  * The app has no test runner of its own yet (B84, B97); this runs with the one in the bayanihan repository:
  *
- *   cd app && ../../bayanihan/node_modules/.bin/vitest run test/offline.test.mjs
+ *   cd app && npm test/offline.test.mjs
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Offline } from "../src/lib/reach";
