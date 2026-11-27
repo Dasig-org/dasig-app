@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { onSynced } from "./outbox";
 import { onLocalChange, swap } from "./bix";
+import { latestCall } from "./latest";
 
 /** Load data, reload when the screen comes back into focus. */
 export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []) {
@@ -14,9 +15,15 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   const [seen, setSeen] = useState(deps);
   const [round, setRound] = useState(0);
   if (deps.length !== seen.length || deps.some((d, i) => !Object.is(d, seen[i]))) { setSeen(deps); setRound(round + 1); }
-  const load = useCallback(() => latest.current().then((d) => { had.current = true; setError(null); setData(d); },
-    // Offline: keep showing what we had rather than replacing the screen with an error.
-    (e) => { if (!had.current) setError(e instanceof Error ? e.message : String(e)); }), []);
+  // Focus, sync and local changes can all start a load at once. Only the newest request may write state: an older
+  // response resolving last would otherwise put stale records back on the screen.
+  const begin = useRef(latestCall());
+  const load = useCallback(() => {
+    const apply = begin.current();
+    return latest.current().then((d) => apply(() => { had.current = true; setError(null); setData(d); }),
+      // Offline: keep showing what we had rather than replacing the screen with an error.
+      (e) => apply(() => { if (!had.current) setError(e instanceof Error ? e.message : String(e)); }));
+  }, []);
   useEffect(() => { void load(); }, [load, round]);
   useEffect(() => onSynced(() => { load(); }), [load]);
   // Optimistic: show a change the moment it's made; reload if the server refuses it.
