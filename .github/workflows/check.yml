@@ -6,46 +6,20 @@ on:
   pull_request:
 
 jobs:
-  typecheck:
+  check:
     runs-on: ubuntu-latest
-    # The sibling repositories are private, and a workflow's own token can read only this one. Add a repository secret
-    # SIBLINGS_TOKEN (a fine-grained token with read access to Dasig-org/bix, bayanihan and bayani) to run the check;
-    # without it the job says so and skips, instead of failing every push.
-    env:
-      SIBLINGS_TOKEN: ${{ secrets.SIBLINGS_TOKEN }}
+    defaults:
+      run:
+        working-directory: app
     steps:
-      - if: env.SIBLINGS_TOKEN == ''
-        run: echo "::notice::Typecheck skipped. Add the SIBLINGS_TOKEN secret (read access to bix, bayanihan, bayani) to run it."
-      # The @bayanihan/* packages aren't on npm yet, so the sibling repositories sit side by side, as in the README.
-      - if: env.SIBLINGS_TOKEN != ''
-        uses: actions/checkout@v4
-        with: { path: dasig-app }
-      - if: env.SIBLINGS_TOKEN != ''
-        uses: actions/checkout@v4
-        with: { repository: Dasig-org/bix, path: bix, token: "${{ secrets.SIBLINGS_TOKEN }}" }
-      - if: env.SIBLINGS_TOKEN != ''
-        uses: actions/checkout@v4
-        with: { repository: Dasig-org/bayanihan, path: bayanihan, token: "${{ secrets.SIBLINGS_TOKEN }}" }
-      - if: env.SIBLINGS_TOKEN != ''
-        uses: actions/checkout@v4
-        with: { repository: Dasig-org/bayani, path: bayani, token: "${{ secrets.SIBLINGS_TOKEN }}" }
-
-      - if: env.SIBLINGS_TOKEN != ''
-        uses: actions/setup-node@v4
-        with: { node-version: 22 }
-
-      - if: env.SIBLINGS_TOKEN != ''
-        run: npm ci
-        working-directory: bix
-      - if: env.SIBLINGS_TOKEN != ''
-        run: npm ci
-        working-directory: bayanihan
-      - if: env.SIBLINGS_TOKEN != ''
-        run: npm ci
-        working-directory: bayani
-      - if: env.SIBLINGS_TOKEN != ''
-        run: npm ci
-        working-directory: dasig-app/app
-      - if: env.SIBLINGS_TOKEN != ''
-        run: npx tsc --noEmit
-        working-directory: dasig-app/app
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      # Skip install scripts: llama.rn downloads its native iOS/Android builds, which these checks don't need.
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npx expo lint
+      - run: npm test

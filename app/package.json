@@ -3,10 +3,10 @@
   "version": "0.22.1",
   "main": "index.js",
   "dependencies": {
-    "@bayanihan/bayani": "file:../../bayani",
-    "@bayanihan/bix": "file:../../bix",
-    "@bayanihan/core": "file:../../bayanihan/packages/core",
-    "@bayanihan/server": "file:../../bayanihan/packages/server",
+    "@bayanihan/bayani": "^0.1.0",
+    "@bayanihan/bix": "^0.1.0",
+    "@bayanihan/core": "^0.1.0",
+    "@bayanihan/server": "^0.1.0",
     "@expo/ui": "~58.0.24",
     "@noble/ed25519": "^2.3.0",
     "@noble/hashes": "^1.8.0",
@@ -67,7 +67,8 @@
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.4"
   },
   "scripts": {
     "start": "expo start",
@@ -76,7 +77,9 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "build:pwa": "expo export --platform web --output-dir dist && node scripts/pwa.mjs dist",
-    "deploy:pwa": "npm run build:pwa && mkdir -p dist/.vercel && cp .vercel-pwa/project.json dist/.vercel/ && rm -f dist/.env* && cd dist && vercel deploy --prod --yes"
+    "deploy:pwa": "npm run build:pwa && mkdir -p dist/.vercel && cp .vercel-pwa/project.json dist/.vercel/ && rm -f dist/.env* && cd dist && vercel deploy --prod --yes",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run test"
   },
   "private": true,
   "license": "AGPL-3.0-only",
@@ -84,5 +87,8 @@
     "staticFeatureFlags": {
       "ENABLE_SHARED_ELEMENT_TRANSITIONS": true
     }
+  },
+  "engines": {
+    "node": ">=22.13"
   }
 }
