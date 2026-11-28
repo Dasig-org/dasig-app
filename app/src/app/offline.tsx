@@ -31,8 +31,7 @@ export default function Offline() {
           {k === "phone" ? <Row left={<IconCircle name="users" />} title="Make this phone your group's hub" meta="Others join over the same wifi" onPress={() => router.push("/hub" as never)} last /> : null}
           {k !== "phone" ? <Row left={<IconCircle name="wifioff" />} title="Join a hub nearby" meta="Your group's phone, over the same wifi" onPress={() => router.push("/pair" as never)} last /> : null}
         </Panel></> : null}
-      <Eyebrow>Another network</Eyebrow>
-      <Panel><Row left={<IconCircle name="building" />} title="Use your LGU's network" meta="From a link or code they give you" onPress={() => router.push("/network" as never)} last /></Panel>
+      {/* "Use your LGU's network" returns when partner and LGU networks work in the app (#16). */}
       <Text style={[t.meta, { marginTop: 14, marginHorizontal: 4 }]}>Your account and where records live are separate: signing in with Google, email or Dasig.org works the same wherever your group keeps its records.</Text>
     </Screen>
   );
