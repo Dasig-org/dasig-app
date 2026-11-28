@@ -136,6 +136,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const pairWithHub = async (hub: string, code: string, nickname?: string) => {
     const url = hub.replace(/\/$/, "");
+    await (await import("./handover")).rememberNetwork();
     const res = await fetch(`${url}/$pair`, { method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ code, nickname: nickname ?? person?.name?.text, ...(person ? { person, proof: await (await import("./keys")).pairingProof(person.id, code, person.publicKey) } : {}) }) });
     const out = await res.json().catch(() => ({ error: `the hub didn't answer (${res.status})` }));

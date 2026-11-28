@@ -36,9 +36,13 @@ async function doFlush(): Promise<{ sent: number; refused: Refusal[] }> {
   const res = await send("POST", "/", JSON.stringify({ type: "sync", entry: p }));
   if (!res.ok) throw new Error(`sync failed: ${res.status}`);
   const out = (await res.json()) as { accepted: R[]; refused: Refusal[] };
+  // The group is on its hub: the Network holds it read-only, so these stay here and go again when it's back.
+  const away = (r: Refusal) => r.reasons.some((x) => x.startsWith("away-on-hub"));
+  const held = p.filter((x) => out.refused.some((r) => away(r) && r.record.id === x.resource.id && r.record.meta?.version === x.resource.meta?.version));
+  const refused = out.refused.filter((r) => !away(r));
   // Only what was sent leaves the queue (it's append-only): anything added while sending stays for the next round.
-  await locked(async () => save((await pending()).slice(p.length)));
-  if (out.refused.length) { refusedNow = [...refusedNow, ...out.refused]; refusedListeners.forEach((l) => l(refusedNow)); }
+  await locked(async () => save([...held, ...(await pending()).slice(p.length)]));
+  if (refused.length) { refusedNow = [...refusedNow, ...refused]; refusedListeners.forEach((l) => l(refusedNow)); }
   syncedListeners.forEach((l) => l());
-  return { sent: p.length, refused: out.refused };
+  return { sent: p.length - held.length, refused };
 }
