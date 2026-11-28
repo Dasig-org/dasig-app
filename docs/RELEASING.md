@@ -1,4 +1,4 @@
-# Store listing: the Dasig app (Google Play first, App Store next)
+# Releasing the Dasig app: store listing and updates
 
 **Status:** draft, 2026-11-23. Title decided by Don the same day. Everything here goes into Play Console (or App
 Store Connect) and can be changed **without a new build**. `expo.name` stays `Dasig`, the name shown on the phone.
@@ -31,6 +31,12 @@ Not everyone can run the whole thing. Everyone can take one step.
 
 The Dasig app helps volunteer groups, student orgs and nonprofits coordinate the work behind every event, outreach and project. A fun run, a feeding program, a campus seminar, a shore cleanup: each one is dozens of small jobs. Usually one coordinator holds them all in their head and a group chat. The Dasig app gives that work a shape, so volunteers know where to help and nothing rests on one person.
 
+FOR VOLUNTEERS AND MEMBERS
+• See what's worth doing this week, and say "I'm in" with one tap.
+• "Can't make it" is one tap too. No guilt, no red counters.
+• Your story: every finished step is thanked, signed by your group and kept on your phone. It goes with you.
+• No leaderboards and no points. Credit is your story, not a ranking.
+
 FOR COORDINATORS AND OFFICERS
 • Turn a project into teams, and a big job into small steps, with subtasks and the files they need.
 • Plan check on every project: what's still open, steps due this week with nobody on them, people asked who haven't answered, and teams with work coming and no lead.
@@ -39,23 +45,17 @@ FOR COORDINATORS AND OFFICERS
 • A project report when it's done, with hours and counts worked out for you.
 • It survives handover. Plans, people and records belong to the group, so next year's officers start on day one.
 
-FOR VOLUNTEERS AND MEMBERS
-• See what's worth doing this week, and say "I'm in" with one tap.
-• "Can't make it" is one tap too. No guilt, no red counters.
-• Your story: every finished step is thanked, signed by your group and kept on your phone. It goes with you.
-• No leaderboards and no points. Credit is your story, not a ranking.
+NO SIGNAL? KEEP GOING
+• Read what you last opened, and keep working. What you do is saved and sent when you're back online.
+• No signal at all? Make one phone the group's hub, and others join over its hotspot. That's handy at venues, barangays and evacuation centers with weak signal.
+• The hub works on Android.
 
-WORKS WITHOUT INTERNET
-• Your group's records live on your phones, not on someone else's server.
-• Make one phone the group's hub, and others join over its hotspot. That's handy at venues, barangays and evacuation centers with weak signal.
-• Connect to the Bayanihan Network when you want, or never.
-
-BAYANI, THE SMALL AI (OPTIONAL, IN TESTING)
+BAYANI, THE SMALL AI (OPTIONAL, IN TESTING, ANDROID ONLY)
 • Bayani runs on your phone with no internet. It matches steps to your group's usual ones and suggests a team.
 • It always asks first. A lead accepts every change.
 
 MADE FOR
-Student organizations and councils, school and campus clubs, volunteer groups, nonprofits and foundations, church and youth ministries, civic and community groups, Rotary and Rotaract clubs, and disaster relief teams.
+Student organizations and councils, school and campus clubs, volunteer groups, nonprofits and foundations, church and youth ministries, civic and community groups, service clubs, and disaster relief teams.
 
 PRIVATE BY DESIGN
 • No ads. We never sell or rent your data.
@@ -63,20 +63,20 @@ PRIVATE BY DESIGN
 • See, download or delete your data any time: Me → Your data.
 
 OPEN SOURCE
-The Dasig app is open source and part of Bayanihan, an open initiative by Dasig. It's built in the Philippines, and shaped with volunteer groups in Cebu.
+The Dasig app is open source and part of Bayanihan, an open initiative by Dasig. Your group's records use BIX, an open format, so they're never locked into one app. Dasig Fundraising is a separate service and isn't part of this. Built in the Philippines, and shaped with volunteer groups in Cebu.
 
 The app is early and changes every week. Tell us what your group needs: hello@dasig.org
 ```
 
 **Before publishing, check:**
 - **Report "with hours and counts worked out"**: confirm the v0 project report includes hours.
-- **"Rotary and Rotaract clubs"**: keep only if a pilot group or a near-term target is one. Otherwise cut it.
+- **"service clubs"**: keep only if a pilot group or a near-term target is one. Otherwise cut it.
 - **"shaped with volunteer groups in Cebu"**: confirm this matches the pilot facts in the canon notes.
 
 ## Release notes, first release (500)
 
 ```
-The first Play Store release of the Dasig app. Plan projects as teams and steps, say "I'm in" to what's worth doing, and keep a thanked record of your work. Works without internet, with an optional on-phone AI in testing.
+The first Play Store release of the Dasig app. Plan projects as teams and steps, say "I'm in" to what's worth doing, and keep a thanked record of your work. Keeps working when the signal drops, with an optional on-phone AI in testing (Android).
 ```
 
 ---
@@ -107,7 +107,7 @@ The first Play Store release of the Dasig app. Plan projects as teams and steps,
 | Financial features | None |
 | Health | None |
 | COVID-19 | Not applicable |
-| Account deletion | In the app: **Me → Your data**. Web: **https://bayanihan.dasig.org/trust/delete-account** (page to add, copy below). |
+| Account deletion | In the app: **Me → Your data**. Web: **https://bayanihan.dasig.org/trust/delete-account** (live). |
 
 ### App access instructions for the reviewer
 
@@ -165,23 +165,12 @@ to privacy@dasig.org for nickname-only accounts. It explains the 14-day grace pe
 
 ## Graphics
 
-| Asset | Spec | Plan |
+| Asset | Spec | Source |
 |---|---|---|
 | App icon | 512×512 PNG, 32-bit | Export from `app/assets/brand/icon.png` |
-| Feature graphic | 1024×500 JPG/PNG | Paper style, one line: **"Everyone can take one step."** plus the Dasig mark. Keep it legible when cropped to the centre. |
-| Phone screenshots | 4–6, 9:16, 1080×1920 or larger | Real screens with made-up people, each with a short caption above |
+| Feature graphic | 1024×500 JPG/PNG | Made by the Dasig team |
+| Phone screenshots | 2–8, 9:16, 1080×1920 | Real app screens with made-up people and groups |
 | Promo video | YouTube URL, optional | Later |
-
-**Screenshot captions** (one idea each, in this order):
-1. Volunteer home: **"See what's worth doing this week"**
-2. Task, "I'm in": **"Say \"I'm in\" with one tap"**
-3. Coordinator home or plan check: **"Know what's still open, early"**
-4. Project as teams and steps: **"Turn a big job into small steps"**
-5. Story: **"Your work, thanked and kept"**
-6. Hub or offline: **"Works without internet"**
-
-The current site screens (`bayanihan.dasig.org/screens/app-*.webp`) cover 1, 2, 3 and the project-memory screen.
-Retake them on the 0.22.x build at the full Play size.
 
 ---
 
@@ -193,3 +182,20 @@ Retake them on the 0.22.x build at the full Play size.
   `student org,nonprofit,volunteer management,teams,tasks,events,outreach,relief,bayanihan,club`
 - **Watch out:** on iOS, the "works without internet" and hub features depend on what the iOS build supports. Check
   before claiming them.
+
+---
+
+## Releasing an update (update check, added 2026-11-27)
+
+The store builds read `https://bayanihan.dasig.org/app/version.json` (in bayanihan-site `public/app/version.json`)
+once a day:
+- **`latest`**: phones on an older version see a dismissable "A new version of the Dasig app is ready. Update".
+  Set it **after** the new version is live on Play, or the button opens a store page without the update yet.
+- **`minimum`**: phones below it see a full screen with only Update. Use it rarely, only when old versions truly
+  can't work with the server any more.
+- **Offline or unreachable, nothing happens.** A group on a hub is never blocked, but a required update is
+  remembered from the last check.
+- iOS: add `"ios": { "latest", "minimum", "url" }` once the App Store link exists. Until then iOS skips the check.
+- Web and self-built copies skip it entirely.
+
+---
