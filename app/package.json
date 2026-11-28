@@ -1,6 +1,6 @@
 {
   "name": "dasig-app",
-  "version": "0.22.1",
+  "version": "0.23.0",
   "main": "index.js",
   "dependencies": {
     "@bayanihan/bayani": "^0.1.0",
