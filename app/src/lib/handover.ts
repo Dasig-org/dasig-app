@@ -27,6 +27,7 @@ export async function takeOffline(org: { id: string; name?: string }, person: { 
   const res = await fetch(`${c.url}/Organization/${org.id}/$handover`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${c.token}` },
     body: JSON.stringify({ name: deviceLabel() ?? "Hub" }) }).catch(() => null);
   if (!res) throw new Error("Taking your group offline needs internet once. Try again where there's signal.");
+  if (res.status === 404) throw new Error("The Bayanihan Network isn't updated for this yet. Try again after its next update.");
   const { endpoint, bundle } = await said(res);
   const { localEngine } = await import("@/local/engine");
   const e = await localEngine();
