@@ -19,7 +19,7 @@
         "foregroundImage": "./assets/brand/adaptive-foreground.png",
         "backgroundColor": "#FFFFFF"
       },
-      "predictiveBackGestureEnabled": true,
+      "predictiveBackGestureEnabled": false,
       "package": "org.dasig.bayanihan",
       "permissions": [
         "android.permission.ACCESS_NETWORK_STATE",
